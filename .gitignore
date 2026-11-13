@@ -1,0 +1,17 @@
+# secrets & local config
+.env
+secrets/
+*.pem
+
+# build & runtime
+bin/
+var/
+coverage.out
+
+# legacy dump (berisi data pribadi & hash password) — jangan di-commit
+database
+
+.DS_Store
+.idea/
+.vscode/
+.github/workflows/
