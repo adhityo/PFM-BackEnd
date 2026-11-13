@@ -142,45 +142,46 @@ Aturan dependensi:
 
 1. **Handler** hanya mem-parse request, memanggil service, dan memetakan response. Tidak ada logika bisnis atau SQL.
 2. **Service** memegang aturan bisnis, transisi status, dan batas transaksi. Service tidak mengenal Fiber.
-3. **Repository** adalah interface yang didefinisikan di package modul (sisi konsumen). Implementasinya memakai `sqlc` dan tidak berisi logika bisnis.
+3. **Repository** berada di package `repository`: interface (dipakai service) beserta implementasinya yang memakai `sqlc`. Repository tidak berisi logika bisnis.
 4. **Domain/entity** tidak bergantung pada Fiber, pgx, maupun AWS SDK.
 5. Wiring dilakukan manual di `cmd/api` (constructor injection). Tidak ada global state dan tidak ada DI berbasis reflection.
 6. Error dibungkus `fmt.Errorf("...: %w", err)`. Error domain (`ErrNotFound`, `ErrConflict`, …) dipetakan ke HTTP di satu tempat, yaitu error handler global.
 
 ### 5.3 Struktur Folder
 
+Layer datar (satu package per layer, satu file per entitas), mengikuti pola registrar-api:
+
 ```
 pfm-backend/
 ├── cmd/
 │   ├── api/main.go              # HTTP server
-│   ├── migrate/main.go          # runner goose (embed), perintah: up, down, status, validate
-│   └── worker/main.go           # job: generate invoice bulanan, sinkronisasi, kirim notifikasi, cleanup file orphan
+│   ├── migrate/main.go          # goose (embed): up, down, status, version, seed, seed-admin
+│   ├── worker/main.go           # job: cleanup file orphan & refresh token kedaluwarsa (berikutnya: invoice, sinkronisasi)
+│   └── scaffold/                # generator CRUD (dev tool)
 ├── internal/
-│   ├── config/                  # load + validasi env
-│   ├── platform/
-│   │   ├── database/            # pgxpool, TxManager, DBTX, pemetaan pgconn.PgError
-│   │   ├── storage/             # ImageStorage (lokal), DocumentStorage (S3)
-│   │   ├── httpx/               # Fiber app, middleware, envelope response, error handler, ETag
-│   │   ├── validatorx/          # validator v10 + rule kustom + pesan error
-│   │   ├── security/            # JWT, argon2id, hash token, masking PII, RBAC
-│   │   └── logger/              # slog JSON + redaksi
-│   ├── module/
-│   │   ├── iam/  masterdata/  market/  portfolio/  trading/  bond/
-│   │   ├── pension/  accounting/  document/  workflow/  integration/  storage/
-│   │   │   # per entitas: <entity>_dto.go, <entity>_handler.go, <entity>_service.go,
-│   │   │   #              <entity>_repository.go (interface + impl), routes.go
-│   └── db/
-│       ├── migrations/          # 00001_…sql s/d 00123_…sql (go:embed)
-│       ├── queries/             # <tabel>.sql untuk sqlc (1 file per tabel)
-│       └── sqlc/                # hasil generate — jangan diedit manual
-├── api/openapi.yaml             # kontrak API (sumber kebenaran untuk FE)
-├── deploy/                      # Dockerfile (distroless, non-root), docker-compose (postgres, minio, redis)
+│   ├── model/                   # struct domain
+│   ├── dto/                     # request/response + mapper (<tabel>_gen.go dari generator)
+│   ├── repository/              # interface + implementasi sqlc (<tabel>_gen.go dari generator)
+│   ├── service/                 # logika bisnis, transaksi, audit, hook
+│   ├── handler/                 # HTTP handler per entitas + registrasi route
+│   ├── permission/              # kode permission (tabel action)
+│   ├── router/                  # middleware + wiring repository -> service -> handler
+│   ├── db/
+│   │   ├── migrations/          # 00001_…sql s/d 00123_…sql (go:embed)
+│   │   ├── queries/             # <tabel>.sql untuk sqlc
+│   │   ├── sqlc/                # hasil generate sqlc — jangan diedit manual
+│   │   └── schema/              # peta FK hasil generator (cek referensi soft delete)
+│   ├── platform/                # database, crud, httpx, auth, security, storage, audit, validatorx, logger
+│   └── apperr/, config/, testutil/
+├── deploy/                      # Dockerfile (distroless, non-root), docker-compose (postgres, minio), SQL role DB
 ├── sqlc.yaml
-├── Makefile                     # make migrate-up, make sqlc, make test, make lint
+├── Makefile
 └── .env.example
 ```
 
-Karena ada 120+ entitas, disediakan generator scaffold (`make scaffold table=bank`). Generator ini membuat kerangka DTO, query sqlc, repository, service, handler, dan route dari metadata tabel. Logika bisnis khusus tetap ditulis manual.
+Arah dependensi: `handler → service → repository → db/sqlc`, dengan `model`/`dto` sebagai tipe bersama. `platform/*` tidak bergantung pada layer mana pun di atasnya.
+
+Karena ada 120+ entitas, disediakan generator scaffold (`make scaffold module=masterdata`). Generator membaca skema dari database yang sudah di-migrate, lalu membuat query sqlc dan adapter repository + DTO per tabel (`*_gen.go`, jangan diedit). Service dan handler CRUD-nya generik (`internal/platform/crud`): transaksi, row lock, cek referensi sebelum soft delete, audit, dan ETag ditangani di satu tempat. Logika bisnis khusus ditulis manual sebagai hook.
 
 ---
 

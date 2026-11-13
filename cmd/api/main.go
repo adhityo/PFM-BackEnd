@@ -16,7 +16,7 @@ import (
 	"pfm-backend/internal/platform/logger"
 	"pfm-backend/internal/platform/security"
 	"pfm-backend/internal/platform/storage"
-	"pfm-backend/internal/server"
+	"pfm-backend/internal/router"
 )
 
 func main() {
@@ -62,7 +62,7 @@ func run() error {
 		return err
 	}
 
-	app := server.New(server.Deps{
+	app := router.New(router.Deps{
 		Cfg: cfg, Log: log, Pool: pool, Images: images, Docs: docs,
 		Signer: security.NewJWTSigner(priv, cfg.JWTIssuer, cfg.JWTAudience, cfg.JWTAccessTTL),
 		Hasher: security.NewPasswordHasher(security.DefaultArgon2Params),

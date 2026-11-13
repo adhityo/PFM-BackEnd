@@ -2,7 +2,7 @@
 
 REST API Portfolio & Fund Management: Go + Fiber v3 + PostgreSQL. Spesifikasi lengkap ada di [prd.md](prd.md).
 
-Status: **M0 (Fondasi) selesai** — skema 122 tabel, IAM/auth, storage file, CI. Modul bisnis (M1–M7) belum.
+Status: **M0 (Fondasi) dan M1 (Master Data, 25 tabel) selesai.** Modul M2–M7 belum.
 
 ## Prasyarat
 
@@ -38,20 +38,27 @@ curl -s localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
 | `make sqlc` | Generate ulang `internal/db/sqlc` setelah mengubah `internal/db/queries/*.sql` |
 | `make migration name=alter_x` | Migrasi baru bernomor berurutan (jangan edit migrasi yang sudah ter-apply) |
 | `make worker` | Job pembersihan upload pending > 24 jam dan refresh token kedaluwarsa |
+| `make scaffold module=<nama>` | Generate query sqlc + adapter CRUD dari spec di `cmd/scaffold/specs_*.go` |
 
 ## Struktur
 
+Layer datar: satu package per layer, satu file per entitas.
+
 ```
-cmd/api | cmd/migrate | cmd/worker
+cmd/api | cmd/migrate | cmd/worker | cmd/scaffold (generator, dev)
 internal/
-  apperr/            error domain -> HTTP
-  config/            konfigurasi dari env (divalidasi saat start)
-  db/                migrations/ (goose, 1 tabel per file), queries/ (sqlc), sqlc/ (generated)
-  platform/          database (TxManager), httpx, validatorx, security, auth (RBAC router), storage, audit
-  module/iam         auth, users, roles, permissions, activity log
-  module/file        upload image (lokal) & dokumen (S3)
-  server/            perakitan middleware + route
-deploy/              Dockerfile (distroless), docker-compose (dev), SQL role DB
+  model/        struct domain (User, Role, Credential, …)
+  dto/          request/response + mapper           (<tabel>_gen.go = hasil generator)
+  repository/   interface + implementasi sqlc        (<tabel>_gen.go = hasil generator)
+  service/      logika bisnis, transaksi, audit      (<tabel>_gen.go = definisi resource CRUD)
+  handler/      HTTP handler per entitas + route
+  permission/   kode permission (tabel action)
+  router/       middleware + wiring repository -> service -> handler
+  db/           migrations/ (goose), queries/ (sqlc), sqlc/ (generated), schema/ (generated)
+  platform/     database (TxManager, lookup), crud (service+handler generik), httpx, auth,
+                security, storage, audit, validatorx, logger
+  apperr/ config/ testutil/
+deploy/         Dockerfile (distroless), docker-compose (dev), SQL role DB
 ```
 
 ## Endpoint M0
@@ -66,9 +73,31 @@ deploy/              Dockerfile (distroless), docker-compose (dev), SQL role DB
 | `POST /api/v1/files/images`, `/files/documents`; `GET /files/{uuid}`, `/content`, `/download` | Upload 2 fase, download dokumen via presigned URL |
 | `GET /healthz`, `GET /readyz` | Liveness / readiness (DB, disk image, S3) |
 
+## Endpoint M1 (Master Data)
+
+24 resource CRUD dengan pola yang sama (`GET` list/detail, `POST`, `PUT` + `If-Match`, `DELETE` + `If-Match`):
+`/asset-classes`, `/bank-classes`, `/banks`, `/bond-periode-options`, `/bond-types`, `/countries`, `/provinces`,
+`/cities`, `/document-categories`, `/finance-account-types`, `/investor-categories`, `/mutual-fund-categories`,
+`/occupations`, `/placement-types`, `/premium-payment-types`, `/property-asset-types`, `/rating-agencies`,
+`/ratings`, `/sectors`, `/sub-sectors`, `/stock-size-classifications`, `/stock-types`, `/tax-rates`, `/trade-types`.
+
+- Filter: `?q=` (nama/kode), `?<relasi>_uuid=`, `?sort=` (kode, nama, created_at; prefiks `-` untuk menurun).
+- Nested: `/countries/{uuid}/provinces`, `/provinces/{uuid}/cities`, `/bank-classes/{uuid}/banks`,
+  `/rating-agencies/{uuid}/ratings`, `/sectors/{uuid}/sub-sectors`.
+- Hapus ditolak (409) bila data masih dipakai baris aktif lain; `asset_class`/`sector` menolak induk yang membentuk siklus.
+- `GET/PUT /configuration`: singleton; counter penomoran read-only; `proxy_api_url` wajib https; logo QR via upload `configuration.qr_logo`.
+
+## Menambah resource CRUD
+
+1. Tambah spec di `cmd/scaffold/specs_<module>.go` (kolom wajib, read-only, snapshot, hook, nested).
+2. `make scaffold module=<module>` (butuh DB ter-migrate di `SCAFFOLD_DATABASE_URL`): menulis
+   `dto/`, `repository/`, `service/<tabel>_gen.go` dan `service/resources_<module>_gen.go`.
+3. Daftarkan sekali di `router/router.go`: `handler.RegisterCRUD(env, service.<Module>Resources(deps))`.
+4. Aturan bisnis ditulis di file manual `service/<module>_hooks.go`, bukan di `*_gen.go`.
+
 ## Catatan keamanan
 
 - Password legacy (SHA-256 tanpa salt) tidak dimigrasi; user lama wajib aktivasi ulang.
-- File `database` (dump legacy berisi data pribadi) dan `secrets/` masuk `.gitignore`.
+- Dump legacy berisi data pribadi dan hash password: jangan simpan di repo. `secrets/` dan `.env` masuk `.gitignore`.
 - Rate limiter memakai memori proses; untuk lebih dari satu instance, pindahkan storage limiter ke Redis (PRD §5.1).
 - Unggahan PDF dicek secara heuristik (tanpa dekompresi stream); pasang ClamAV sebelum production (PRD §8.4).

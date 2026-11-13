@@ -2,6 +2,7 @@ package validatorx
 
 import (
 	"net/netip"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -16,11 +17,13 @@ var (
 	reDigits16   = regexp.MustCompile(`^[0-9]{16}$`)
 	reNPWP       = regexp.MustCompile(`^([0-9]{15}|[0-9]{16})$`)
 	rePhoneID    = regexp.MustCompile(`^(\+62|62|0)[0-9]{8,13}$`)
-	reCode       = regexp.MustCompile(`^[A-Z0-9][A-Z0-9_.-]{0,44}$`)
+	reCode       = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_.+-]{0,44}$`)
 	rePermCode   = regexp.MustCompile(`^[a-z][a-z0-9_]{0,99}:[a-z][a-z0-9_]{0,49}$`)
 	reStockCode  = regexp.MustCompile(`^[A-Z0-9]{1,6}$`)
 	reUsername   = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{2,49}$`)
 	reDecimalStr = regexp.MustCompile(`^-?[0-9]+(\.[0-9]+)?$`)
+	reTemplateTk = regexp.MustCompile(`\$?\{([A-Za-z]+)\}`)
+	reTemplateLt = regexp.MustCompile(`^[A-Za-z0-9._/-]*$`)
 )
 
 func registerRules(v *validator.Validate) {
@@ -37,6 +40,38 @@ func registerRules(v *validator.Validate) {
 	mustRegister(v, "dgte", decimalCompare(func(c int) bool { return c >= 0 }))
 	mustRegister(v, "dlte", decimalCompare(func(c int) bool { return c <= 0 }))
 	mustRegister(v, "cidr_list", cidrList)
+	mustRegister(v, "number_template", numberTemplate)
+	mustRegister(v, "https_url", httpsURL)
+}
+
+// templatePlaceholders are the variables understood by number generators
+// ({name} and ${name} syntaxes both exist in legacy data).
+var templatePlaceholders = map[string]bool{
+	"bondCode": true, "series": true, "bondSeries": true, "counter": true, "year": true, "month": true,
+	"agentCode": true, "investorCode": true, "clientCode": true,
+}
+
+// numberTemplate accepts templates such as "{bondCode}.A{series}.{counter}"
+// or "RID${year}${counter}": only known placeholders, a mandatory counter,
+// and plain literal characters.
+func numberTemplate(fl validator.FieldLevel) bool {
+	s := fl.Field().String()
+	hasCounter := false
+	for _, m := range reTemplateTk.FindAllStringSubmatch(s, -1) {
+		if !templatePlaceholders[m[1]] {
+			return false
+		}
+		if m[1] == "counter" {
+			hasCounter = true
+		}
+	}
+	return hasCounter && reTemplateLt.MatchString(reTemplateTk.ReplaceAllString(s, ""))
+}
+
+// httpsURL accepts absolute https URLs without credentials or fragments.
+func httpsURL(fl validator.FieldLevel) bool {
+	u, err := url.Parse(fl.Field().String())
+	return err == nil && u.Scheme == "https" && u.Host != "" && u.User == nil && u.Fragment == ""
 }
 
 func mustRegister(v *validator.Validate, tag string, fn validator.Func) {

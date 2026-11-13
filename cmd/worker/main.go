@@ -12,11 +12,12 @@ import (
 	"time"
 
 	"pfm-backend/internal/config"
-	"pfm-backend/internal/module/file"
 	"pfm-backend/internal/platform/audit"
 	"pfm-backend/internal/platform/database"
 	"pfm-backend/internal/platform/logger"
 	"pfm-backend/internal/platform/storage"
+	"pfm-backend/internal/repository"
+	"pfm-backend/internal/service"
 )
 
 const (
@@ -59,7 +60,7 @@ func run() error {
 	}
 
 	tx := database.NewTxManager(pool)
-	files := file.NewService(tx, file.NewRepository(tx), images, docs, audit.NewRecorder(tx), log, cfg.S3PresignTTL)
+	files := service.NewFileService(tx, repository.NewFileObjectRepository(tx), images, docs, audit.NewRecorder(tx), log, cfg.S3PresignTTL)
 
 	tick := time.NewTicker(interval)
 	defer tick.Stop()
@@ -74,7 +75,7 @@ func run() error {
 	}
 }
 
-func runOnce(ctx context.Context, log *slog.Logger, tx *database.TxManager, files *file.Service) {
+func runOnce(ctx context.Context, log *slog.Logger, tx *database.TxManager, files *service.FileService) {
 	if n, err := files.CleanupStale(ctx, time.Now().Add(-pendingFileMaxAge)); err != nil {
 		log.Error("cleanup stale files", "err", err)
 	} else if n > 0 {

@@ -110,7 +110,11 @@ func message(fe validator.FieldError) string {
 	case "dlte":
 		return "harus lebih kecil atau sama dengan " + p
 	case "code":
-		return "hanya huruf kapital, angka, '_', '.', '-' (maks 45 karakter)"
+		return "hanya huruf, angka, '_', '.', '+', '-' (maks 45 karakter)"
+	case "number_template":
+		return "template harus memuat {counter} dan hanya placeholder yang dikenal: bondCode, series, bondSeries, counter, year, month, agentCode, investorCode, clientCode"
+	case "https_url":
+		return "harus URL https yang valid"
 	case "perm_code":
 		return "format harus <tabel>:<aksi> dengan huruf kecil"
 	case "stock_code":

@@ -19,6 +19,16 @@ keys: ## Buat kunci JWT Ed25519 untuk development (secrets/jwt_ed25519.pem)
 sqlc: ## Generate kode query dari internal/db/queries
 	sqlc generate
 
+SCAFFOLD_DATABASE_URL ?= postgres://postgres:postgres@localhost:5432/pfm_schema?sslmode=disable
+
+.PHONY: scaffold
+scaffold: ## Generate CRUD dari spec: make scaffold module=masterdata (butuh DB ter-migrate)
+	@test -n "$(module)" || (echo "pakai: make scaffold module=<nama>" && exit 1)
+	SCAFFOLD_DATABASE_URL="$(SCAFFOLD_DATABASE_URL)" $(GO) run ./cmd/scaffold schema
+	SCAFFOLD_DATABASE_URL="$(SCAFFOLD_DATABASE_URL)" $(GO) run ./cmd/scaffold module $(module)
+	sqlc generate
+	$(GO) build ./...
+
 .PHONY: build
 build: ## Build semua binary ke ./bin
 	CGO_ENABLED=0 $(GO) build -trimpath -ldflags="-s -w" -o bin/ ./cmd/...

@@ -18,6 +18,8 @@ type sample struct {
 	User  string   `json:"user"    validate:"omitempty,username"`
 	IPs   []string `json:"ips"     validate:"omitempty,cidr_list"`
 	Ref   string   `json:"ref"     validate:"omitempty,uuid"`
+	Tpl   string   `json:"tpl"     validate:"omitempty,number_template"`
+	URL   string   `json:"url"     validate:"omitempty,https_url"`
 }
 
 func TestValidatorRules(t *testing.T) {
@@ -40,11 +42,21 @@ func TestValidatorRules(t *testing.T) {
 		{"price zero", sample{Name: "x", Price: "0"}, "price"},
 		{"price not number", sample{Name: "x", Price: "1e5"}, "price"},
 		{"rate over 100", sample{Name: "x", Rate: "100.5"}, "rate"},
-		{"code lowercase", sample{Name: "x", Code: "admin"}, "code"},
+		{"code leading symbol", sample{Name: "x", Code: "-ADMIN"}, "code"},
 		{"perm format", sample{Name: "x", Perm: "BondTrade.approve"}, "perm"},
 		{"username upper", sample{Name: "x", User: "Admin"}, "user"},
 		{"cidr", sample{Name: "x", IPs: []string{"10.0.0.0/33"}}, "ips"},
 		{"uuid", sample{Name: "x", Ref: "1"}, "ref"},
+		{"rating code with sign", sample{Name: "x", Code: "idAA+"}, ""},
+		{"code with space", sample{Name: "x", Code: "A B"}, "code"},
+		{"template braces", sample{Name: "x", Tpl: "{bondCode}.A{series}.{counter}"}, ""},
+		{"template dollar", sample{Name: "x", Tpl: "RID${year}${counter}"}, ""},
+		{"template unknown var", sample{Name: "x", Tpl: "{password}{counter}"}, "tpl"},
+		{"template no counter", sample{Name: "x", Tpl: "{bondCode}"}, "tpl"},
+		{"template injection", sample{Name: "x", Tpl: "{counter};rm -rf"}, "tpl"},
+		{"https url", sample{Name: "x", URL: "https://api.example.com/v1"}, ""},
+		{"http url", sample{Name: "x", URL: "http://169.254.169.254/latest"}, "url"},
+		{"url with creds", sample{Name: "x", URL: "https://u:p@example.com"}, "url"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

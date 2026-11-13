@@ -19,11 +19,13 @@ import (
 	"pfm-backend/internal/apperr"
 	"pfm-backend/internal/config"
 	"pfm-backend/internal/db"
-	"pfm-backend/internal/module/iam"
+	"pfm-backend/internal/model"
 	"pfm-backend/internal/platform/auth"
 	"pfm-backend/internal/platform/database"
 	"pfm-backend/internal/platform/security"
-	"pfm-backend/internal/server"
+	"pfm-backend/internal/repository"
+	"pfm-backend/internal/router"
+	"pfm-backend/internal/service"
 )
 
 func main() {
@@ -129,11 +131,14 @@ func run(args []string) error {
 }
 
 func seed(ctx context.Context, tx *database.TxManager) error {
-	catalog := server.Catalog()
-	if err := iam.SyncCatalog(ctx, tx, iam.NewActionRepository(tx), iam.NewRoleRepository(tx), catalog); err != nil {
+	catalog := router.Catalog()
+	if err := service.SyncCatalog(ctx, tx, repository.NewActionRepository(tx), repository.NewRoleRepository(tx), catalog); err != nil {
 		return err
 	}
-	fmt.Printf("seed OK: %d permission, %d role\n", len(catalog), len(iam.DefaultRoles))
+	if err := repository.NewConfigurationRepository(tx).Ensure(ctx); err != nil {
+		return err
+	}
+	fmt.Printf("seed OK: %d permission, %d role\n", len(catalog), len(service.DefaultRoles))
 	return nil
 }
 
@@ -142,8 +147,8 @@ func seedAdmin(ctx context.Context, tx *database.TxManager) error {
 	if username == "" || email == "" || len(password) < 12 {
 		return errors.New("ADMIN_USERNAME, ADMIN_EMAIL dan ADMIN_PASSWORD (min 12 karakter) wajib diisi")
 	}
-	users := iam.NewUserRepository(tx)
-	roles := iam.NewRoleRepository(tx)
+	users := repository.NewUserRepository(tx)
+	roles := repository.NewRoleRepository(tx)
 	hasher := security.NewPasswordHasher(security.DefaultArgon2Params)
 
 	return tx.WithinTx(ctx, func(ctx context.Context) error {
@@ -162,7 +167,7 @@ func seedAdmin(ctx context.Context, tx *database.TxManager) error {
 			return err
 		}
 		id := uuid.Must(uuid.NewV7())
-		uid, err := users.Create(ctx, iam.NewUser{UUID: id, Username: username, Email: email, Status: iam.StatusActive,
+		uid, err := users.Create(ctx, model.NewUser{UUID: id, Username: username, Email: email, Status: model.StatusActive,
 			RoleID: role.ID, ActivationKeyHash: keyHash, ActivationExpires: time.Now(), Actor: "system"})
 		if err != nil {
 			return err

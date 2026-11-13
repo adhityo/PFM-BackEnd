@@ -1,0 +1,47 @@
+package main
+
+// moduleSpecs holds the scaffold specs per module. configuration is a
+// singleton and is written by hand.
+var moduleSpecs = map[string][]*Spec{
+	"masterdata": {
+		{Table: "asset_class", Label: "kelas aset", Check: "checkAssetClass"},
+		{Table: "bank_class", Label: "kelas bank"},
+		{Table: "bank", Label: "bank", NestedUnder: []string{"bank_class_id"},
+			Validate: map[string]string{"bank_swift_code": "bic", "bank_clearing_code": "numeric"}},
+		{Table: "bond_periode_option", Label: "opsi periode obligasi",
+			Validate: map[string]string{"bond_number_template": "number_template", "default_coupon_rate": "dgte=0,dlte=100",
+				"default_distribution_cost": "dgte=0"}},
+		{Table: "bond_type", Label: "tipe obligasi"},
+		{Table: "country", Label: "negara"},
+		{Table: "province", Label: "provinsi", NestedUnder: []string{"country_id"},
+			Required: []string{"province_name", "province_code", "country_id"}},
+		{Table: "city", Label: "kota", NestedUnder: []string{"province_id"},
+			Required: []string{"city_name", "city_code", "province_id"},
+			Validate: map[string]string{"latitude": "dgte=-90,dlte=90", "longitude": "dgte=-180,dlte=180"}},
+		{Table: "document_category", Label: "kategori dokumen"},
+		{Table: "finance_account_type", Label: "tipe akun keuangan"},
+		{Table: "investor_category", Label: "kategori investor"},
+		{Table: "mutual_fund_category", Label: "kategori reksa dana"},
+		{Table: "occupation", Label: "pekerjaan"},
+		{Table: "placement_type", Label: "tipe penempatan"},
+		{Table: "premium_payment_type", Label: "tipe pembayaran iuran"},
+		{Table: "property_asset_type", Label: "tipe aset properti", Validate: map[string]string{"weighted_value": "dgte=0"}},
+		{Table: "rating_agency", Label: "lembaga pemeringkat"},
+		{Table: "rating", Label: "rating", NestedUnder: []string{"rating_agency_id"},
+			Required: []string{"rating_name", "rating_code", "rating_agency_id"}},
+		{Table: "sector", Label: "sektor", Check: "checkSector",
+			ReadOnly: []string{"total_stock", "total_market_capitalization", "latest_sector_date", "total_corporate"}},
+		{Table: "sub_sector", Label: "sub sektor", NestedUnder: []string{"sector_id"},
+			Required: []string{"sub_sector_name", "sub_sector_code", "sector_id"},
+			ReadOnly: []string{"total_stock", "total_market_capitalization", "latest_sub_sector_date", "total_corporate"},
+			Snapshot: map[string]SnapFK{
+				"sector_code": {FKColumn: "sector_id", RefColumn: "sector_code"},
+				"sector_name": {FKColumn: "sector_id", RefColumn: "sector_name"},
+			}},
+		{Table: "stock_size_classification", Label: "klasifikasi ukuran saham",
+			Validate: map[string]string{"start_quartile_range": "dgte=0", "end_quartile_range": "dgte=0"}},
+		{Table: "stock_type", Label: "tipe saham"},
+		{Table: "tax_rate", Label: "tarif pajak"},
+		{Table: "trade_type", Label: "tipe transaksi"},
+	},
+}
