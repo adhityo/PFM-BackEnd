@@ -123,6 +123,17 @@ func columnPlan(sp *Spec, t *Table, c Column) (*reqField, respField, error) {
 		rf.Type = ptrIf(c.Nullable, "time.Time")
 		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("datetime=2006-01-02T15:04:05Z07:00"),
 			Param: "crud.Time(req." + goName(c.Name) + ")", TrimString: true}
+	case "inet":
+		rf.Type = "*netip.Addr"
+		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("ip"),
+			Param: "crud.IP(req." + goName(c.Name) + ")", TrimString: true}
+	case "ARRAY":
+		if c.UDT != "_cidr" {
+			return nil, rf, fmt.Errorf("%s.%s: array %s belum didukung generator", t.Name, c.Name, c.UDT)
+		}
+		rf.Type = "[]netip.Prefix"
+		req = &reqField{Name: goName(c.Name), Type: "[]string", JSON: c.Name, Validate: tags("max=100", "cidr_list"),
+			Param: "crud.Prefixes(req." + goName(c.Name) + ")"}
 	default:
 		return nil, rf, fmt.Errorf("%s.%s: tipe %s belum didukung generator", t.Name, c.Name, c.DataType)
 	}
@@ -163,15 +174,19 @@ func imports(groups ...[]string) string {
 
 // genDTO renders internal/dto/<table>_gen.go: request, response and mapper.
 func genDTO(p *plan) string {
-	usesStrings, usesDecimal, usesHTTPX := false, false, false
+	usesStrings, usesDecimal, usesHTTPX, usesNetip := false, false, false, false
 	for _, f := range p.reqs {
 		usesStrings = usesStrings || f.TrimString
 	}
 	for _, f := range p.resps {
 		usesDecimal = usesDecimal || strings.Contains(f.Type, "decimal.")
 		usesHTTPX = usesHTTPX || strings.Contains(f.Type, "httpx.")
+		usesNetip = usesNetip || strings.Contains(f.Type, "netip.")
 	}
 	std := []string{"time"}
+	if usesNetip {
+		std = append([]string{"net/netip"}, std...)
+	}
 	if usesStrings {
 		std = append([]string{"strings"}, std...)
 	}
@@ -187,21 +202,24 @@ func genDTO(p *plan) string {
 	var b strings.Builder
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	w("%s", genHeader+"package dto\n\n"+imports(std, third, local))
-	w("// %sRequest is the create/update body for %s.\ntype %sRequest struct {\n", p.gn, p.sp.Table, p.gn)
-	for _, f := range p.reqs {
-		tag := fmt.Sprintf("json:%q", f.JSON)
-		if f.Validate != "" {
-			tag += fmt.Sprintf(" validate:%q", f.Validate)
+	if !p.sp.readOnly() {
+		w("// %sRequest is the create/update body for %s.\ntype %sRequest struct {\n", p.gn, p.sp.Table, p.gn)
+		for _, f := range p.reqs {
+			tag := fmt.Sprintf("json:%q", f.JSON)
+			if f.Validate != "" {
+				tag += fmt.Sprintf(" validate:%q", f.Validate)
+			}
+			w("\t%s %s `%s`\n", f.Name, f.Type, tag)
 		}
-		w("\t%s %s `%s`\n", f.Name, f.Type, tag)
-	}
-	w("}\n\n// Normalize trims string input.\nfunc (r *%sRequest) Normalize() {\n", p.gn)
-	for _, f := range p.reqs {
-		if f.TrimString {
-			w("\tr.%[1]s = strings.TrimSpace(r.%[1]s)\n", f.Name)
+		w("}\n\n// Normalize trims string input.\nfunc (r *%sRequest) Normalize() {\n", p.gn)
+		for _, f := range p.reqs {
+			if f.TrimString {
+				w("\tr.%[1]s = strings.TrimSpace(r.%[1]s)\n", f.Name)
+			}
 		}
+		w("}\n\n")
 	}
-	w("}\n\n// %sResponse is the public representation of %s.\ntype %sResponse struct {\n\tUUID uuid.UUID `json:\"uuid\"`\n", p.gn, p.sp.Table, p.gn)
+	w("// %sResponse is the public representation of %s.\ntype %sResponse struct {\n\tUUID uuid.UUID `json:\"uuid\"`\n", p.gn, p.sp.Table, p.gn)
 	for _, f := range p.resps {
 		w("\t%s %s `json:%q`\n", f.Name, f.Type, f.JSON)
 	}
@@ -219,15 +237,23 @@ func genDTO(p *plan) string {
 func genRepository(p *plan) string {
 	var b strings.Builder
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
-	w("%s", genHeader+"package repository\n\n"+imports(
-		[]string{"context", "time"},
-		[]string{"github.com/google/uuid"},
-		[]string{"pfm-backend/internal/db/sqlc", "pfm-backend/internal/dto", "pfm-backend/internal/platform/crud",
-			"pfm-backend/internal/platform/database", "pfm-backend/internal/platform/httpx"}))
+	ro := p.sp.readOnly()
+	std := []string{"context", "time"}
+	local := []string{"pfm-backend/internal/db/sqlc", "pfm-backend/internal/dto", "pfm-backend/internal/platform/crud",
+		"pfm-backend/internal/platform/database", "pfm-backend/internal/platform/httpx"}
+	if ro {
+		std = []string{"context"}
+		local = slices.DeleteFunc(local, func(s string) bool { return strings.HasSuffix(s, "/dto") })
+	}
+	w("%s", genHeader+"package repository\n\n"+imports(std, []string{"github.com/google/uuid"}, local))
 
 	req := "dto." + p.gn + "Request"
 	impl := p.lc + "Repository"
-	w("// %sRepository persists %s.\ntype %sRepository = crud.Store[%s, %s]\n\n", p.gn, p.sp.Table, p.gn, p.rowType, req)
+	if ro {
+		w("// %sRepository reads %s (read-only resource).\ntype %sRepository = crud.Reader[%s]\n\n", p.gn, p.sp.Table, p.gn, p.rowType)
+	} else {
+		w("// %sRepository persists %s.\ntype %sRepository = crud.Store[%s, %s]\n\n", p.gn, p.sp.Table, p.gn, p.rowType, req)
+	}
 	w("type %s struct{ tx *database.TxManager }\n\n", impl)
 	w("func New%sRepository(tx *database.TxManager) %sRepository { return %s{tx: tx} }\n\n", p.gn, p.gn, impl)
 
@@ -247,10 +273,20 @@ func genRepository(p *plan) string {
 	}
 
 	w("func (r %s) Get(ctx context.Context, id uuid.UUID) (%s, error) {\n", impl, p.rowType)
-	w("\trow, err := r.tx.Queries(ctx).Get%sByUUID(ctx, id)\n\treturn row, database.MapError(\"get %s\", err)\n}\n\n", p.camel, p.sp.Table)
+	if p.sp.Scope != "" {
+		w("\trow, err := r.tx.Queries(ctx).Get%sByUUID(ctx, sqlc.Get%sByUUIDParams{Uuid: id, ScopeClientID: crud.ScopeClientID(ctx)})\n", p.camel, p.camel)
+	} else {
+		w("\trow, err := r.tx.Queries(ctx).Get%sByUUID(ctx, id)\n", p.camel)
+	}
+	w("\treturn row, database.MapError(\"get %s\", err)\n}\n\n", p.sp.Table)
 
 	w("func (r %s) List(ctx context.Context, q httpx.ListQuery) ([]%s, int64, error) {\n", impl, p.rowType)
 	var listParams, countArgs []string
+	if p.sp.Scope != "" {
+		w("\tscope := crud.ScopeClientID(ctx)\n")
+		listParams = append(listParams, "ScopeClientID: scope")
+		countArgs = append(countArgs, "ScopeClientID:scope")
+	}
 	if len(p.sp.Search) > 0 {
 		listParams = append(listParams, `Q: q.Like("q")`)
 		countArgs = append(countArgs, `Q:q.Like("q")`)
@@ -276,6 +312,11 @@ func genRepository(p *plan) string {
 	}
 	w("\tif err != nil {\n\t\treturn nil, 0, database.MapError(\"count %s\", err)\n\t}\n", p.sp.Table)
 	w("\tout := make([]%s, len(rows))\n\tfor i, row := range rows {\n\t\tout[i] = %s(row)\n\t}\n\treturn out, total, nil\n}\n\n", p.rowType, p.rowType)
+
+	if ro {
+		w("func (%s) Meta(row %s) crud.Meta {\n\treturn crud.Meta{ID: row.ID, UUID: row.Uuid, UpdatedAt: row.UpdatedAt}\n}\n", impl, p.rowType)
+		return b.String()
+	}
 
 	params := func() string {
 		var lines []string
@@ -316,7 +357,7 @@ func genService(p *plan) (string, error) {
 	var b strings.Builder
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	var std []string
-	if p.sp.Check != "" {
+	if p.sp.Check != "" || p.sp.AfterWrite != "" {
 		std = append(std, "context")
 	}
 	w("%s", genHeader+"package service\n\n"+imports(std,
@@ -324,6 +365,9 @@ func genService(p *plan) (string, error) {
 			"pfm-backend/internal/repository"}))
 
 	typ := fmt.Sprintf("crud.Resource[%s, dto.%sRequest, dto.%sResponse]", p.rowType, p.gn, p.gn)
+	if p.sp.readOnly() {
+		typ = fmt.Sprintf("crud.ReadResource[%s, dto.%sResponse]", p.rowType, p.gn)
+	}
 	var sorts []string
 	for _, s := range p.sp.Sorts {
 		sorts = append(sorts, fmt.Sprintf("%q", s))
@@ -354,6 +398,13 @@ func genService(p *plan) (string, error) {
 	if p.sp.Check != "" {
 		w("\t\tCheck: func(ctx context.Context, req *dto.%sRequest, cur *%s) error {\n\t\t\treturn %s(ctx, d, req, cur)\n\t\t},\n",
 			p.gn, p.rowType, p.sp.Check)
+	}
+	if p.sp.AfterWrite != "" {
+		w("\t\tAfterWrite: func(ctx context.Context, before, after *%s) error {\n\t\t\treturn %s(ctx, d, before, after)\n\t\t},\n",
+			p.rowType, p.sp.AfterWrite)
+	}
+	if p.sp.Import {
+		w("\t\tImport: true,\n")
 	}
 	w("\t}\n}\n")
 	return b.String(), nil

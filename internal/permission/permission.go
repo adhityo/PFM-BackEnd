@@ -32,6 +32,11 @@ const (
 
 	ConfigurationRead   = "configuration:read"
 	ConfigurationUpdate = "configuration:update"
+
+	PlacementDetailRead   = "placement:read"
+	PlacementDetailUpdate = "placement:update"
+	DepositoRollover      = "deposito_portfolio:rollover"
+	DepositoWithdraw      = "deposito_portfolio:withdraw"
 )
 
 // Static returns the hand-defined permissions. CRUD resources add their own
@@ -55,5 +60,7 @@ func Static() []auth.Permission {
 		auth.Permission{Code: FileDelete, Name: "Hapus file pending milik pengguna lain"},
 		auth.Permission{Code: ConfigurationRead, Name: "Lihat konfigurasi sistem"},
 		auth.Permission{Code: ConfigurationUpdate, Name: "Ubah konfigurasi sistem"},
+		auth.Permission{Code: DepositoRollover, Name: "Rollover penempatan deposito"},
+		auth.Permission{Code: DepositoWithdraw, Name: "Cairkan penempatan deposito"},
 	)
 }

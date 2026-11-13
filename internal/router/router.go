@@ -34,7 +34,15 @@ import (
 
 // Catalog is the full permission catalog of the application.
 func Catalog() []auth.Permission {
-	return auth.MergeCatalogs(permission.Static(), handler.CRUDPermissions(service.MasterdataResources(service.Deps{})))
+	return auth.MergeCatalogs(permission.Static(), handler.CRUDPermissions(crudResources(service.Deps{})))
+}
+
+// crudResources lists every scaffolded resource, module by module.
+func crudResources(d service.Deps) []crud.Registrar {
+	var out []crud.Registrar
+	out = append(out, service.MasterdataResources(d)...)
+	out = append(out, service.MarketResources(d)...)
+	return append(out, service.PortfolioResources(d)...)
 }
 
 // ImageStore is the local image storage with a readiness probe.
@@ -153,7 +161,8 @@ func New(d Deps) *fiber.App {
 	handler.NewActivityLogHandler(logSvc).Register(api)
 	handler.NewFileHandler(fileSvc).Register(api)
 	handler.NewConfigurationHandler(v, configSvc).Register(api)
-	handler.RegisterCRUD(crud.Env{Router: api, Validator: v, TX: tx, Audit: rec}, service.MasterdataResources(deps))
+	handler.NewPortfolioTxHandler(v, service.NewPortfolioTxService(tx, rec)).Register(api)
+	handler.RegisterCRUD(crud.Env{Router: api, Validator: v, TX: tx, Audit: rec}, crudResources(deps))
 
 	app.Use(func(fiber.Ctx) error { return apperr.NotFound("endpoint tidak ditemukan") })
 	return app

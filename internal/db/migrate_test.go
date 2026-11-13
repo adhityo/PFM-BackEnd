@@ -24,8 +24,8 @@ func TestMigrationsRoundTrip(t *testing.T) {
 	}
 
 	sources := m.ListSources()
-	if len(sources) != 123 {
-		t.Fatalf("expected 123 migrations, got %d", len(sources))
+	if len(sources) != 124 {
+		t.Fatalf("expected 124 migrations, got %d", len(sources))
 	}
 	for i, s := range sources {
 		if s.Version != int64(i+1) {

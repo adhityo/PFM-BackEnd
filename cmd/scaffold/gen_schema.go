@@ -6,6 +6,15 @@ import (
 	"strings"
 )
 
+// snapshotTables hold audit snapshots (PRD §10.4 HIST). They keep pointing at
+// their source row but must not block its soft delete.
+var snapshotTables = map[string]bool{
+	"deposito_history": true, "deposito_portfolio_history": true, "bond_history": true,
+	"bond_trade_data_history": true, "document_data_history": true, "investor_data_history": true,
+	"marketing_agent_data_history": true, "stock_portfolio_history": true, "bond_portfolio_history": true,
+	"mutual_fund_portfolio_history": true, "portfolio_budget_history": true, "member_portfolio_history": true,
+}
+
 // genSchema renders internal/db/schema/schema_gen.go: the table list and the
 // reverse foreign-key map used for "still referenced" checks on soft delete.
 func genSchema(s Schema) string {
@@ -26,8 +35,8 @@ func genSchema(s Schema) string {
 	refs := map[string][]string{}
 	for _, n := range s.names() {
 		t := s[n]
-		if !t.SoftDelete {
-			continue // e.g. auth_refresh_token: lifecycle handled by its owner
+		if !t.SoftDelete || snapshotTables[n] {
+			continue // auth_refresh_token: owned by IAM; snapshots: never block deletes
 		}
 		cols := make([]string, 0, len(t.FKs))
 		for c := range t.FKs {

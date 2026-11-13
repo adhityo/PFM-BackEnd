@@ -17,6 +17,7 @@ import (
 	"go/format"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -63,7 +64,11 @@ func run(args []string) error {
 			for _, c := range append(append(append([]string{}, sp.Required...), sp.Search...), sp.ReadOnly...) {
 				mustColumn(t, c, sp.Table)
 			}
-			if err := os.WriteFile(filepath.Join("internal/db/queries", sp.Table+".sql"), []byte(genSQL(sp, t)), 0o644); err != nil { //nolint:gosec // source file
+			sqlPath := filepath.Join("internal/db/queries", sp.Table+".sql")
+			if err := guardGenerated(sqlPath); err != nil {
+				return err
+			}
+			if err := os.WriteFile(sqlPath, []byte(genSQL(sp, t)), 0o644); err != nil { //nolint:gosec // source file
 				return err
 			}
 			p, err := newPlan(sp, t)
@@ -91,9 +96,27 @@ func run(args []string) error {
 	}
 }
 
+// guardGenerated refuses to overwrite a hand-written file.
+func guardGenerated(path string) error {
+	b, err := os.ReadFile(path) //nolint:gosec // path from known spec names
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if !strings.HasPrefix(string(b), "-- Code generated") && !strings.HasPrefix(string(b), "// Code generated") {
+		return fmt.Errorf("%s adalah file manual; ganti nama file manual itu atau hapus spec-nya", path)
+	}
+	return nil
+}
+
 // writeGo formats and writes generated source. Paths are built from table and
 // module names that exist in moduleSpecs, never from free-form input.
 func writeGo(path, src string) error {
+	if err := guardGenerated(path); err != nil {
+		return err
+	}
 	out, err := format.Source([]byte(src))
 	if err != nil {
 		_ = os.WriteFile(path+".broken", []byte(src), 0o600) //nolint:gosec // path from known spec names

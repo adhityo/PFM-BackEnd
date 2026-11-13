@@ -15,6 +15,9 @@ linters:
     - rowserrcheck
     - sqlclosecheck
   settings:
+    misspell:
+      ignore-rules:
+        - depositos # Indonesian domain term (resource path of table deposito)
     gosec:
       excludes:
         - G115 # int conversions are bounded by validation before conversion

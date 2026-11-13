@@ -22,9 +22,17 @@ type Spec struct {
 	Exclude     []string          // columns hidden from the API entirely
 	Snapshot    map[string]SnapFK // column copied from a referenced row on write
 	Validate    map[string]string // column -> extra validator tags
-	Check       string            // name of a hand-written hook in the module package
+	Check       string            // hand-written hook run before create/update (service package)
+	AfterWrite  string            // hand-written hook run after create/update/delete (service package)
 	NestedUnder []string          // FK columns whose parent gets a nested list route
+	Kind        string            // "" = writable CRUD, "read" = list/detail only
+	Import      bool              // enable POST <path>/import (CSV)
+	// Scope is an SQL expression (alias t) yielding the owning client_id; when
+	// set, reads are limited to the actor's client (PRD §12.3).
+	Scope string
 }
+
+func (sp *Spec) readOnly() bool { return sp.Kind == "read" }
 
 // SnapFK fills a snapshot column from RefColumn of the row referenced by FKColumn.
 type SnapFK struct {
@@ -98,7 +106,7 @@ func (sp *Spec) apiColumns(t *Table) []Column {
 
 // writable reports whether clients may set the column.
 func (sp *Spec) writable(c Column) bool {
-	return !slices.Contains(sp.ReadOnly, c.Name) && !sp.isSnapshot(c.Name)
+	return !sp.readOnly() && !slices.Contains(sp.ReadOnly, c.Name) && !sp.isSnapshot(c.Name)
 }
 
 func isText(c Column) bool { return c.DataType == "character varying" || c.DataType == "text" }

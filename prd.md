@@ -1172,12 +1172,16 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 9 | Penyedia S3 | AWS S3 (dev: MinIO) | Region/bucket dan KMS key? |
 | 10 | Template cetak (`*_print_template`, `trade_confirmation_template`) | Hanya disimpan sebagai string; rendering di luar v1 | Kapan dibutuhkan, dan formatnya? |
 | 11 | Unique index kode (§6.4 #13) | Ditegakkan; data duplikat diselesaikan saat ETL | Apakah ada kode yang memang boleh duplikat? |
+| 12 | Satuan `tenor` deposito | Bulan; rollover menghitung tanggal akhir = mulai + tenor bulan | Benar? |
+| 13 | Total detail placement | Σ `placement_detail.placement_value` ≤ `placement.placement_value`; tanggal detail di dalam periode placement | Benar? |
+| 14 | Jurnal deposito & placement | Rollover/withdraw belum memposting jurnal; ditambahkan bersama modul akuntansi (M3) | — |
+| 15 | Tabel snapshot riwayat (`*_history` audit, `*_data_history`) | Tidak menghalangi soft delete data sumbernya; data time-series (harga, NAV) tetap menghalangi | Setuju? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-123 file migrasi: 1 init, 120 tabel legacy, dan 2 tabel baru. Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
+124 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, dan 1 migrasi index bisnis (M2). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1304,6 +1308,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00121 | `00121_create_payment_document.sql` | `payment_document` | bond | bond_coupon_schedule, document_category, investor_coupon_schedule, file_object |
 | 00122 | `00122_create_task_document.sql` | `task_document` | workflow | document, document_category, task |
 | 00123 | `00123_create_auth_refresh_token.sql` | `auth_refresh_token` | iam | app_user |
+| 00124 | `00124_create_business_unique_indexes.sql` | — (unique index bisnis M2) | market, portfolio | stock_history, indices_history, mutual_fund_history, … |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap

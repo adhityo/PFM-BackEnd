@@ -1,7 +1,8 @@
-// Package crud is the shared service + HTTP layer for MASTER/CHILD resources
-// (PRD §10.4). Each resource supplies a Store (its sqlc repository), DTOs and
-// optional business hooks; transactions, locking, reference checks, audit,
-// ETags and routing are handled here once.
+// Package crud is the shared service + HTTP layer for MASTER, CHILD,
+// TIMESERIES and read-only resources (PRD §10.4). Each resource supplies a
+// store (its sqlc repository), DTOs and optional hooks; transactions,
+// locking, tenant scope, reference checks, audit, ETags, CSV import and
+// routing are handled here once.
 package crud
 
 import (
@@ -23,16 +24,22 @@ type Meta struct {
 	UpdatedAt time.Time
 }
 
-// Store is the repository contract of a resource.
-type Store[Row, Req any] interface {
+// Reader is the read side of a repository. Implementations apply the tenant
+// scope of the actor in ctx (see ScopeClientID) to Get and List.
+type Reader[Row any] interface {
 	Get(ctx context.Context, id uuid.UUID) (Row, error)
 	List(ctx context.Context, q httpx.ListQuery) ([]Row, int64, error)
+	Meta(row Row) Meta
+}
+
+// Store is the full repository contract of a writable resource.
+type Store[Row, Req any] interface {
+	Reader[Row]
 	Create(ctx context.Context, req Req, actor string) (uuid.UUID, error)
 	// Update and SoftDelete must return apperr.ErrPreconditionFailed when
 	// updated_at no longer equals expected.
 	Update(ctx context.Context, id uuid.UUID, req Req, actor string, expected time.Time) error
 	SoftDelete(ctx context.Context, id uuid.UUID, actor string, expected time.Time) error
-	Meta(row Row) Meta
 }
 
 // Nested exposes GET <ParentPath>/{parent_uuid}<Path> as a list filtered by Filter.
@@ -41,7 +48,7 @@ type Nested struct {
 	Filter     string
 }
 
-// Resource describes one CRUD endpoint family backed by a table.
+// Resource describes one writable CRUD endpoint family backed by a table.
 type Resource[Row, Req, Resp any] struct {
 	Table       string // permission prefix and audit entity
 	Label       string
@@ -52,8 +59,26 @@ type Resource[Row, Req, Resp any] struct {
 	Store       Store[Row, Req]
 	Response    func(Row) Resp
 	// Check runs inside the write transaction before create (cur == nil) and update.
-	Check  func(ctx context.Context, req *Req, cur *Row) error
+	Check func(ctx context.Context, req *Req, cur *Row) error
+	// AfterWrite runs inside the write transaction after create (before == nil),
+	// update, and delete (after == nil); e.g. to refresh a parent's latest_* columns.
+	AfterWrite func(ctx context.Context, before, after *Row) error
+	// Import enables POST <Path>/import (CSV, all-or-nothing).
+	Import bool
 	Nested []Nested
+}
+
+// ReadResource describes a read-only endpoint family (positions, history).
+type ReadResource[Row, Resp any] struct {
+	Table       string
+	Label       string
+	Path        string
+	Sorts       []string
+	DefaultSort string
+	Filters     []string
+	Store       Reader[Row]
+	Response    func(Row) Resp
+	Nested      []Nested
 }
 
 // Env carries the shared dependencies needed to mount resources.
@@ -64,10 +89,19 @@ type Env struct {
 	Audit     *audit.Recorder
 }
 
-// Registrar is implemented by every Resource instantiation.
+// Registrar is implemented by every Resource and ReadResource instantiation.
 type Registrar interface {
 	Permissions() []auth.Permission
 	Register(env Env)
+}
+
+// ScopeClientID returns the tenant filter of the actor in ctx (nil = global).
+func ScopeClientID(ctx context.Context) *int64 {
+	a, ok := auth.ActorFrom(ctx)
+	if !ok {
+		return nil
+	}
+	return a.ScopeClientID()
 }
 
 // Permissions returns <table>:read|create|update|delete.
@@ -84,6 +118,9 @@ func (r Resource[Row, Req, Resp]) Register(env Env) {
 	g := env.Router.Group(r.Path)
 	g.Get("", read, h.list)
 	g.Post("", create, h.create)
+	if r.Import {
+		g.Post("/import", create, h.importCSV)
+	}
 	g.Get("/:uuid", read, h.get)
 	g.Put("/:uuid", update, h.update)
 	g.Delete("/:uuid", del, h.delete)
@@ -92,9 +129,26 @@ func (r Resource[Row, Req, Resp]) Register(env Env) {
 	}
 }
 
-func (r Resource[Row, Req, Resp]) sortOptions() []string {
-	out := make([]string, 0, len(r.Sorts)*2)
-	for _, s := range r.Sorts {
+// Permissions returns only <table>:read.
+func (r ReadResource[Row, Resp]) Permissions() []auth.Permission {
+	return []auth.Permission{{Code: r.Table + ":read", Name: "Lihat " + r.Label}}
+}
+
+// Register mounts list, detail and nested list routes.
+func (r ReadResource[Row, Resp]) Register(env Env) {
+	h := &readHandler[Row, Resp]{res: r}
+	read := r.Table + ":read"
+	g := env.Router.Group(r.Path)
+	g.Get("", read, h.list)
+	g.Get("/:uuid", read, h.get)
+	for _, n := range r.Nested {
+		env.Router.Group(n.ParentPath).Get("/:parent_uuid"+r.Path, read, h.nestedList(n.Filter))
+	}
+}
+
+func sortOptions(sorts []string) []string {
+	out := make([]string, 0, len(sorts)*2)
+	for _, s := range sorts {
 		out = append(out, s, "-"+s)
 	}
 	return out

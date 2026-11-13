@@ -148,11 +148,9 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "asset_class_finance_account", Column: "asset_class_id"},
 		{Table: "portfolio_accounting_structure", Column: "asset_class_id"},
 		{Table: "portfolio_budget", Column: "asset_class_id"},
-		{Table: "portfolio_budget_history", Column: "asset_class_id"},
 	},
 	"bank": {
 		{Table: "bond_trade", Column: "custodian_bank_id"},
-		{Table: "bond_trade_data_history", Column: "custodian_bank_id"},
 		{Table: "deposito", Column: "bank_id"},
 		{Table: "member", Column: "bank_id"},
 		{Table: "portfolio_bank", Column: "bank_id"},
@@ -170,13 +168,10 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "agent_fee_transaction", Column: "bond_id"},
 		{Table: "bond", Column: "parent_bond_id"},
 		{Table: "bond_coupon_schedule", Column: "bond_id"},
-		{Table: "bond_history", Column: "bond_id"},
 		{Table: "bond_periode_distribution", Column: "bond_id"},
 		{Table: "bond_portfolio", Column: "bond_id"},
-		{Table: "bond_portfolio_history", Column: "bond_id"},
 		{Table: "bond_rating", Column: "bond_id"},
 		{Table: "bond_trade", Column: "bond_id"},
-		{Table: "bond_trade_data_history", Column: "bond_id"},
 		{Table: "document", Column: "bond_id"},
 	},
 	"bond_coupon_schedule": {
@@ -188,26 +183,19 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "bond_trade", Column: "bond_periode_option_id"},
 	},
 	"bond_portfolio": {
-		{Table: "bond_portfolio_history", Column: "bond_portfolio_id"},
 		{Table: "cash_settlement", Column: "bond_portfolio_id"},
 	},
 	"bond_trade": {
 		{Table: "bond_trade", Column: "parent_bond_trade_id"},
-		{Table: "bond_trade_data_history", Column: "bond_trade_id"},
 		{Table: "document", Column: "bond_trade_id"},
-		{Table: "document_data_history", Column: "bond_trade_id"},
 		{Table: "finance_transaction", Column: "bond_trade_id"},
 		{Table: "investor_coupon_schedule", Column: "bond_trade_id"},
-	},
-	"bond_trade_data_history": {
-		{Table: "bond_trade_data_history", Column: "parent_bond_trade_id"},
 	},
 	"bond_type": {
 		{Table: "bond", Column: "bond_type_id"},
 	},
 	"broker": {
 		{Table: "bond_trade", Column: "broker_id"},
-		{Table: "bond_trade_data_history", Column: "broker_id"},
 		{Table: "broker_api_setting", Column: "broker_id"},
 		{Table: "stock_trade", Column: "broker_id"},
 	},
@@ -216,7 +204,6 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"city": {
 		{Table: "investor", Column: "city_id"},
-		{Table: "investor_data_history", Column: "city_id"},
 		{Table: "member", Column: "city_id"},
 		{Table: "member_group", Column: "city_id"},
 	},
@@ -229,7 +216,6 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"country": {
 		{Table: "investor", Column: "country_id"},
-		{Table: "investor_data_history", Column: "country_id"},
 		{Table: "member", Column: "country_id"},
 		{Table: "member_group", Column: "country_id"},
 		{Table: "province", Column: "country_id"},
@@ -251,7 +237,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "tax_report", Column: "dependant_id"},
 	},
 	"deposito": {
-		{Table: "deposito_history", Column: "deposito_id"},
 		{Table: "deposito_interest_history", Column: "deposito_id"},
 		{Table: "deposito_portfolio", Column: "deposito_id"},
 	},
@@ -259,17 +244,14 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "cash_settlement", Column: "deposito_portfolio_id"},
 		{Table: "deposito_portfolio", Column: "next_portfolio_id"},
 		{Table: "deposito_portfolio", Column: "previous_portfolio_id"},
-		{Table: "deposito_portfolio_history", Column: "deposito_portfolio_id"},
 	},
 	"document": {
 		{Table: "document_authorization_table", Column: "document_id"},
-		{Table: "document_data_history", Column: "document_id"},
 		{Table: "task_document", Column: "document_id"},
 	},
 	"document_category": {
 		{Table: "document", Column: "document_category_id"},
 		{Table: "document_category_authorization_table", Column: "document_category_id"},
-		{Table: "document_data_history", Column: "document_category_id"},
 		{Table: "member_document", Column: "document_category_id"},
 		{Table: "payment_document", Column: "document_category_id"},
 		{Table: "task_document", Column: "document_category_id"},
@@ -283,8 +265,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "cash_settlement", Column: "document_file_id"},
 		{Table: "configuration", Column: "qr_logo_file_id"},
 		{Table: "document", Column: "document_file_id"},
-		{Table: "document_data_history", Column: "document_file_id"},
-		{Table: "document_data_history", Column: "previous_document_file_id"},
 		{Table: "investor_coupon_schedule", Column: "payment_document_file_id"},
 		{Table: "member_document", Column: "document_file_id"},
 		{Table: "newsletter", Column: "document_file_id"},
@@ -325,14 +305,10 @@ var ReferencedBy = map[string][]Ref{
 	"investor": {
 		{Table: "bank_account", Column: "investor_id"},
 		{Table: "bond_trade", Column: "investor_id"},
-		{Table: "bond_trade_data_history", Column: "investor_id"},
 		{Table: "document", Column: "investor_id"},
-		{Table: "document_data_history", Column: "investor_id"},
-		{Table: "investor_data_history", Column: "investor_id"},
 	},
 	"investor_category": {
 		{Table: "investor", Column: "investor_category_id"},
-		{Table: "investor_data_history", Column: "investor_category_id"},
 	},
 	"investor_coupon_schedule": {
 		{Table: "payment_document", Column: "investor_coupon_schedule_id"},
@@ -344,11 +320,8 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "agent_fee_transaction", Column: "marketing_agent_id"},
 		{Table: "bank_account", Column: "marketing_agent_id"},
 		{Table: "bond_trade", Column: "marketing_agent_id"},
-		{Table: "bond_trade_data_history", Column: "marketing_agent_id"},
 		{Table: "document", Column: "marketing_agent_id"},
-		{Table: "document_data_history", Column: "marketing_agent_id"},
 		{Table: "marketing_agent", Column: "leader_agent_id"},
-		{Table: "marketing_agent_data_history", Column: "marketing_agent_id"},
 	},
 	"member": {
 		{Table: "cash_settlement", Column: "member_id"},
@@ -363,7 +336,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "member_document", Column: "member_benefit_payout_id"},
 	},
 	"member_portfolio": {
-		{Table: "member_portfolio_history", Column: "member_portfolio_id"},
 		{Table: "member_portfolio_transaction", Column: "member_portfolio_id"},
 	},
 	"member_premium_payment": {
@@ -379,11 +351,9 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"mutual_fund_portfolio": {
 		{Table: "cash_settlement", Column: "mutual_fund_portfolio_id"},
-		{Table: "mutual_fund_portfolio_history", Column: "mutual_fund_portfolio_id"},
 	},
 	"mutual_fund_trade": {
 		{Table: "document", Column: "mutual_fund_trade_id"},
-		{Table: "document_data_history", Column: "mutual_fund_trade_id"},
 		{Table: "finance_transaction", Column: "mutual_fund_trade_id"},
 	},
 	"newsletter": {
@@ -401,9 +371,7 @@ var ReferencedBy = map[string][]Ref{
 	"portfolio": {
 		{Table: "asset_class_finance_account", Column: "portfolio_id"},
 		{Table: "bond_portfolio", Column: "portfolio_id"},
-		{Table: "bond_portfolio_history", Column: "portfolio_id"},
 		{Table: "bond_trade", Column: "portfolio_id"},
-		{Table: "bond_trade_data_history", Column: "portfolio_id"},
 		{Table: "crypto_portfolio", Column: "portfolio_id"},
 		{Table: "deposito_portfolio", Column: "portfolio_id"},
 		{Table: "finance_account", Column: "portfolio_id"},
@@ -422,7 +390,6 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"portfolio_budget": {
 		{Table: "portfolio_budget", Column: "previous_budget_id"},
-		{Table: "portfolio_budget_history", Column: "portfolio_budget_id"},
 	},
 	"premium_payment_type": {
 		{Table: "member_premium_payment", Column: "premium_payment_type"},
@@ -433,13 +400,11 @@ var ReferencedBy = map[string][]Ref{
 	"province": {
 		{Table: "city", Column: "province_id"},
 		{Table: "investor", Column: "province_id"},
-		{Table: "investor_data_history", Column: "province_id"},
 		{Table: "member", Column: "province_id"},
 		{Table: "member_group", Column: "province_id"},
 	},
 	"rating": {
 		{Table: "bond", Column: "rating_id"},
-		{Table: "bond_history", Column: "rating_id"},
 		{Table: "bond_portfolio", Column: "rating_id"},
 		{Table: "bond_rating", Column: "rating_id"},
 	},
@@ -477,14 +442,12 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"stock_portfolio": {
 		{Table: "cash_settlement", Column: "stock_portfolio_id"},
-		{Table: "stock_portfolio_history", Column: "stock_portfolio_id"},
 	},
 	"stock_size_classification": {
 		{Table: "stock_size_classification_history", Column: "stock_size_classification_id"},
 	},
 	"stock_trade": {
 		{Table: "document", Column: "stock_trade_id"},
-		{Table: "document_data_history", Column: "stock_trade_id"},
 		{Table: "finance_transaction", Column: "stock_trade_id"},
 	},
 	"stock_type": {
@@ -505,7 +468,6 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"trade_type": {
 		{Table: "bond_trade", Column: "trade_type_id"},
-		{Table: "bond_trade_data_history", Column: "trade_type_id"},
 		{Table: "crypto_trade", Column: "trade_type_id"},
 		{Table: "member_portfolio_transaction", Column: "trade_type_id"},
 		{Table: "mutual_fund_trade", Column: "trade_type_id"},

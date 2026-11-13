@@ -1,8 +1,11 @@
 package crud
 
 import (
+	"strings"
+
 	"github.com/gofiber/fiber/v3"
 
+	"pfm-backend/internal/apperr"
 	"pfm-backend/internal/platform/httpx"
 )
 
@@ -13,7 +16,7 @@ type handler[Row, Req, Resp any] struct {
 
 func (h *handler[Row, Req, Resp]) parseList(c fiber.Ctx) (httpx.ListQuery, error) {
 	r := h.svc.res
-	return httpx.ParseListQuery(c, r.sortOptions(), r.DefaultSort, r.Filters...)
+	return httpx.ParseListQuery(c, sortOptions(r.Sorts), r.DefaultSort, r.Filters...)
 }
 
 func (h *handler[Row, Req, Resp]) respondList(c fiber.Ctx, q httpx.ListQuery) error {
@@ -81,6 +84,24 @@ func (h *handler[Row, Req, Resp]) create(c fiber.Ctx) error {
 	return h.write(c, fiber.StatusCreated, row)
 }
 
+// importCSV accepts text/csv whose header row uses the JSON field names.
+func (h *handler[Row, Req, Resp]) importCSV(c fiber.Ctx) error {
+	ct := strings.ToLower(strings.TrimSpace(strings.SplitN(c.Get(fiber.HeaderContentType), ";", 2)[0]))
+	if ct != "text/csv" {
+		return apperr.UnsupportedMediaType("Content-Type harus text/csv")
+	}
+	reqs, err := parseCSV[Req](c.Body(), h.v)
+	if err != nil {
+		return err
+	}
+	n, err := h.svc.importRows(c.Context(), reqs)
+	if err != nil {
+		return err
+	}
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{"data": fiber.Map{"imported": n},
+		"meta": httpx.Meta{RequestID: httpx.RequestID(c)}})
+}
+
 func (h *handler[Row, Req, Resp]) update(c fiber.Ctx) error {
 	id, err := httpx.UUIDParam(c, "uuid")
 	if err != nil {
@@ -114,4 +135,57 @@ func (h *handler[Row, Req, Resp]) delete(c fiber.Ctx) error {
 		return err
 	}
 	return httpx.NoContent(c)
+}
+
+// readHandler serves ReadResource routes.
+type readHandler[Row, Resp any] struct {
+	res ReadResource[Row, Resp]
+}
+
+func (h *readHandler[Row, Resp]) parseList(c fiber.Ctx) (httpx.ListQuery, error) {
+	return httpx.ParseListQuery(c, sortOptions(h.res.Sorts), h.res.DefaultSort, h.res.Filters...)
+}
+
+func (h *readHandler[Row, Resp]) respond(c fiber.Ctx, q httpx.ListQuery) error {
+	items, total, err := listRows(c.Context(), h.res.Store, h.res.Response, q)
+	if err != nil {
+		return err
+	}
+	return httpx.List(c, items, q.Page, total)
+}
+
+func (h *readHandler[Row, Resp]) list(c fiber.Ctx) error {
+	q, err := h.parseList(c)
+	if err != nil {
+		return err
+	}
+	return h.respond(c, q)
+}
+
+func (h *readHandler[Row, Resp]) nestedList(filter string) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		parent, err := httpx.UUIDParam(c, "parent_uuid")
+		if err != nil {
+			return err
+		}
+		q, err := h.parseList(c)
+		if err != nil {
+			return err
+		}
+		q.Filters[filter] = parent.String()
+		return h.respond(c, q)
+	}
+}
+
+func (h *readHandler[Row, Resp]) get(c fiber.Ctx) error {
+	id, err := httpx.UUIDParam(c, "uuid")
+	if err != nil {
+		return err
+	}
+	row, err := h.res.Store.Get(c.Context(), id)
+	if err != nil {
+		return err
+	}
+	httpx.SetETag(c, h.res.Store.Meta(row).UpdatedAt)
+	return httpx.OK(c, h.res.Response(row))
 }

@@ -1,6 +1,7 @@
 package crud
 
 import (
+	"net/netip"
 	"strings"
 	"time"
 
@@ -78,4 +79,35 @@ func Affected(op string, n int64, err error) error {
 		return apperr.ErrPreconditionFailed
 	}
 	return nil
+}
+
+// IP parses an address already checked by the "ip" validator.
+func IP(s string) *netip.Addr {
+	if s == "" {
+		return nil
+	}
+	a, err := netip.ParseAddr(s)
+	if err != nil {
+		return nil
+	}
+	return &a
+}
+
+// Prefixes parses entries already checked by "cidr_list"; a bare address
+// becomes a single-host prefix.
+func Prefixes(in []string) []netip.Prefix {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make([]netip.Prefix, 0, len(in))
+	for _, s := range in {
+		if p, err := netip.ParsePrefix(strings.TrimSpace(s)); err == nil {
+			out = append(out, p.Masked())
+			continue
+		}
+		if a, err := netip.ParseAddr(strings.TrimSpace(s)); err == nil {
+			out = append(out, netip.PrefixFrom(a, a.BitLen()))
+		}
+	}
+	return out
 }
