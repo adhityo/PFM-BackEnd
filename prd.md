@@ -1176,12 +1176,20 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 13 | Total detail placement | Σ `placement_detail.placement_value` ≤ `placement.placement_value`; tanggal detail di dalam periode placement | Benar? |
 | 14 | Jurnal deposito & placement | Rollover/withdraw belum memposting jurnal; ditambahkan bersama modul akuntansi (M3) | — |
 | 15 | Tabel snapshot riwayat (`*_history` audit, `*_data_history`) | Tidak menghalangi soft delete data sumbernya; data time-series (harga, NAV) tetap menghalangi | Setuju? |
+| 16 | Kode status transaksi | `0` draft, `1` settled/approved/posted, `2` cancelled, `3` reversed (API: string). `crypto_trade.status` memakai teks yang sama | Cocok dengan arti status legacy? |
+| 17 | Mapping akun trade | `asset_class_finance_account`: `buy_account` = akun investasi (`sell_account` bila diisi dipakai saat jual), `capital_gain/loss_account` untuk laba/rugi; `portfolio_accounting_structure` (kelas aset × BUY/SELL) = akun kas | Sesuai praktik akuntansi dana? |
+| 18 | Metode posisi | Rata-rata tertimbang; fee beli masuk biaya perolehan, fee jual mengurangi hasil; 1 lot saham = 100 lembar | Benar? |
+| 19 | Urutan settle/reverse | Settle wajib berurutan per tanggal per posisi; reverse hanya trade ter-settle terakhir (LIFO) | Perlu backdate? |
+| 20 | `crypto_trade.portfolio_id` [USULAN] | Ditambahkan (migrasi 00125) karena posisi kripto butuh portofolio | Setuju? |
+| 21 | Maker-checker | Diterapkan pada approve cash settlement; settle trade belum memakai maker-checker | Perlu juga untuk trade? |
+| 22 | Jurnal deposito | Penempatan/rollover/withdraw deposito belum memposting jurnal (perlu keputusan perlakuan bunga) | Perlakuan akuntansi bunga deposito? |
+| 23 | `Idempotency-Key` | Belum diimplementasi; aksi TRX dilindungi `If-Match` (kirim ulang mendapat 412) | Tetap perlu Redis idempotency? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-124 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, dan 1 migrasi index bisnis (M2). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
+125 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, 1 migrasi index bisnis (M2), dan 1 migrasi pendukung trading & akuntansi (M3, termasuk tabel `number_sequence`). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1309,6 +1317,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00122 | `00122_create_task_document.sql` | `task_document` | workflow | document, document_category, task |
 | 00123 | `00123_create_auth_refresh_token.sql` | `auth_refresh_token` | iam | app_user |
 | 00124 | `00124_create_business_unique_indexes.sql` | — (unique index bisnis M2) | market, portfolio | stock_history, indices_history, mutual_fund_history, … |
+| 00125 | `00125_trading_accounting_support.sql` | `number_sequence` + kolom/index pendukung M3 | accounting, trading | crypto_trade, finance_transaction, cash_settlement, … |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap

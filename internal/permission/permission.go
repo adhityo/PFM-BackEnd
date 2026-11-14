@@ -37,7 +37,17 @@ const (
 	PlacementDetailUpdate = "placement:update"
 	DepositoRollover      = "deposito_portfolio:rollover"
 	DepositoWithdraw      = "deposito_portfolio:withdraw"
+
+	FinanceTransactionRead    = "finance_transaction:read"
+	FinanceTransactionCreate  = "finance_transaction:create"
+	FinanceTransactionReverse = "finance_transaction:reverse"
+	CashSettlementApprove     = "cash_settlement:approve"
+	CashSettlementCancel      = "cash_settlement:cancel"
+	CashSettlementReverse     = "cash_settlement:reverse"
 )
+
+// TradeActions are the action permissions of every trade table.
+var TradeActions = []string{"settle", "cancel", "reverse"}
 
 // Static returns the hand-defined permissions. CRUD resources add their own
 // <table>:read|create|update|delete entries (see router.Catalog).
@@ -52,7 +62,7 @@ func Static() []auth.Permission {
 		auth.Permission{Code: RoleActionUpdate, Name: "Ubah permission role"},
 	)
 	p = append(p, auth.CRUD("action", "katalog permission")...)
-	return append(p,
+	p = append(p,
 		auth.Permission{Code: ActivityLogRead, Name: "Lihat log aktivitas"},
 		auth.Permission{Code: auth.PermPIIRead, Name: "Lihat data pribadi tanpa masking"},
 		auth.Permission{Code: FileRead, Name: "Lihat/unduh file milik pengguna lain"},
@@ -62,5 +72,17 @@ func Static() []auth.Permission {
 		auth.Permission{Code: ConfigurationUpdate, Name: "Ubah konfigurasi sistem"},
 		auth.Permission{Code: DepositoRollover, Name: "Rollover penempatan deposito"},
 		auth.Permission{Code: DepositoWithdraw, Name: "Cairkan penempatan deposito"},
+		auth.Permission{Code: FinanceTransactionRead, Name: "Lihat jurnal"},
+		auth.Permission{Code: FinanceTransactionCreate, Name: "Posting jurnal manual"},
+		auth.Permission{Code: FinanceTransactionReverse, Name: "Balik jurnal manual"},
+		auth.Permission{Code: CashSettlementApprove, Name: "Setujui cash settlement"},
+		auth.Permission{Code: CashSettlementCancel, Name: "Batalkan cash settlement"},
+		auth.Permission{Code: CashSettlementReverse, Name: "Balik cash settlement"},
 	)
+	for _, table := range []string{"stock_trade", "mutual_fund_trade", "crypto_trade"} {
+		for _, a := range TradeActions {
+			p = append(p, auth.Permission{Code: table + ":" + a, Name: a + " " + table})
+		}
+	}
+	return p
 }

@@ -92,6 +92,7 @@ var SoftDelete = map[string]bool{
 	"newsletter":                            true,
 	"notification":                          true,
 	"notification_download_counter":         true,
+	"number_sequence":                       false,
 	"occupation":                            true,
 	"payment_document":                      true,
 	"placement":                             true,
@@ -199,6 +200,9 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "broker_api_setting", Column: "broker_id"},
 		{Table: "stock_trade", Column: "broker_id"},
 	},
+	"cash_settlement": {
+		{Table: "finance_transaction", Column: "cash_settlement_id"},
+	},
 	"cash_settlement_category": {
 		{Table: "cash_settlement", Column: "cash_settlement_category_id"},
 	},
@@ -228,6 +232,9 @@ var ReferencedBy = map[string][]Ref{
 	"crypto_exchange": {
 		{Table: "crypto_listing_exchange", Column: "crypto_exchange_id"},
 		{Table: "crypto_trade_plan", Column: "crypto_exchange_id"},
+	},
+	"crypto_trade": {
+		{Table: "finance_transaction", Column: "crypto_trade_id"},
 	},
 	"crypto_trade_plan": {
 		{Table: "crypto_trade", Column: "crypto_trade_plan_id"},
@@ -290,6 +297,7 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "portfolio_accounting_structure", Column: "finance_account_type_id"},
 	},
 	"finance_transaction": {
+		{Table: "finance_transaction", Column: "reversal_of_id"},
 		{Table: "finance_transaction_detail", Column: "finance_transaction_id"},
 	},
 	"indices": {
@@ -373,6 +381,7 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "bond_portfolio", Column: "portfolio_id"},
 		{Table: "bond_trade", Column: "portfolio_id"},
 		{Table: "crypto_portfolio", Column: "portfolio_id"},
+		{Table: "crypto_trade", Column: "portfolio_id"},
 		{Table: "deposito_portfolio", Column: "portfolio_id"},
 		{Table: "finance_account", Column: "portfolio_id"},
 		{Table: "finance_transaction", Column: "portfolio_id"},

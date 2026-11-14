@@ -75,6 +75,11 @@ func genSQL(sp *Spec, t *Table) string {
 	// Create / update.
 	var insCols, insVals, sets []string
 	for _, c := range cols {
+		if expr, ok := sp.Computed[c.Name]; ok {
+			insCols, insVals = append(insCols, c.Name), append(insVals, expr)
+			sets = append(sets, c.Name+" = "+expr)
+			continue
+		}
 		switch {
 		case sp.isSnapshot(c.Name):
 			snap := sp.Snapshot[c.Name]

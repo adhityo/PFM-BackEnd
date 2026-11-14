@@ -19,6 +19,33 @@ type service[Row, Req, Resp any] struct {
 	res   Resource[Row, Req, Resp]
 	tx    *database.TxManager
 	audit *audit.Recorder
+	files FileAttacher
+}
+
+// attachFiles activates newly referenced uploads; an unchanged reference is kept.
+func (s *service[Row, Req, Resp]) attachFiles(ctx context.Context, req *Req, cur *Row) error {
+	for _, f := range s.res.Files {
+		raw := f.Get(req)
+		if raw == "" {
+			continue
+		}
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			return apperr.Invalid(f.Field, "uuid", "harus berupa UUID yang valid")
+		}
+		if cur != nil {
+			if c := f.Current(cur); c != nil && *c == id {
+				continue
+			}
+		}
+		if s.files == nil {
+			return errors.New("crud: resource has file fields but Env.Files is nil")
+		}
+		if _, err := s.files.Attach(ctx, id, f.Purpose, f.Field); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func listRows[Row, Resp any](ctx context.Context, store Reader[Row], resp func(Row) Resp, q httpx.ListQuery) ([]Resp, int64, error) {
@@ -65,6 +92,9 @@ func (s *service[Row, Req, Resp]) insert(ctx context.Context, req Req, actor str
 		if err := s.res.Check(ctx, &req, nil); err != nil {
 			return zero, err
 		}
+	}
+	if err := s.attachFiles(ctx, &req, nil); err != nil {
+		return zero, err
 	}
 	id, err := s.res.Store.Create(ctx, req, actor)
 	if err != nil {
@@ -141,6 +171,9 @@ func (s *service[Row, Req, Resp]) update(ctx context.Context, id uuid.UUID, req 
 				return err
 			}
 		}
+		if err := s.attachFiles(ctx, &req, &cur); err != nil {
+			return err
+		}
 		if err := s.res.Store.Update(ctx, id, req, actor.AuditName(), expected); err != nil {
 			return err
 		}
@@ -173,6 +206,11 @@ func (s *service[Row, Req, Resp]) delete(ctx context.Context, id uuid.UUID, expe
 		cur, err := s.res.Store.Get(ctx, id) // scoped
 		if err != nil {
 			return err
+		}
+		if s.res.CheckDelete != nil {
+			if err := s.res.CheckDelete(ctx, &cur); err != nil {
+				return err
+			}
 		}
 		ref, err := database.ActiveReference(ctx, s.tx, s.res.Table, rowID)
 		if err != nil {

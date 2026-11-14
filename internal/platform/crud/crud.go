@@ -60,12 +60,29 @@ type Resource[Row, Req, Resp any] struct {
 	Response    func(Row) Resp
 	// Check runs inside the write transaction before create (cur == nil) and update.
 	Check func(ctx context.Context, req *Req, cur *Row) error
+	// CheckDelete runs inside the delete transaction before the soft delete.
+	CheckDelete func(ctx context.Context, cur *Row) error
 	// AfterWrite runs inside the write transaction after create (before == nil),
 	// update, and delete (after == nil); e.g. to refresh a parent's latest_* columns.
 	AfterWrite func(ctx context.Context, before, after *Row) error
+	// Files are upload references attached (pending -> active) before writing.
+	Files []FileField[Row, Req]
 	// Import enables POST <Path>/import (CSV, all-or-nothing).
 	Import bool
 	Nested []Nested
+}
+
+// FileField describes a *_file_uuid request field backed by file_object.
+type FileField[Row, Req any] struct {
+	Field   string // JSON field name, used in error messages
+	Purpose string // upload purpose, e.g. "cash_settlement.document"
+	Get     func(*Req) string
+	Current func(*Row) *uuid.UUID
+}
+
+// FileAttacher validates a pending upload and marks it active (service.FileService).
+type FileAttacher interface {
+	Attach(ctx context.Context, fileUUID uuid.UUID, purpose, field string) (int64, error)
 }
 
 // ReadResource describes a read-only endpoint family (positions, history).
@@ -87,6 +104,7 @@ type Env struct {
 	Validator httpx.Validator
 	TX        *database.TxManager
 	Audit     *audit.Recorder
+	Files     FileAttacher
 }
 
 // Registrar is implemented by every Resource and ReadResource instantiation.
@@ -111,7 +129,7 @@ func (r Resource[Row, Req, Resp]) Permissions() []auth.Permission {
 
 // Register mounts the standard routes of PRD §10.3.
 func (r Resource[Row, Req, Resp]) Register(env Env) {
-	s := &service[Row, Req, Resp]{res: r, tx: env.TX, audit: env.Audit}
+	s := &service[Row, Req, Resp]{res: r, tx: env.TX, audit: env.Audit, files: env.Files}
 	h := &handler[Row, Req, Resp]{svc: s, v: env.Validator}
 	read, create, update, del := r.Table+":read", r.Table+":create", r.Table+":update", r.Table+":delete"
 

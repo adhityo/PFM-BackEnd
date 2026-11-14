@@ -840,6 +840,7 @@ type CryptoTrade struct {
 	UpdatedBy            *string
 	DeletedAt            *time.Time
 	DeletedBy            *string
+	PortfolioID          *int64
 }
 
 type CryptoTradePlan struct {
@@ -1192,6 +1193,9 @@ type FinanceTransaction struct {
 	UpdatedBy         *string
 	DeletedAt         *time.Time
 	DeletedBy         *string
+	CryptoTradeID     *int64
+	CashSettlementID  *int64
+	ReversalOfID      *int64
 }
 
 type FinanceTransactionDetail struct {
@@ -1866,6 +1870,16 @@ type NotificationDownloadCounter struct {
 	UpdatedBy      *string
 	DeletedAt      *time.Time
 	DeletedBy      *string
+}
+
+type NumberSequence struct {
+	ID        int64
+	Uuid      uuid.UUID
+	Name      string
+	Period    string
+	LastValue int64
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type Occupation struct {

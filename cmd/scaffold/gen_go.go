@@ -7,6 +7,7 @@ import (
 )
 
 type reqField struct {
+	Col                        string // column name (sqlc param name)
 	Name, Type, JSON, Validate string
 	Param                      string // expression producing the sqlc param value
 	TrimString                 bool
@@ -75,10 +76,19 @@ func columnPlan(sp *Spec, t *Table, c Column) (*reqField, respField, error) {
 		base := fkBase(c.Name)
 		rf = respField{Name: goName(base + "_uuid"), Type: "*uuid.UUID", JSON: base + "_uuid", Expr: "r." + sqlcName(base+"_uuid")}
 		if sp.writable(c) {
-			req = &reqField{Name: goName(base + "_uuid"), Type: "string", JSON: base + "_uuid", Validate: tags("uuid"),
+			req = &reqField{Col: c.Name, Name: goName(base + "_uuid"), Type: "string", JSON: base + "_uuid", Validate: tags("uuid"),
 				Param: "refs." + lowerFirst(goName(c.Name)), TrimString: true}
 		}
 		return req, rf, nil
+	}
+
+	if names, ok := sp.Enum[c.Name]; ok {
+		quoted := make([]string, len(names))
+		for i, n := range names {
+			quoted[i] = fmt.Sprintf("%q", n)
+		}
+		rf.Type, rf.Expr = "*string", fmt.Sprintf("crud.EnumName(r.%s, []string{%s})", sq, strings.Join(quoted, ", "))
+		return nil, rf, nil // enum columns are state, changed by actions only
 	}
 
 	switch c.DataType {
@@ -98,41 +108,41 @@ func columnPlan(sp *Spec, t *Table, c Column) (*reqField, respField, error) {
 		if !c.Nullable {
 			param = "req." + goName(c.Name)
 		}
-		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags(parts...), Param: param, TrimString: true}
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags(parts...), Param: param, TrimString: true}
 	case "numeric":
 		rf.Type = ptrIf(c.Nullable, "decimal.Decimal")
-		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name,
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name,
 			Validate: tags(fmt.Sprintf("decimal=%d.%d", c.Precision, c.Scale)), Param: "crud.Decimal(req." + goName(c.Name) + ")", TrimString: true}
 	case "integer":
 		rf.Type = ptrIf(c.Nullable, "int32")
-		req = &reqField{Name: goName(c.Name), Type: "*int32", JSON: c.Name, Validate: tags("min=0"), Param: "req." + goName(c.Name)}
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "*int32", JSON: c.Name, Validate: tags("min=0"), Param: "req." + goName(c.Name)}
 	case "smallint":
 		rf.Type = ptrIf(c.Nullable, "int16")
-		req = &reqField{Name: goName(c.Name), Type: "*int16", JSON: c.Name, Validate: tags("min=0"), Param: "req." + goName(c.Name)}
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "*int16", JSON: c.Name, Validate: tags("min=0"), Param: "req." + goName(c.Name)}
 	case "bigint":
 		rf.Type = ptrIf(c.Nullable, "int64")
-		req = &reqField{Name: goName(c.Name), Type: "*int64", JSON: c.Name, Validate: tags("min=0"), Param: "req." + goName(c.Name)}
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "*int64", JSON: c.Name, Validate: tags("min=0"), Param: "req." + goName(c.Name)}
 	case "boolean":
 		rf.Type = ptrIf(c.Nullable, "bool")
-		req = &reqField{Name: goName(c.Name), Type: ptrIf(c.Nullable, "bool"), JSON: c.Name, Param: "req." + goName(c.Name), Validate: extra}
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: ptrIf(c.Nullable, "bool"), JSON: c.Name, Param: "req." + goName(c.Name), Validate: extra}
 	case "date":
 		rf.Type, rf.Expr = "*httpx.Date", "httpx.DateOf(r."+sq+")"
-		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("datetime=2006-01-02"),
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("datetime=2006-01-02"),
 			Param: "crud.Date(req." + goName(c.Name) + ")", TrimString: true}
 	case "timestamp with time zone":
 		rf.Type = ptrIf(c.Nullable, "time.Time")
-		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("datetime=2006-01-02T15:04:05Z07:00"),
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("datetime=2006-01-02T15:04:05Z07:00"),
 			Param: "crud.Time(req." + goName(c.Name) + ")", TrimString: true}
 	case "inet":
 		rf.Type = "*netip.Addr"
-		req = &reqField{Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("ip"),
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("ip"),
 			Param: "crud.IP(req." + goName(c.Name) + ")", TrimString: true}
 	case "ARRAY":
 		if c.UDT != "_cidr" {
 			return nil, rf, fmt.Errorf("%s.%s: array %s belum didukung generator", t.Name, c.Name, c.UDT)
 		}
 		rf.Type = "[]netip.Prefix"
-		req = &reqField{Name: goName(c.Name), Type: "[]string", JSON: c.Name, Validate: tags("max=100", "cidr_list"),
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "[]string", JSON: c.Name, Validate: tags("max=100", "cidr_list"),
 			Param: "crud.Prefixes(req." + goName(c.Name) + ")"}
 	default:
 		return nil, rf, fmt.Errorf("%s.%s: tipe %s belum didukung generator", t.Name, c.Name, c.DataType)
@@ -174,7 +184,7 @@ func imports(groups ...[]string) string {
 
 // genDTO renders internal/dto/<table>_gen.go: request, response and mapper.
 func genDTO(p *plan) string {
-	usesStrings, usesDecimal, usesHTTPX, usesNetip := false, false, false, false
+	usesStrings, usesDecimal, usesHTTPX, usesNetip, usesCrud := false, false, false, false, false
 	for _, f := range p.reqs {
 		usesStrings = usesStrings || f.TrimString
 	}
@@ -182,6 +192,7 @@ func genDTO(p *plan) string {
 		usesDecimal = usesDecimal || strings.Contains(f.Type, "decimal.")
 		usesHTTPX = usesHTTPX || strings.Contains(f.Type, "httpx.")
 		usesNetip = usesNetip || strings.Contains(f.Type, "netip.")
+		usesCrud = usesCrud || strings.Contains(f.Expr, "crud.")
 	}
 	std := []string{"time"}
 	if usesNetip {
@@ -195,6 +206,9 @@ func genDTO(p *plan) string {
 		third = append(third, "github.com/shopspring/decimal")
 	}
 	local := []string{"pfm-backend/internal/db/sqlc"}
+	if usesCrud {
+		local = append(local, "pfm-backend/internal/platform/crud")
+	}
 	if usesHTTPX {
 		local = append(local, "pfm-backend/internal/platform/httpx")
 	}
@@ -321,11 +335,7 @@ func genRepository(p *plan) string {
 	params := func() string {
 		var lines []string
 		for _, f := range p.reqs {
-			name := sqlcName(f.JSON)
-			if strings.HasPrefix(f.Param, "refs.") {
-				name = sqlcName(strings.TrimSuffix(f.JSON, "_uuid") + "_id")
-			}
-			lines = append(lines, fmt.Sprintf("%s: %s", name, f.Param))
+			lines = append(lines, fmt.Sprintf("%s: %s", sqlcName(f.Col), f.Param))
 		}
 		return strings.Join(lines, ",\n\t\t")
 	}
@@ -357,10 +367,14 @@ func genService(p *plan) (string, error) {
 	var b strings.Builder
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	var std []string
-	if p.sp.Check != "" || p.sp.AfterWrite != "" {
+	if p.sp.Check != "" || p.sp.AfterWrite != "" || p.sp.CheckDelete != "" {
 		std = append(std, "context")
 	}
-	w("%s", genHeader+"package service\n\n"+imports(std,
+	var third []string
+	if len(p.sp.Files) > 0 {
+		third = append(third, "github.com/google/uuid")
+	}
+	w("%s", genHeader+"package service\n\n"+imports(std, third,
 		[]string{"pfm-backend/internal/db/sqlc", "pfm-backend/internal/dto", "pfm-backend/internal/platform/crud",
 			"pfm-backend/internal/repository"}))
 
@@ -402,6 +416,23 @@ func genService(p *plan) (string, error) {
 	if p.sp.AfterWrite != "" {
 		w("\t\tAfterWrite: func(ctx context.Context, before, after *%s) error {\n\t\t\treturn %s(ctx, d, before, after)\n\t\t},\n",
 			p.rowType, p.sp.AfterWrite)
+	}
+	if p.sp.CheckDelete != "" {
+		w("\t\tCheckDelete: func(ctx context.Context, cur *%s) error {\n\t\t\treturn %s(ctx, d, cur)\n\t\t},\n", p.rowType, p.sp.CheckDelete)
+	}
+	if len(p.sp.Files) > 0 {
+		cols := make([]string, 0, len(p.sp.Files))
+		for c := range p.sp.Files {
+			cols = append(cols, c)
+		}
+		slices.Sort(cols)
+		w("\t\tFiles: []crud.FileField[%s, dto.%sRequest]{\n", p.rowType, p.gn)
+		for _, c := range cols {
+			field := fkBase(c) + "_uuid"
+			w("\t\t\t{Field: %q, Purpose: %q,\n\t\t\t\tGet: func(r *dto.%sRequest) string { return r.%s },\n\t\t\t\tCurrent: func(r *%s) *uuid.UUID { return r.%s }},\n",
+				field, p.sp.Files[c], p.gn, goName(field), p.rowType, sqlcName(field))
+		}
+		w("\t\t},\n")
 	}
 	if p.sp.Import {
 		w("\t\tImport: true,\n")

@@ -2,6 +2,7 @@ package crud
 
 import (
 	"net/netip"
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,4 +111,18 @@ func Prefixes(in []string) []netip.Prefix {
 		}
 	}
 	return out
+}
+
+// EnumName maps a SMALLINT status to its API name; unknown codes stay numeric.
+func EnumName(code *int16, names []string) *string {
+	if code == nil {
+		return nil
+	}
+	var out string
+	if int(*code) >= 0 && int(*code) < len(names) {
+		out = names[*code]
+	} else {
+		out = strconv.Itoa(int(*code))
+	}
+	return &out
 }

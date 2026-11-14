@@ -2,7 +2,7 @@
 
 REST API Portfolio & Fund Management: Go + Fiber v3 + PostgreSQL. Spesifikasi lengkap ada di [prd.md](prd.md).
 
-Status: **M0 (Fondasi), M1 (Master Data, 25 tabel), M2 (Instrumen Pasar & Portofolio, 43 tabel) selesai.** M3–M7 belum.
+Status: **M0–M3 selesai** (fondasi, master data, instrumen & portofolio, trading & akuntansi). M4–M7 belum.
 
 ## Prasyarat
 
@@ -104,6 +104,20 @@ deploy/         Dockerfile (distroless), docker-compose (dev), SQL role DB
   riwayat `/…-portfolio-histories`, `/portfolio-budget-histories`, `/deposito-histories`.
 - **Transaksi:** `GET/PUT /placements/{uuid}/details` (ganti seluruh detail dalam 1 transaksi),
   `POST /deposito-portfolios/{uuid}/rollover` dan `/withdraw` (`If-Match` wajib).
+
+## Endpoint M3 (Trading & Akuntansi)
+
+- **Trade** `/stock-trades`, `/mutual-fund-trades`, `/crypto-trades`: CRUD untuk draft (nilai, unit, dan fee dihitung
+  server), lalu `POST /{uuid}/settle`, `/cancel`, `/reverse` (`If-Match` wajib). Settle memperbarui posisi
+  (metode rata-rata, fee masuk biaya perolehan), snapshot riwayat, laba/rugi realisasi portofolio, dan memposting jurnal
+  dalam satu transaksi. Settle harus berurutan per tanggal; reverse hanya untuk trade ter-settle terakhir pada posisinya.
+- **Mapping akun** per portofolio: `asset-class-finance-accounts` (akun investasi, laba, rugi per kelas aset
+  `STOCK`/`MF-ASSET`/`CRYPTO`) dan `portfolio-accounting-structures` (akun kas per kelas aset × `BUY`/`SELL`).
+- **Jurnal** `/finance-transactions`: `POST` jurnal manual (langsung posted, Σdebit = Σkredit, nomor `JV-YYYY-NNNNNN`
+  tanpa celah), `GET` list/detail beserta baris, `POST /{uuid}/reverse`. Jurnal dari trade/settlement hanya dibalik
+  lewat dokumen sumbernya.
+- **Akun & settlement** `/finance-accounts` (tree), `/cash-settlement-categories`, `/cash-settlements` (draft + lampiran
+  dokumen), lalu `/approve` (pembuat tidak boleh menyetujui), `/cancel`, `/reverse`.
 
 ## Menambah resource CRUD
 
