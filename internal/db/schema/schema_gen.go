@@ -216,6 +216,7 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "bond", Column: "client_id"},
 		{Table: "cash_settlement", Column: "client_id"},
 		{Table: "invoice", Column: "client_id"},
+		{Table: "member", Column: "client_id"},
 		{Table: "portfolio", Column: "client_id"},
 	},
 	"country": {

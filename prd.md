@@ -809,15 +809,15 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 
 | Mig | Tabel | Base path `/api/v1/…` | Kelas | Operasi | Aturan khusus |
 |---|---|---|---|---|---|
-| 00007 | `benefit_payout_batch` | `benefit-payout-batches` | TRX | L G C U* D* + aksi | Aksi `/generate` (buat semua `member_benefit_payout` periode tsb) & `/approve`, masing-masing 1 transaksi. |
-| 00057 | `invoice` | `invoices` | TRX | L G C U* D* + aksi | Generate bulanan per client (job): invoice + `member_premium_payment` dalam 1 transaksi; counter bulan/tahun di `configuration`. |
+| 00007 | `benefit_payout_batch` | `benefit-payout-batches` | TRX | L G C U* D* + aksi | `POST /benefit-payout-batches/generate` (idempoten per bulan; baris untuk peserta pensiun & tanggungan), `/approve` (maker-checker), `/pay`, `/cancel`; masing-masing 1 transaksi. |
+| 00057 | `invoice` | `invoices` | TRX | L G C U* D* + aksi | `POST /invoices/generate` per client per bulan (idempoten): invoice + `member_premium_payment` dalam 1 transaksi; periode terakhir dicatat di `configuration`. Aksi `/issue`, `/cancel`. |
 | 00072 | `member` | `members` | MASTER | L G C U D | `member_number` dari counter. PII dimasking di response. |
 | 00073 | `member_group` | `member-groups` | MASTER | L G C U D | — |
 | 00095 | `dependant` | `dependants` | CHILD | L G C U D | Nested `/members/{uuid}/dependants`. |
-| 00098 | `member_portfolio` | `member-portfolios` | POSITION | L G | Hanya L/G. Diubah oleh `member_portfolio_transaction`. |
+| 00098 | `member_portfolio` | `member-portfolios` | POSITION | L G C D | C = buka rekening unit (peserta × portofolio client yang sama); saldo hanya diubah oleh settle `member_portfolio_transaction`. |
 | 00099 | `member_premium_payment` | `member-premium-payments` | TRX | L G C U* D* + aksi | Pembayaran iuran; terkait `invoice`. Aksi `/pay`. |
 | 00109 | `member_portfolio_history` | `member-portfolio-histories` | HIST | L G | — |
-| 00110 | `member_portfolio_transaction` | `member-portfolio-transactions` | TRX | L G C U* D* + aksi | Subscribe/redeem unit pada NAV efektif; update `member_portfolio` + insert history, 1 transaksi. |
+| 00110 | `member_portfolio_transaction` | `member-portfolio-transactions` | TRX | L G C U* D* + aksi | Subscribe/redeem unit pada NAV efektif; `/settle` update `member_portfolio` + insert history, 1 transaksi; `/cancel`. |
 | 00111 | `tax_report` | `tax-reports` | CHILD | L G C U D | Milik member atau dependant. |
 | 00116 | `member_benefit_payout` | `member-benefit-payouts` | CHILD | L G C U D | Baris dalam `benefit_payout_batch`. |
 | 00120 | `member_document` | `member-documents` | CHILD | L G C U D | Upload PDF → S3; nested di member. File: `document_file_id`. |
@@ -1191,12 +1191,19 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 28 | Perubahan data investor/agen | Pengajuan = penggantian penuh data pribadi; satu pengajuan pending per data; approve ditolak bila data diubah langsung setelah pengajuan; `leader_agent_id`/`agent_level` hanya diubah ADMIN | Benar? |
 | 29 | Pembayaran kupon & fee | Bayar kupon belum memposting jurnal; fee agen dibayar sekaligus (`outstanding_value` dikurangi `paid_value`) | Perlu jurnal & pembayaran sebagian? |
 | 30 | Jatuh tempo obligasi | Status `matured` belum diset otomatis (rencana: worker M7 setelah pokok dibayar) | Kapan obligasi dianggap matured? |
+| 31 | `member.client_id` [USULAN] (M5) | Ditambahkan (migrasi 00127): peserta milik satu client; dasar scope dan penagihan per client. Client peserta tidak dapat dipindah | Bagaimana legacy memetakan peserta ke pemberi kerja? Perlu relasi ke `member_group`? |
+| 32 | Kode status peserta & dana pensiun | `member.status` 0 nonaktif, 1 aktif (ditagih iuran), 2 pensiun (menerima manfaat); invoice 0 draft, 1 issued, 2 paid, 3 cancelled; iuran 0 belum/1 sudah dibayar; payout 0 draft, 1 approved, 2 paid, 3 cancelled | Cocok dengan arti status legacy? |
+| 33 | Nominal iuran | Baris invoice = `member.latest_pension_premium` (seluruhnya iuran peserta; `allowance_payment_nominal` 0; `percentage` = iuran / gaji × 100); peserta ditagih bila aktif di bulan tsb (`start_working_date` ≤ akhir bulan, `retired_date` ≥ awal bulan); pajak invoice diisi manual | Rumus resmi iuran (porsi pemberi kerja vs peserta, `premium_payment_type`)? |
+| 34 | Penomoran M5 | Invoice `NN/DP/MM/YYYY` dan batch `NN/PAYMENT/MM/YYYY` (pola data legacy; NN berurutan per bulan), peserta `MBR000001`; terbilang dalam Title Case + "Rupiah" | Format nomor peserta resmi? |
+| 35 | Penerima manfaat | Peserta status pensiun dengan `pension_benefit_value` > 0 dan setiap tanggungan dengan `pension_benefit_value` > 0; pajak (PPh) diisi manual per baris sebelum approve | Aturan ahli waris & perhitungan PPh 21 manfaat pensiun? |
+| 36 | Jurnal M5 | Pembayaran iuran, payout, dan settle unit peserta belum memposting jurnal; unit peserta tidak terhubung ke posisi portofolio | Perlakuan akuntansi dana pensiun? |
+| 37 | Job bulanan | Generate invoice/payout dipanggil lewat API (idempoten); penjadwalan otomatis menyusul di worker (M7) | Tanggal eksekusi job? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-126 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, 1 migrasi index bisnis (M2), 1 migrasi pendukung trading & akuntansi (M3, termasuk tabel `number_sequence`), dan 1 migrasi pendukung obligasi (M4). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
+127 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, 1 migrasi index bisnis (M2), 1 migrasi pendukung trading & akuntansi (M3, termasuk tabel `number_sequence`), 1 migrasi pendukung obligasi (M4), dan 1 migrasi pendukung dana pensiun (M5). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1326,6 +1333,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00124 | `00124_create_business_unique_indexes.sql` | — (unique index bisnis M2) | market, portfolio | stock_history, indices_history, mutual_fund_history, … |
 | 00125 | `00125_trading_accounting_support.sql` | `number_sequence` + kolom/index pendukung M3 | accounting, trading | crypto_trade, finance_transaction, cash_settlement, … |
 | 00126 | `00126_bond_support.sql` | default status, unique sertifikat & kupon investor, CHECK pemilik rekening (M4) | bond | bond, bond_trade, bond_coupon_schedule, investor_coupon_schedule, bank_account, … |
+| 00127 | `00127_pension_support.sql` | `member.client_id` [USULAN], default status, unique periode invoice/payout & baris per peserta (M5) | pension | member, client, invoice, member_premium_payment, benefit_payout_batch, member_benefit_payout, member_portfolio |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap

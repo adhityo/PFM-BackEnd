@@ -2,7 +2,7 @@
 
 REST API Portfolio & Fund Management: Go + Fiber v3 + PostgreSQL. Spesifikasi lengkap ada di [prd.md](prd.md).
 
-Status: **M0–M4 selesai** (fondasi, master data, instrumen & portofolio, trading & akuntansi, obligasi). M5–M7 belum.
+Status: **M0–M5 selesai** (fondasi, master data, instrumen & portofolio, trading & akuntansi, obligasi, dana pensiun). M6–M7 belum.
 
 ## Prasyarat
 
@@ -142,6 +142,24 @@ deploy/         Dockerfile (distroless), docker-compose (dev), SQL role DB
   `POST /investor-data-histories/{uuid}/approve|reject` dan `/marketing-agent-data-histories/{uuid}/approve|reject`.
   Approve menerapkan perubahan + mencatat approver & IP; ditolak bila data sudah diubah langsung setelah pengajuan.
   Berikan `investor:update`/`marketing_agent:update` hanya ke ADMIN agar perubahan lain lewat jalur ini.
+
+## Endpoint M5 (Dana Pensiun)
+
+- **Peserta** `/members` (milik satu client, nomor `MBR000001` dst.; status 0 nonaktif, 1 aktif, 2 pensiun; data pribadi
+  di-mask), `/dependants`, `/tax-reports`, `/member-documents` (PDF ke S3), `/member-groups`.
+- **Tagihan iuran** `/invoices`: `POST /invoices/generate` `{client_uuid, year, month}` membuat invoice bulanan client
+  (nomor `NN/DP/MM/YYYY`, tanggal 1, jatuh tempo tanggal 10) dengan satu baris `/member-premium-payments` per peserta aktif
+  (`latest_pension_premium`). Idempoten: panggilan ulang mengembalikan invoice yang sama (200) dan hanya melengkapi
+  draft dengan peserta baru. Lalu `/issue` (baris terkunci), `/cancel` (bila belum ada yang dibayar; periode bisa
+  di-generate ulang). `POST /member-premium-payments/{uuid}/pay` mencatat pembayaran; invoice otomatis `paid` saat
+  baris terakhir dibayar. Total dan terbilang (`billing_description`) dihitung server.
+- **Pembayaran manfaat** `/benefit-payout-batches`: `POST /generate` `{year, month}` (idempoten; satu baris per peserta
+  pensiun dan per tanggungan dengan `pension_benefit_value`), edit pajak per baris saat draft, `/approve`
+  (maker-checker), `/pay`, `/cancel`.
+- **Unit peserta** `/member-portfolios` (rekening unit per peserta × portofolio client yang sama) dan
+  `/member-portfolio-transactions` (draft BUY = subscribe berdasarkan nilai, SELL = redeem berdasarkan unit, pada NAV
+  efektif), lalu `/settle` (saldo unit, biaya perolehan rata-rata, riwayat `/member-portfolio-histories`; urut tanggal)
+  dan `/cancel`.
 
 ## Menambah resource CRUD
 

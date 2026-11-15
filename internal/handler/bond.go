@@ -7,7 +7,6 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
-	"pfm-backend/internal/dto"
 	"pfm-backend/internal/permission"
 	"pfm-backend/internal/platform/auth"
 	"pfm-backend/internal/platform/httpx"
@@ -17,13 +16,13 @@ import (
 // BondHandler serves the bond-module actions: bond lifecycle, subscription
 // approval, coupon and agent fee payments, and data change requests.
 type BondHandler struct {
-	v       httpx.Validator
+	txActions
 	svc     *service.BondTxService
 	changes *service.ChangeRequestService
 }
 
 func NewBondHandler(v httpx.Validator, svc *service.BondTxService, changes *service.ChangeRequestService) *BondHandler {
-	return &BondHandler{v: v, svc: svc, changes: changes}
+	return &BondHandler{txActions: txActions{v: v, view: svc.View}, svc: svc, changes: changes}
 }
 
 func (h *BondHandler) Register(r *auth.Router) {
@@ -37,11 +36,11 @@ func (h *BondHandler) Register(r *auth.Router) {
 	t.Post("/:uuid/cancel", permission.BondTradeCancel, h.action("bond_trade", h.decision(h.svc.CancelTrade)))
 
 	r.Group("/bond-coupon-schedules").Post("/:uuid/pay", permission.BondCouponSchedulePay,
-		h.action("bond_coupon_schedule", withBody(h, h.svc.PaySchedule)))
+		h.action("bond_coupon_schedule", withBody(h.txActions, h.svc.PaySchedule)))
 	r.Group("/investor-coupon-schedules").Post("/:uuid/pay", permission.InvestorCouponSchedulePay,
-		h.action("investor_coupon_schedule", withBody(h, h.svc.PayInvestorCoupon)))
+		h.action("investor_coupon_schedule", withBody(h.txActions, h.svc.PayInvestorCoupon)))
 	r.Group("/agent-fee-transactions").Post("/:uuid/pay", permission.AgentFeePay,
-		h.action("agent_fee_transaction", withBody(h, h.svc.PayAgentFee)))
+		h.action("agent_fee_transaction", withBody(h.txActions, h.svc.PayAgentFee)))
 
 	r.Group("/investors").Post("/:uuid/change-requests", permission.InvestorChangeCreate,
 		changeRequest(h, "/investor-data-histories", "investor_data_history", h.changes.CreateInvestor))
@@ -55,69 +54,9 @@ func (h *BondHandler) Register(r *auth.Router) {
 	ah.Post("/:uuid/reject", permission.MarketingAgentChangeReject, h.decide("marketing_agent_data_history", h.changes.DecideAgent, false))
 }
 
-// bodyAction runs one action with the request already bound.
-type bodyAction func(c fiber.Ctx, id uuid.UUID, expected time.Time) error
-
-// action wraps an If-Match guarded action and answers with the updated record.
-func (h *BondHandler) action(kind string, run bodyAction) fiber.Handler {
-	return func(c fiber.Ctx) error {
-		id, err := httpx.UUIDParam(c, "uuid")
-		if err != nil {
-			return err
-		}
-		expected, err := httpx.IfMatch(c)
-		if err != nil {
-			return err
-		}
-		if err := run(c, id, expected); err != nil {
-			return err
-		}
-		res, updated, err := h.svc.View(c.Context(), kind, id)
-		if err != nil {
-			return err
-		}
-		httpx.SetETag(c, updated)
-		return httpx.OK(c, res)
-	}
-}
-
-func (h *BondHandler) noBody(fn actionFunc) bodyAction {
-	return func(c fiber.Ctx, id uuid.UUID, expected time.Time) error { return fn(c.Context(), id, expected) }
-}
-
 func (h *BondHandler) status(target int16) bodyAction {
 	return func(c fiber.Ctx, id uuid.UUID, expected time.Time) error {
 		return h.svc.SetStatus(c.Context(), id, expected, target)
-	}
-}
-
-// decision binds an optional {"note": "..."} body (an empty body is allowed).
-func (h *BondHandler) decision(fn func(context.Context, uuid.UUID, time.Time, string) error) bodyAction {
-	return func(c fiber.Ctx, id uuid.UUID, expected time.Time) error {
-		req, err := h.note(c)
-		if err != nil {
-			return err
-		}
-		return fn(c.Context(), id, expected, req.Note)
-	}
-}
-
-func (h *BondHandler) note(c fiber.Ctx) (dto.DecisionRequest, error) {
-	var req dto.DecisionRequest
-	if len(c.Body()) == 0 {
-		return req, nil
-	}
-	err := httpx.BindJSON(c, h.v, &req)
-	return req, err
-}
-
-func withBody[Req any](h *BondHandler, fn func(context.Context, uuid.UUID, time.Time, Req) error) bodyAction {
-	return func(c fiber.Ctx, id uuid.UUID, expected time.Time) error {
-		var req Req
-		if err := httpx.BindJSON(c, h.v, &req); err != nil {
-			return err
-		}
-		return fn(c.Context(), id, expected, req)
 	}
 }
 

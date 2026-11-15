@@ -1563,6 +1563,7 @@ type Member struct {
 	UpdatedBy                *string
 	DeletedAt                *time.Time
 	DeletedBy                *string
+	ClientID                 *int64
 }
 
 type MemberBenefitPayout struct {

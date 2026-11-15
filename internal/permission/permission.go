@@ -59,6 +59,17 @@ const (
 	MarketingAgentChangeCreate  = "marketing_agent_data_history:create"
 	MarketingAgentChangeApprove = "marketing_agent_data_history:approve"
 	MarketingAgentChangeReject  = "marketing_agent_data_history:reject"
+
+	InvoiceGenerate       = "invoice:generate"
+	InvoiceIssue          = "invoice:issue"
+	InvoiceCancel         = "invoice:cancel"
+	PremiumPay            = "member_premium_payment:pay"
+	PayoutGenerate        = "benefit_payout_batch:generate"
+	PayoutApprove         = "benefit_payout_batch:approve"
+	PayoutPay             = "benefit_payout_batch:pay"
+	PayoutCancel          = "benefit_payout_batch:cancel"
+	UnitTransactionSettle = "member_portfolio_transaction:settle"
+	UnitTransactionCancel = "member_portfolio_transaction:cancel"
 )
 
 // TradeActions are the action permissions of every trade table.
@@ -107,6 +118,16 @@ func Static() []auth.Permission {
 		auth.Permission{Code: MarketingAgentChangeCreate, Name: "Ajukan perubahan data agen"},
 		auth.Permission{Code: MarketingAgentChangeApprove, Name: "Setujui perubahan data agen"},
 		auth.Permission{Code: MarketingAgentChangeReject, Name: "Tolak perubahan data agen"},
+		auth.Permission{Code: InvoiceGenerate, Name: "Generate tagihan iuran bulanan"},
+		auth.Permission{Code: InvoiceIssue, Name: "Terbitkan tagihan iuran"},
+		auth.Permission{Code: InvoiceCancel, Name: "Batalkan tagihan iuran"},
+		auth.Permission{Code: PremiumPay, Name: "Catat pembayaran iuran peserta"},
+		auth.Permission{Code: PayoutGenerate, Name: "Generate batch pembayaran manfaat"},
+		auth.Permission{Code: PayoutApprove, Name: "Setujui batch pembayaran manfaat"},
+		auth.Permission{Code: PayoutPay, Name: "Tandai batch pembayaran manfaat dibayar"},
+		auth.Permission{Code: PayoutCancel, Name: "Batalkan batch pembayaran manfaat"},
+		auth.Permission{Code: UnitTransactionSettle, Name: "Settle transaksi unit peserta"},
+		auth.Permission{Code: UnitTransactionCancel, Name: "Batalkan transaksi unit peserta"},
 	)
 	for _, table := range []string{"stock_trade", "mutual_fund_trade", "crypto_trade"} {
 		for _, a := range TradeActions {

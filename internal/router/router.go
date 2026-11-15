@@ -45,7 +45,8 @@ func crudResources(d service.Deps) []crud.Registrar {
 	out = append(out, service.PortfolioResources(d)...)
 	out = append(out, service.AccountingResources(d)...)
 	out = append(out, service.TradingResources(d)...)
-	return append(out, service.BondResources(d)...)
+	out = append(out, service.BondResources(d)...)
+	return append(out, service.PensionResources(d)...)
 }
 
 // ImageStore is the local image storage with a readiness probe.
@@ -169,6 +170,7 @@ func New(d Deps) *fiber.App {
 	handler.NewAccountingHandler(v, service.NewAccountingService(tx, journals, rec)).Register(api)
 	handler.NewTradeHandler(service.NewTradeService(tx, journals, rec)).Register(api)
 	handler.NewBondHandler(v, service.NewBondTxService(deps, rec), service.NewChangeRequestService(deps, rec)).Register(api)
+	handler.NewPensionHandler(v, service.NewPensionService(deps, rec)).Register(api)
 	handler.RegisterCRUD(crud.Env{Router: api, Validator: v, TX: tx, Audit: rec, Files: fileSvc}, crudResources(deps))
 
 	app.Use(func(fiber.Ctx) error { return apperr.NotFound("endpoint tidak ditemukan") })
