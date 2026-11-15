@@ -6,6 +6,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"pfm-backend/internal/apperr"
+	"pfm-backend/internal/platform/audit"
 	"pfm-backend/internal/platform/httpx"
 )
 
@@ -54,10 +55,12 @@ func (h *handler[Row, Req, Resp]) nestedList(filter string) fiber.Handler {
 func (h *handler[Row, Req, Resp]) write(c fiber.Ctx, status int, row Row) error {
 	meta := h.svc.res.Store.Meta(row)
 	httpx.SetETag(c, meta.UpdatedAt)
+	resp := h.svc.res.Response(row)
+	present(c.Context(), h.svc.audit, h.svc.res.Table, h.svc.res.Mask, &resp)
 	if status == fiber.StatusCreated {
-		return httpx.Created(c, "/api/v1"+h.svc.res.Path+"/"+meta.UUID.String(), h.svc.res.Response(row))
+		return httpx.Created(c, "/api/v1"+h.svc.res.Path+"/"+meta.UUID.String(), resp)
 	}
-	return httpx.OK(c, h.svc.res.Response(row))
+	return httpx.OK(c, resp)
 }
 
 func (h *handler[Row, Req, Resp]) get(c fiber.Ctx) error {
@@ -139,7 +142,8 @@ func (h *handler[Row, Req, Resp]) delete(c fiber.Ctx) error {
 
 // readHandler serves ReadResource routes.
 type readHandler[Row, Resp any] struct {
-	res ReadResource[Row, Resp]
+	res   ReadResource[Row, Resp]
+	audit *audit.Recorder
 }
 
 func (h *readHandler[Row, Resp]) parseList(c fiber.Ctx) (httpx.ListQuery, error) {
@@ -151,6 +155,11 @@ func (h *readHandler[Row, Resp]) respond(c fiber.Ctx, q httpx.ListQuery) error {
 	if err != nil {
 		return err
 	}
+	ptrs := make([]*Resp, len(items))
+	for i := range items {
+		ptrs[i] = &items[i]
+	}
+	present(c.Context(), h.audit, h.res.Table, h.res.Mask, ptrs...)
 	return httpx.List(c, items, q.Page, total)
 }
 
@@ -187,5 +196,7 @@ func (h *readHandler[Row, Resp]) get(c fiber.Ctx) error {
 		return err
 	}
 	httpx.SetETag(c, h.res.Store.Meta(row).UpdatedAt)
-	return httpx.OK(c, h.res.Response(row))
+	resp := h.res.Response(row)
+	present(c.Context(), h.audit, h.res.Table, h.res.Mask, &resp)
+	return httpx.OK(c, resp)
 }

@@ -790,7 +790,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | Mig | Tabel | Base path `/api/v1/…` | Kelas | Operasi | Aturan khusus |
 |---|---|---|---|---|---|
 | 00020 | `marketing_agent` | `marketing-agents` | MASTER | L G C U D | Tree leader (`leader_agent_id`). Perubahan data lewat `marketing_agent_data_history`. |
-| 00044 | `marketing_agent_data_history` | `marketing-agent-data-histories` | APPROVAL | L G C + approve/reject | Pola sama dengan investor_data_history. |
+| 00044 | `marketing_agent_data_history` | `marketing-agent-data-histories` | APPROVAL | L G + approve/reject | Pola sama dengan investor_data_history; ajukan lewat `POST /marketing-agents/{uuid}/change-requests`. |
 | 00064 | `bond` | `bonds` | MASTER | L G C U D | Aksi `/activate`, `/generate-coupon-schedule` (insert semua `bond_coupon_schedule` dalam 1 transaksi). Perubahan harga/rating → insert `bond_history`. |
 | 00071 | `investor` | `investors` | MASTER | L G C U D | `investor_number` dari template+counter (`SELECT … FOR UPDATE` di `configuration`). Perubahan data oleh non-ADMIN lewat `investor_data_history` (maker-checker). |
 | 00086 | `agent_fee_transaction` | `agent-fee-transactions` | TRX | L G C U* D* + aksi | Komisi agen. Upload bukti bayar & bukti pajak (PDF → S3). Aksi `/pay`. File: `payment_document_file_id`, `tax_document_file_id`. |
@@ -799,7 +799,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | 00090 | `bond_history` | `bond-histories` | HIST | L G | — |
 | 00091 | `bond_periode_distribution` | `bond-periode-distributions` | CHILD | L G C U D | — |
 | 00093 | `bond_rating` | `bond-ratings` | CHILD | L G C U D | Insert rating baru meng-update `bond.rating_id` (1 transaksi). |
-| 00097 | `investor_data_history` | `investor-data-histories` | APPROVAL | L G C + approve/reject | Change request: `POST` = ajukan, `/approve` & `/reject` (role checker ≠ maker). Approve → update `investor` + simpan IP & approver, 1 transaksi. |
+| 00097 | `investor_data_history` | `investor-data-histories` | APPROVAL | L G + approve/reject | Change request: ajukan lewat `POST /investors/{uuid}/change-requests`, lalu `/approve` & `/reject` (checker ≠ maker). Approve → update `investor` + simpan IP & approver, 1 transaksi. |
 | 00107 | `bond_trade` | `bond-trades` | TRX | L G C U* D* + aksi | Subscription investor. Draft → approved → (redeemed/rollover). Approve: nomor sertifikat (counter + row lock), generate `investor_coupon_schedule`, update total di `bond` — 1 transaksi. Dokumen subscription/transfer → S3. Header `Idempotency-Key` wajib. |
 | 00112 | `bond_trade_data_history` | `bond-trade-data-histories` | HIST | L G | Snapshot sebelum `bond_trade` diubah. |
 | 00115 | `investor_coupon_schedule` | `investor-coupon-schedules` | CHILD | L G C U D | Aksi `/pay` + upload bukti bayar (PDF → S3). File: `payment_document_file_id`. |
@@ -1181,15 +1181,22 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 18 | Metode posisi | Rata-rata tertimbang; fee beli masuk biaya perolehan, fee jual mengurangi hasil; 1 lot saham = 100 lembar | Benar? |
 | 19 | Urutan settle/reverse | Settle wajib berurutan per tanggal per posisi; reverse hanya trade ter-settle terakhir (LIFO) | Perlu backdate? |
 | 20 | `crypto_trade.portfolio_id` [USULAN] | Ditambahkan (migrasi 00125) karena posisi kripto butuh portofolio | Setuju? |
-| 21 | Maker-checker | Diterapkan pada approve cash settlement; settle trade belum memakai maker-checker | Perlu juga untuk trade? |
+| 21 | Maker-checker | Diterapkan pada approve cash settlement, approve subscription obligasi, dan perubahan data investor/agen; settle trade saham/RD/kripto belum | Perlu juga untuk trade? |
 | 22 | Jurnal deposito | Penempatan/rollover/withdraw deposito belum memposting jurnal (perlu keputusan perlakuan bunga) | Perlakuan akuntansi bunga deposito? |
 | 23 | `Idempotency-Key` | Belum diimplementasi; aksi TRX dilindungi `If-Match` (kirim ulang mendapat 412) | Tetap perlu Redis idempotency? |
+| 24 | Kode status obligasi (M4) | `bond_status` 0 draft, 1 offering, 2 active, 3 matured; `bond_trade_status` mengikuti data legacy: 0 draft/pending, 1 approved, -1 cancelled; kupon 0 belum/1 sudah dibayar; fee agen 0 draft, 1 paid, 2 cancelled; change request 0 pending, 1 approved, 2 rejected | Cocok dengan arti status legacy? |
+| 25 | Jadwal kupon | Kupon tiap `coupon_payment_periode` hari sejak tanggal terbit, periode terakhir dipotong di jatuh tempo; tarif = kupon × hari / 360 (dibulatkan 6 desimal); pokok 100% (`transaction_type` 2) saat jatuh tempo; `transaction_type` 1 = kupon | Basis hari 360 atau Actual/365? Arti `transaction_type` 3? |
+| 26 | Nomor sertifikat | Counter per obligasi (`bond.latest_certificate_counter`, dikunci baris); template `bond_periode_option.bond_number_template` → `configuration.certificate_number_template` → `{bondCode}-{series}{counter}` (counter 7 digit) | Format resmi nomor sertifikat? |
+| 27 | Scope investor & agen | `investor`, `marketing_agent`, `bank_account` belum di-scope per client (global); obligasi & turunannya di-scope lewat `bond.client_id` | Apakah investor/agen milik client tertentu? |
+| 28 | Perubahan data investor/agen | Pengajuan = penggantian penuh data pribadi; satu pengajuan pending per data; approve ditolak bila data diubah langsung setelah pengajuan; `leader_agent_id`/`agent_level` hanya diubah ADMIN | Benar? |
+| 29 | Pembayaran kupon & fee | Bayar kupon belum memposting jurnal; fee agen dibayar sekaligus (`outstanding_value` dikurangi `paid_value`) | Perlu jurnal & pembayaran sebagian? |
+| 30 | Jatuh tempo obligasi | Status `matured` belum diset otomatis (rencana: worker M7 setelah pokok dibayar) | Kapan obligasi dianggap matured? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-125 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, 1 migrasi index bisnis (M2), dan 1 migrasi pendukung trading & akuntansi (M3, termasuk tabel `number_sequence`). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
+126 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, 1 migrasi index bisnis (M2), 1 migrasi pendukung trading & akuntansi (M3, termasuk tabel `number_sequence`), dan 1 migrasi pendukung obligasi (M4). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1318,6 +1325,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00123 | `00123_create_auth_refresh_token.sql` | `auth_refresh_token` | iam | app_user |
 | 00124 | `00124_create_business_unique_indexes.sql` | — (unique index bisnis M2) | market, portfolio | stock_history, indices_history, mutual_fund_history, … |
 | 00125 | `00125_trading_accounting_support.sql` | `number_sequence` + kolom/index pendukung M3 | accounting, trading | crypto_trade, finance_transaction, cash_settlement, … |
+| 00126 | `00126_bond_support.sql` | default status, unique sertifikat & kupon investor, CHECK pemilik rekening (M4) | bond | bond, bond_trade, bond_coupon_schedule, investor_coupon_schedule, bank_account, … |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap

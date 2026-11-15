@@ -44,6 +44,21 @@ const (
 	CashSettlementApprove     = "cash_settlement:approve"
 	CashSettlementCancel      = "cash_settlement:cancel"
 	CashSettlementReverse     = "cash_settlement:reverse"
+
+	BondOffer                   = "bond:offer"
+	BondActivate                = "bond:activate"
+	BondGenerateCouponSchedule  = "bond:generate_coupon_schedule"
+	BondTradeApprove            = "bond_trade:approve"
+	BondTradeCancel             = "bond_trade:cancel"
+	BondCouponSchedulePay       = "bond_coupon_schedule:pay"
+	InvestorCouponSchedulePay   = "investor_coupon_schedule:pay"
+	AgentFeePay                 = "agent_fee_transaction:pay"
+	InvestorChangeCreate        = "investor_data_history:create"
+	InvestorChangeApprove       = "investor_data_history:approve"
+	InvestorChangeReject        = "investor_data_history:reject"
+	MarketingAgentChangeCreate  = "marketing_agent_data_history:create"
+	MarketingAgentChangeApprove = "marketing_agent_data_history:approve"
+	MarketingAgentChangeReject  = "marketing_agent_data_history:reject"
 )
 
 // TradeActions are the action permissions of every trade table.
@@ -78,6 +93,20 @@ func Static() []auth.Permission {
 		auth.Permission{Code: CashSettlementApprove, Name: "Setujui cash settlement"},
 		auth.Permission{Code: CashSettlementCancel, Name: "Batalkan cash settlement"},
 		auth.Permission{Code: CashSettlementReverse, Name: "Balik cash settlement"},
+		auth.Permission{Code: BondOffer, Name: "Buka masa offering obligasi"},
+		auth.Permission{Code: BondActivate, Name: "Aktifkan obligasi"},
+		auth.Permission{Code: BondGenerateCouponSchedule, Name: "Buat jadwal kupon obligasi"},
+		auth.Permission{Code: BondTradeApprove, Name: "Setujui subscription obligasi"},
+		auth.Permission{Code: BondTradeCancel, Name: "Batalkan subscription obligasi"},
+		auth.Permission{Code: BondCouponSchedulePay, Name: "Bayar kupon obligasi (semua investor)"},
+		auth.Permission{Code: InvestorCouponSchedulePay, Name: "Bayar kupon investor"},
+		auth.Permission{Code: AgentFeePay, Name: "Bayar fee agen"},
+		auth.Permission{Code: InvestorChangeCreate, Name: "Ajukan perubahan data investor"},
+		auth.Permission{Code: InvestorChangeApprove, Name: "Setujui perubahan data investor"},
+		auth.Permission{Code: InvestorChangeReject, Name: "Tolak perubahan data investor"},
+		auth.Permission{Code: MarketingAgentChangeCreate, Name: "Ajukan perubahan data agen"},
+		auth.Permission{Code: MarketingAgentChangeApprove, Name: "Setujui perubahan data agen"},
+		auth.Permission{Code: MarketingAgentChangeReject, Name: "Tolak perubahan data agen"},
 	)
 	for _, table := range []string{"stock_trade", "mutual_fund_trade", "crypto_trade"} {
 		for _, a := range TradeActions {

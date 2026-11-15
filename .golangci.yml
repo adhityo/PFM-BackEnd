@@ -18,6 +18,7 @@ linters:
     misspell:
       ignore-rules:
         - depositos # Indonesian domain term (resource path of table deposito)
+        - commision # legacy column names agent_fee_transaction.*_commision (kept for data compatibility)
     gosec:
       excludes:
         - G115 # int conversions are bounded by validation before conversion

@@ -70,6 +70,8 @@ type Resource[Row, Req, Resp any] struct {
 	// Import enables POST <Path>/import (CSV, all-or-nothing).
 	Import bool
 	Nested []Nested
+	// Mask hides PII for actors without pii:read (PRD §12.2).
+	Mask func(ctx context.Context, r *Resp)
 }
 
 // FileField describes a *_file_uuid request field backed by file_object.
@@ -96,6 +98,7 @@ type ReadResource[Row, Resp any] struct {
 	Store       Reader[Row]
 	Response    func(Row) Resp
 	Nested      []Nested
+	Mask        func(ctx context.Context, r *Resp)
 }
 
 // Env carries the shared dependencies needed to mount resources.
@@ -111,6 +114,29 @@ type Env struct {
 type Registrar interface {
 	Permissions() []auth.Permission
 	Register(env Env)
+}
+
+// CanReadPII reports whether the actor in ctx may see unmasked PII.
+func CanReadPII(ctx context.Context) bool {
+	a, ok := auth.ActorFrom(ctx)
+	return ok && a.Can(auth.PermPIIRead)
+}
+
+// present applies PII masking and logs unmasked access (PRD §12.2).
+func present[Resp any](ctx context.Context, rec *audit.Recorder, table string, mask func(context.Context, *Resp), items ...*Resp) {
+	if mask == nil {
+		return
+	}
+	if CanReadPII(ctx) {
+		if rec != nil {
+			_ = rec.Record(ctx, audit.Entry{Action: table + ".pii_read", Entity: table,
+				Description: "akses data pribadi tanpa masking"})
+		}
+		return
+	}
+	for _, it := range items {
+		mask(ctx, it)
+	}
 }
 
 // ScopeClientID returns the tenant filter of the actor in ctx (nil = global).
@@ -154,7 +180,7 @@ func (r ReadResource[Row, Resp]) Permissions() []auth.Permission {
 
 // Register mounts list, detail and nested list routes.
 func (r ReadResource[Row, Resp]) Register(env Env) {
-	h := &readHandler[Row, Resp]{res: r}
+	h := &readHandler[Row, Resp]{res: r, audit: env.Audit}
 	read := r.Table + ":read"
 	g := env.Router.Group(r.Path)
 	g.Get("", read, h.list)
@@ -170,4 +196,27 @@ func sortOptions(sorts []string) []string {
 		out = append(out, s, "-"+s)
 	}
 	return out
+}
+
+// View returns the (PII-masked) API representation of one row and its ETag
+// time, for action endpoints that answer with the updated record.
+func (r Resource[Row, Req, Resp]) View(ctx context.Context, rec *audit.Recorder, id uuid.UUID) (Resp, time.Time, error) {
+	return view(ctx, rec, r.Table, r.Store, r.Response, r.Mask, id)
+}
+
+// View is Resource.View for read-only resources.
+func (r ReadResource[Row, Resp]) View(ctx context.Context, rec *audit.Recorder, id uuid.UUID) (Resp, time.Time, error) {
+	return view(ctx, rec, r.Table, r.Store, r.Response, r.Mask, id)
+}
+
+func view[Row, Resp any](ctx context.Context, rec *audit.Recorder, table string, store Reader[Row], response func(Row) Resp,
+	mask func(context.Context, *Resp), id uuid.UUID) (Resp, time.Time, error) {
+	row, err := store.Get(ctx, id)
+	if err != nil {
+		var zero Resp
+		return zero, time.Time{}, err
+	}
+	out := response(row)
+	present(ctx, rec, table, mask, &out)
+	return out, store.Meta(row).UpdatedAt, nil
 }

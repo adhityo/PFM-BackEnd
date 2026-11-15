@@ -90,6 +90,19 @@ func columnPlan(sp *Spec, t *Table, c Column) (*reqField, respField, error) {
 		rf.Type, rf.Expr = "*string", fmt.Sprintf("crud.EnumName(r.%s, []string{%s})", sq, strings.Join(quoted, ", "))
 		return nil, rf, nil // enum columns are state, changed by actions only
 	}
+	if labels, ok := sp.EnumMap[c.Name]; ok {
+		codes := make([]int, 0, len(labels))
+		for k := range labels {
+			codes = append(codes, int(k))
+		}
+		slices.Sort(codes)
+		parts := make([]string, 0, len(codes))
+		for _, k := range codes {
+			parts = append(parts, fmt.Sprintf("%d: %q", k, labels[int16(k)]))
+		}
+		rf.Type, rf.Expr = "*string", fmt.Sprintf("crud.EnumLabel(r.%s, map[int16]string{%s})", sq, strings.Join(parts, ", "))
+		return nil, rf, nil
+	}
 
 	switch c.DataType {
 	case "character varying", "text":
@@ -367,16 +380,19 @@ func genService(p *plan) (string, error) {
 	var b strings.Builder
 	w := func(format string, a ...any) { fmt.Fprintf(&b, format, a...) }
 	var std []string
-	if p.sp.Check != "" || p.sp.AfterWrite != "" || p.sp.CheckDelete != "" {
+	if p.sp.Check != "" || p.sp.AfterWrite != "" || p.sp.CheckDelete != "" || len(p.sp.PII) > 0 {
 		std = append(std, "context")
 	}
 	var third []string
 	if len(p.sp.Files) > 0 {
 		third = append(third, "github.com/google/uuid")
 	}
-	w("%s", genHeader+"package service\n\n"+imports(std, third,
-		[]string{"pfm-backend/internal/db/sqlc", "pfm-backend/internal/dto", "pfm-backend/internal/platform/crud",
-			"pfm-backend/internal/repository"}))
+	local := []string{"pfm-backend/internal/db/sqlc", "pfm-backend/internal/dto", "pfm-backend/internal/platform/crud"}
+	if len(p.sp.PII) > 0 {
+		local = append(local, "pfm-backend/internal/platform/security")
+	}
+	local = append(local, "pfm-backend/internal/repository")
+	w("%s", genHeader+"package service\n\n"+imports(std, third, local))
 
 	typ := fmt.Sprintf("crud.Resource[%s, dto.%sRequest, dto.%sResponse]", p.rowType, p.gn, p.gn)
 	if p.sp.readOnly() {
@@ -436,6 +452,26 @@ func genService(p *plan) (string, error) {
 	}
 	if p.sp.Import {
 		w("\t\tImport: true,\n")
+	}
+	if len(p.sp.PII) > 0 {
+		w("\t\tMask: func(_ context.Context, r *dto.%sResponse) {\n", p.gn)
+		for _, col := range p.sp.PII {
+			var f *respField
+			for i := range p.resps {
+				if p.resps[i].JSON == col {
+					f = &p.resps[i]
+				}
+			}
+			if f == nil {
+				return "", fmt.Errorf("%s: kolom PII %s tidak ada di response", p.sp.Table, col)
+			}
+			if f.Type == "*string" {
+				w("\t\t\tr.%[1]s = security.MaskPII(r.%[1]s, false)\n", f.Name)
+			} else {
+				w("\t\t\tr.%s = nil\n", f.Name)
+			}
+		}
+		w("\t\t},\n")
 	}
 	w("\t}\n}\n")
 	return b.String(), nil

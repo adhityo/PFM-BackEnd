@@ -2,7 +2,7 @@
 
 REST API Portfolio & Fund Management: Go + Fiber v3 + PostgreSQL. Spesifikasi lengkap ada di [prd.md](prd.md).
 
-Status: **M0–M3 selesai** (fondasi, master data, instrumen & portofolio, trading & akuntansi). M4–M7 belum.
+Status: **M0–M4 selesai** (fondasi, master data, instrumen & portofolio, trading & akuntansi, obligasi). M5–M7 belum.
 
 ## Prasyarat
 
@@ -118,6 +118,30 @@ deploy/         Dockerfile (distroless), docker-compose (dev), SQL role DB
   lewat dokumen sumbernya.
 - **Akun & settlement** `/finance-accounts` (tree), `/cash-settlement-categories`, `/cash-settlements` (draft + lampiran
   dokumen), lalu `/approve` (pembuat tidak boleh menyetujui), `/cancel`, `/reverse`.
+
+## Endpoint M4 (Obligasi)
+
+- **Obligasi** `/bonds` (scope per client; status `draft` → `offering` → `active` → `matured`):
+  `POST /{uuid}/generate-coupon-schedule` (kupon per `coupon_payment_periode` hari, tarif = kupon × hari / 360, pokok 100%
+  saat jatuh tempo; hanya sebelum ada subscription disetujui), `/offer`, `/activate` (butuh jadwal kupon). Kupon, periode,
+  tanggal terbit dan jatuh tempo terkunci setelah aktif. Turunan: `/bond-ratings` (rating terbaru → `bond.rating_id`),
+  `/bond-histories` (snapshot harga/rating), `/bond-coupon-schedules`, `/bond-periode-distributions`, `/payment-documents`.
+- **Investor & agen** `/investors`, `/marketing-agents` (nomor dari template + counter di `configuration`),
+  `/bank-accounts` (milik tepat satu investor **atau** agen). Data pribadi (NIK, NPWP, rekening, HP, tanggal lahir)
+  di-mask kecuali punya `pii:read`; akses tanpa mask dicatat di audit.
+- **Subscription** `/bond-trades`: draft hanya untuk obligasi `offering`/`active`, nominal ≥ denominasi minimum, rekening
+  harus milik investor; setiap edit draft tersimpan di `/bond-trade-data-histories`. `POST /{uuid}/approve`
+  (maker-checker; nomor sertifikat dari counter per obligasi yang dikunci baris, template `bond_periode_option` →
+  `configuration` → `{bondCode}-{series}{counter}`; membuat `/investor-coupon-schedules` dan memperbarui total obligasi
+  dalam satu transaksi) dan `/cancel`.
+- **Pembayaran:** `POST /bond-coupon-schedules/{uuid}/pay` (semua kupon investor yang belum dibayar),
+  `POST /investor-coupon-schedules/{uuid}/pay` (satu investor, bukti transfer PDF wajib),
+  `POST /agent-fee-transactions/{uuid}/pay` (bukti bayar harus sudah dilampirkan). Semua butuh `If-Match`.
+- **Perubahan data (maker-checker):** `POST /investors/{uuid}/change-requests` dan
+  `/marketing-agents/{uuid}/change-requests` (satu pengajuan pending per data), lalu
+  `POST /investor-data-histories/{uuid}/approve|reject` dan `/marketing-agent-data-histories/{uuid}/approve|reject`.
+  Approve menerapkan perubahan + mencatat approver & IP; ditolak bila data sudah diubah langsung setelah pengajuan.
+  Berikan `investor:update`/`marketing_agent:update` hanya ke ADMIN agar perubahan lain lewat jalur ini.
 
 ## Menambah resource CRUD
 

@@ -28,11 +28,13 @@ type Spec struct {
 	// Computed gives an SQL expression (sqlc params allowed) used instead of the
 	// plain parameter when inserting/updating the column.
 	Computed    map[string]string
-	Enum        map[string][]string // SMALLINT column -> API names by code (0..n)
-	Files       map[string]string   // *_file_id column -> upload purpose
-	NestedUnder []string            // FK columns whose parent gets a nested list route
-	Kind        string              // "" = writable CRUD, "read" = list/detail only
-	Import      bool                // enable POST <path>/import (CSV)
+	Enum        map[string][]string         // SMALLINT column -> API names by code (0..n)
+	EnumMap     map[string]map[int16]string // SMALLINT column -> API names by explicit code (e.g. -1)
+	PII         []string                    // columns masked for actors without pii:read
+	Files       map[string]string           // *_file_id column -> upload purpose
+	NestedUnder []string                    // FK columns whose parent gets a nested list route
+	Kind        string                      // "" = writable CRUD, "read" = list/detail only
+	Import      bool                        // enable POST <path>/import (CSV)
 	// Scope is an SQL expression (alias t) yielding the owning client_id; when
 	// set, reads are limited to the actor's client (PRD §12.3).
 	Scope string
@@ -113,7 +115,8 @@ func (sp *Spec) apiColumns(t *Table) []Column {
 // writable reports whether clients may set the column.
 func (sp *Spec) writable(c Column) bool {
 	_, enum := sp.Enum[c.Name]
-	return !sp.readOnly() && !enum && !slices.Contains(sp.ReadOnly, c.Name) && !sp.isSnapshot(c.Name)
+	_, enumMap := sp.EnumMap[c.Name]
+	return !sp.readOnly() && !enum && !enumMap && !slices.Contains(sp.ReadOnly, c.Name) && !sp.isSnapshot(c.Name)
 }
 
 func isText(c Column) bool { return c.DataType == "character varying" || c.DataType == "text" }

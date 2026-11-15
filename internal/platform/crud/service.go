@@ -61,7 +61,15 @@ func listRows[Row, Resp any](ctx context.Context, store Reader[Row], resp func(R
 }
 
 func (s *service[Row, Req, Resp]) list(ctx context.Context, q httpx.ListQuery) ([]Resp, int64, error) {
-	return listRows(ctx, s.res.Store, s.res.Response, q)
+	items, total, err := listRows(ctx, s.res.Store, s.res.Response, q)
+	if err == nil {
+		ptrs := make([]*Resp, len(items))
+		for i := range items {
+			ptrs[i] = &items[i]
+		}
+		present(ctx, s.audit, s.res.Table, s.res.Mask, ptrs...)
+	}
+	return items, total, err
 }
 
 func (s *service[Row, Req, Resp]) get(ctx context.Context, id uuid.UUID) (Row, error) {
@@ -106,6 +114,10 @@ func (s *service[Row, Req, Resp]) insert(ctx context.Context, req Req, actor str
 	}
 	if s.res.AfterWrite != nil {
 		if err := s.res.AfterWrite(ctx, nil, &row); err != nil {
+			return zero, err
+		}
+		// The hook may have changed the row (e.g. assigned a number).
+		if row, err = s.res.Store.Get(ctx, id); err != nil {
 			return zero, err
 		}
 	}
@@ -182,6 +194,9 @@ func (s *service[Row, Req, Resp]) update(ctx context.Context, id uuid.UUID, req 
 		}
 		if s.res.AfterWrite != nil {
 			if err := s.res.AfterWrite(ctx, &cur, &out); err != nil {
+				return err
+			}
+			if out, err = s.res.Store.Get(ctx, id); err != nil {
 				return err
 			}
 		}

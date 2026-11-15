@@ -126,3 +126,16 @@ func EnumName(code *int16, names []string) *string {
 	}
 	return &out
 }
+
+// EnumLabel maps a status code through an explicit code table (supports
+// negative legacy codes such as -1); unknown codes stay numeric.
+func EnumLabel(code *int16, labels map[int16]string) *string {
+	if code == nil {
+		return nil
+	}
+	out, ok := labels[*code]
+	if !ok {
+		out = strconv.Itoa(int(*code))
+	}
+	return &out
+}
