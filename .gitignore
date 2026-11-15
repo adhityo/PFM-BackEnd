@@ -10,6 +10,9 @@ coverage.out
 
 # legacy dump (berisi data pribadi & hash password) — jangan di-commit
 database
+/database*.sql
+*.dump
+*.sql.gz
 
 .DS_Store
 .idea/
