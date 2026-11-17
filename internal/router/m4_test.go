@@ -17,7 +17,7 @@ func (e *env) userWith(admin, roleCode, username, password, client string, codes
 	var ids []string
 	for _, code := range codes {
 		var id string
-		if err := e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id); err != nil {
+		if err := e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id); err != nil {
 			e.t.Fatal(code, err)
 		}
 		ids = append(ids, id)

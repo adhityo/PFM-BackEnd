@@ -41,7 +41,7 @@ func (s *service[Row, Req, Resp]) attachFiles(ctx context.Context, req *Req, cur
 		if s.files == nil {
 			return errors.New("crud: resource has file fields but Env.Files is nil")
 		}
-		if _, err := s.files.Attach(ctx, id, f.Purpose, f.Field); err != nil {
+		if err := s.files.Attach(ctx, id, f.Purpose, f.Field); err != nil {
 			return err
 		}
 	}

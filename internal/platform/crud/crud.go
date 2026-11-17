@@ -83,8 +83,10 @@ type FileField[Row, Req any] struct {
 }
 
 // FileAttacher validates a pending upload and marks it active (service.FileService).
+// Files live in pfm_document: the claim commits there before the caller's
+// transaction, so a reference can never point to a file that cleanup removes.
 type FileAttacher interface {
-	Attach(ctx context.Context, fileUUID uuid.UUID, purpose, field string) (int64, error)
+	Attach(ctx context.Context, fileUUID uuid.UUID, purpose, field string) error
 }
 
 // ReadResource describes a read-only endpoint family (positions, history).

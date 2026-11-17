@@ -41,7 +41,7 @@ func (q *Queries) CountActivityLogs(ctx context.Context, arg CountActivityLogsPa
 }
 
 const getActivityLogByUUID = `-- name: GetActivityLogByUUID :one
-SELECT id, uuid, action_query, ip_address, log_action, log_description, log_session_code, log_time, log_title, role_code, username, created_at FROM activity_log WHERE uuid = $1
+SELECT id, uuid, action_query, ip_address, log_action, log_description, log_session_code, log_time, log_title, role_code, username, created_at, source FROM activity_log WHERE uuid = $1
 `
 
 func (q *Queries) GetActivityLogByUUID(ctx context.Context, argUuid uuid.UUID) (ActivityLog, error) {
@@ -60,47 +60,13 @@ func (q *Queries) GetActivityLogByUUID(ctx context.Context, argUuid uuid.UUID) (
 		&i.RoleCode,
 		&i.Username,
 		&i.CreatedAt,
+		&i.Source,
 	)
 	return i, err
 }
 
-const insertActivityLog = `-- name: InsertActivityLog :exec
-INSERT INTO activity_log (uuid, action_query, ip_address, log_action, log_description, log_session_code,
-                          log_time, log_title, role_code, username)
-VALUES ($1, $2, $3, $4,
-        $5, $6, now(), $7,
-        $8, $9)
-`
-
-type InsertActivityLogParams struct {
-	Uuid           uuid.UUID
-	ActionQuery    *string
-	IpAddress      *netip.Addr
-	LogAction      *string
-	LogDescription *string
-	LogSessionCode *string
-	LogTitle       *string
-	RoleCode       *string
-	Username       *string
-}
-
-func (q *Queries) InsertActivityLog(ctx context.Context, arg InsertActivityLogParams) error {
-	_, err := q.db.Exec(ctx, insertActivityLog,
-		arg.Uuid,
-		arg.ActionQuery,
-		arg.IpAddress,
-		arg.LogAction,
-		arg.LogDescription,
-		arg.LogSessionCode,
-		arg.LogTitle,
-		arg.RoleCode,
-		arg.Username,
-	)
-	return err
-}
-
 const listActivityLogs = `-- name: ListActivityLogs :many
-SELECT id, uuid, action_query, ip_address, log_action, log_description, log_session_code, log_time, log_title, role_code, username, created_at FROM activity_log
+SELECT id, uuid, action_query, ip_address, log_action, log_description, log_session_code, log_time, log_title, role_code, username, created_at, source FROM activity_log
 WHERE ($1::text IS NULL OR username = $1)
   AND ($2::text IS NULL OR log_action = $2)
   AND ($3::timestamptz IS NULL OR log_time >= $3)
@@ -151,6 +117,7 @@ func (q *Queries) ListActivityLogs(ctx context.Context, arg ListActivityLogsPara
 			&i.RoleCode,
 			&i.Username,
 			&i.CreatedAt,
+			&i.Source,
 		); err != nil {
 			return nil, err
 		}
@@ -160,4 +127,47 @@ func (q *Queries) ListActivityLogs(ctx context.Context, arg ListActivityLogsPara
 		return nil, err
 	}
 	return items, nil
+}
+
+const shipActivityLog = `-- name: ShipActivityLog :exec
+INSERT INTO activity_log (uuid, action_query, ip_address, log_action, log_description, log_session_code,
+                          log_time, log_title, role_code, username, source)
+VALUES ($1, $2, $3, $4,
+        $5, $6, $7, $8,
+        $9, $10, $11)
+ON CONFLICT DO NOTHING
+`
+
+type ShipActivityLogParams struct {
+	Uuid           uuid.UUID
+	ActionQuery    *string
+	IpAddress      *netip.Addr
+	LogAction      *string
+	LogDescription *string
+	LogSessionCode *string
+	LogTime        *time.Time
+	LogTitle       *string
+	RoleCode       *string
+	Username       *string
+	Source         *string
+}
+
+// Written only by the outbox shipper; replays are ignored (uuid is the only
+// unique key besides id). No conflict target, so the INSERT-only log user
+// needs no SELECT privilege at all.
+func (q *Queries) ShipActivityLog(ctx context.Context, arg ShipActivityLogParams) error {
+	_, err := q.db.Exec(ctx, shipActivityLog,
+		arg.Uuid,
+		arg.ActionQuery,
+		arg.IpAddress,
+		arg.LogAction,
+		arg.LogDescription,
+		arg.LogSessionCode,
+		arg.LogTime,
+		arg.LogTitle,
+		arg.RoleCode,
+		arg.Username,
+		arg.Source,
+	)
+	return err
 }

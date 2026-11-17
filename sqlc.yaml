@@ -1,8 +1,21 @@
 version: "2"
 sql:
   - engine: postgresql
-    schema: internal/db/migrations
-    queries: internal/db/queries
+    # One package over the four databases (PRD §7.1): the schema is the union of every
+    # migration set, and each query file lives in the folder of the database it runs on.
+    schema:
+      - internal/db/migrations/shared
+      - internal/db/migrations/outbox
+      - internal/db/migrations/core
+      - internal/db/migrations/security
+      - internal/db/migrations/log
+      - internal/db/migrations/document
+    queries:
+      - internal/db/queries/core
+      - internal/db/queries/security
+      - internal/db/queries/log
+      - internal/db/queries/document
+      - internal/db/queries/outbox
     gen:
       go:
         package: sqlc

@@ -39,11 +39,11 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := database.NewPool(ctx, cfg.DatabaseURL, cfg.DBMaxConns)
+	pools, err := database.OpenPools(ctx, cfg.DatabaseURLs(), cfg.DBMaxConns)
 	if err != nil {
 		return err
 	}
-	defer pool.Close()
+	defer pools.Close()
 
 	priv, err := security.LoadEd25519PrivateKey(cfg.JWTPrivateKeyFile)
 	if err != nil {
@@ -63,7 +63,7 @@ func run() error {
 	}
 
 	app := router.New(router.Deps{
-		Cfg: cfg, Log: log, Pool: pool, Images: images, Docs: docs,
+		Cfg: cfg, Log: log, Pools: pools, Images: images, Docs: docs,
 		Signer: security.NewJWTSigner(priv, cfg.JWTIssuer, cfg.JWTAudience, cfg.JWTAccessTTL),
 		Hasher: security.NewPasswordHasher(security.DefaultArgon2Params),
 	})

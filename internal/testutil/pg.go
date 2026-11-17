@@ -1,4 +1,4 @@
-// Package testutil provides a migrated PostgreSQL database for integration tests.
+// Package testutil provides migrated PostgreSQL databases for integration tests.
 package testutil
 
 import (
@@ -19,10 +19,11 @@ import (
 	"pfm-backend/internal/platform/database"
 )
 
-// NewDB creates an isolated database on TEST_DATABASE_URL, applies every
-// migration and drops it when the test ends. The test is skipped when
+// NewDB creates an isolated database on TEST_DATABASE_URL, applies the
+// migration set name (db.Core, db.Security, db.Log, db.Document or db.All)
+// and drops it when the test ends. The test is skipped when
 // TEST_DATABASE_URL is not set.
-func NewDB(t *testing.T) *pgxpool.Pool {
+func NewDB(t *testing.T, name string) *pgxpool.Pool {
 	t.Helper()
 	admin := os.Getenv("TEST_DATABASE_URL")
 	if admin == "" {
@@ -31,12 +32,12 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	name := "pfm_test_" + strings.ReplaceAll(uuid.NewString(), "-", "")[:16]
+	dbName := "pfm_test_" + name + "_" + strings.ReplaceAll(uuid.NewString(), "-", "")[:12]
 	conn, err := pgx.Connect(ctx, admin)
 	if err != nil {
 		t.Fatalf("connect admin: %v", err)
 	}
-	if _, err := conn.Exec(ctx, "CREATE DATABASE "+name); err != nil {
+	if _, err := conn.Exec(ctx, "CREATE DATABASE "+dbName); err != nil {
 		t.Fatalf("create database: %v", err)
 	}
 	_ = conn.Close(ctx)
@@ -45,18 +46,18 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 	if err != nil {
 		t.Fatal(err)
 	}
-	u.Path = "/" + name
+	u.Path = "/" + dbName
 	pool, err := database.NewPool(ctx, u.String(), 10)
 	if err != nil {
 		t.Fatal(err)
 	}
 	sqlDB := stdlib.OpenDBFromPool(pool)
-	m, err := db.NewMigrator(sqlDB)
+	m, err := db.NewMigrator(sqlDB, name)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := m.Up(ctx); err != nil {
-		t.Fatalf("migrate up: %v", err)
+		t.Fatalf("migrate up %s: %v", name, err)
 	}
 	_ = sqlDB.Close()
 
@@ -69,7 +70,14 @@ func NewDB(t *testing.T) *pgxpool.Pool {
 			return
 		}
 		defer func() { _ = conn.Close(ctx) }()
-		_, _ = conn.Exec(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s WITH (FORCE)", name))
+		_, _ = conn.Exec(ctx, fmt.Sprintf("DROP DATABASE IF EXISTS %s WITH (FORCE)", dbName))
 	})
 	return pool
+}
+
+// NewPools creates the four runtime databases of one test.
+func NewPools(t *testing.T) database.Pools {
+	t.Helper()
+	return database.Pools{Core: NewDB(t, db.Core), Security: NewDB(t, db.Security), Log: NewDB(t, db.Log),
+		Document: NewDB(t, db.Document)}
 }

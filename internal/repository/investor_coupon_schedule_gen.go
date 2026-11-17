@@ -33,20 +33,16 @@ func (r investorCouponScheduleRepository) List(ctx context.Context, q httpx.List
 	if err != nil {
 		return nil, 0, err
 	}
-	paymentDocumentFileID, err := database.FilterRefID(ctx, r.tx, "file_object", "payment_document_file_uuid", q.Text("payment_document_file_uuid"))
-	if err != nil {
-		return nil, 0, err
-	}
 	bondTradeID, err := database.FilterRefID(ctx, r.tx, "bond_trade", "bond_trade_uuid", q.Text("bond_trade_uuid"))
 	if err != nil {
 		return nil, 0, err
 	}
 	qs := r.tx.Queries(ctx)
-	rows, err := qs.ListInvestorCouponSchedule(ctx, sqlc.ListInvestorCouponScheduleParams{ScopeClientID: scope, BondCouponScheduleID: bondCouponScheduleID, PaymentDocumentFileID: paymentDocumentFileID, BondTradeID: bondTradeID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
+	rows, err := qs.ListInvestorCouponSchedule(ctx, sqlc.ListInvestorCouponScheduleParams{ScopeClientID: scope, BondCouponScheduleID: bondCouponScheduleID, BondTradeID: bondTradeID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
 	if err != nil {
 		return nil, 0, database.MapError("list investor_coupon_schedule", err)
 	}
-	total, err := qs.CountInvestorCouponSchedule(ctx, sqlc.CountInvestorCouponScheduleParams{ScopeClientID: scope, BondCouponScheduleID: bondCouponScheduleID, PaymentDocumentFileID: paymentDocumentFileID, BondTradeID: bondTradeID})
+	total, err := qs.CountInvestorCouponSchedule(ctx, sqlc.CountInvestorCouponScheduleParams{ScopeClientID: scope, BondCouponScheduleID: bondCouponScheduleID, BondTradeID: bondTradeID})
 	if err != nil {
 		return nil, 0, database.MapError("count investor_coupon_schedule", err)
 	}

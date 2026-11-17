@@ -92,7 +92,7 @@ func (j *Journal) validate() (decimal.Decimal, error) {
 // Post writes a balanced journal; it must run inside the caller's transaction
 // so the ledger and the source document commit together.
 func (s *JournalService) Post(ctx context.Context, j Journal) (int64, uuid.UUID, error) {
-	if !database.InTx(ctx) {
+	if !s.tx.InTx(ctx) {
 		return 0, uuid.Nil, fmt.Errorf("journal.Post must run inside a transaction")
 	}
 	total, err := j.validate()

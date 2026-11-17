@@ -14,10 +14,10 @@ import (
 	"github.com/gofiber/fiber/v3/middleware/helmet"
 	"github.com/gofiber/fiber/v3/middleware/limiter"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"pfm-backend/internal/apperr"
 	"pfm-backend/internal/config"
+	"pfm-backend/internal/db"
 	"pfm-backend/internal/handler"
 	"pfm-backend/internal/permission"
 	"pfm-backend/internal/platform/audit"
@@ -59,7 +59,7 @@ type ImageStore interface {
 type Deps struct {
 	Cfg    config.Config
 	Log    *slog.Logger
-	Pool   *pgxpool.Pool
+	Pools  database.Pools
 	Images ImageStore
 	Docs   storage.DocumentStorage
 	Signer *security.JWTSigner
@@ -122,29 +122,36 @@ func New(d Deps) *fiber.App {
 	app.Use(httpx.NoStore())
 	app.Use(httpx.TimeoutMiddleware(cfg.RequestTimeout))
 
-	tx := database.NewTxManager(d.Pool)
+	// One transaction manager and audit recorder per database (PRD §7.1).
+	tx := database.NewTxManager(d.Pools.Core)
+	sec := database.NewTxManager(d.Pools.Security)
+	logs := database.NewTxManager(d.Pools.Log)
+	docs := database.NewTxManager(d.Pools.Document)
 	v := validatorx.New()
-	rec := audit.NewRecorder(tx)
+	rec := audit.NewRecorder(tx, db.Core)
+	secRec := audit.NewRecorder(sec, db.Security)
+	docRec := audit.NewRecorder(docs, db.Document)
 
 	// repositories
-	users := repository.NewUserRepository(tx)
-	roles := repository.NewRoleRepository(tx)
-	actions := repository.NewActionRepository(tx)
-	tokens := repository.NewRefreshTokenRepository(tx)
+	users := repository.NewUserRepository(sec)
+	roles := repository.NewRoleRepository(sec)
+	actions := repository.NewActionRepository(sec)
+	tokens := repository.NewRefreshTokenRepository(sec)
+	clients := repository.NewClientLookup(tx)
 
 	// services
 	permCache := service.NewPermissionCache(roles, time.Minute)
-	authSvc := service.NewAuthService(tx, users, tokens, roles, d.Hasher, d.Signer, rec, service.AuthConfig{
+	authSvc := service.NewAuthService(sec, users, tokens, roles, d.Hasher, d.Signer, secRec, service.AuthConfig{
 		RefreshTTL: cfg.JWTRefreshTTL, ActivationTTL: cfg.ActivationKeyTTL,
 		LoginMaxAttempts: cfg.LoginMaxAttempts, LoginLockFor: cfg.LoginLockFor,
 	})
-	userSvc := service.NewUserService(tx, users, roles, tokens, repository.NewClientLookup(tx), rec, cfg.ActivationKeyTTL)
-	roleSvc := service.NewRoleService(tx, roles, actions, users, permCache, rec)
-	actionSvc := service.NewActionService(tx, actions, roles, rec)
-	logSvc := service.NewActivityLogService(repository.NewActivityLogRepository(tx))
-	fileSvc := service.NewFileService(tx, repository.NewFileObjectRepository(tx), d.Images, d.Docs, rec, d.Log, cfg.S3PresignTTL)
+	userSvc := service.NewUserService(sec, users, roles, tokens, clients, secRec, cfg.ActivationKeyTTL)
+	roleSvc := service.NewRoleService(sec, roles, actions, users, permCache, secRec)
+	actionSvc := service.NewActionService(sec, actions, roles, secRec)
+	logSvc := service.NewActivityLogService(repository.NewActivityLogRepository(logs))
+	fileSvc := service.NewFileService(docs, repository.NewFileObjectRepository(docs), d.Images, d.Docs, docRec, d.Log, cfg.S3PresignTTL)
 	configSvc := service.NewConfigurationService(tx, repository.NewConfigurationRepository(tx), fileSvc, rec)
-	deps := service.Deps{TX: tx, Files: fileSvc}
+	deps := service.Deps{TX: tx, Security: sec, Files: fileSvc}
 
 	app.Get("/healthz", func(c fiber.Ctx) error { return c.JSON(fiber.Map{"status": "ok"}) })
 	app.Get("/readyz", readiness(d))
@@ -155,7 +162,7 @@ func New(d Deps) *fiber.App {
 		Expiration:   time.Minute,
 		LimitReached: func(fiber.Ctx) error { return fiber.ErrTooManyRequests },
 	})
-	authn := auth.NewAuthenticator(d.Signer, service.NewActorLoader(users), permCache)
+	authn := auth.NewAuthenticator(d.Signer, service.NewActorLoader(users, clients), permCache)
 	api := auth.NewRouter(app.Group("/api/v1"), authn.Middleware(), Catalog())
 
 	handler.NewAuthHandler(v, authSvc).Register(api, authLimiter)
@@ -196,11 +203,14 @@ func readiness(d Deps) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		ctx, cancel := context.WithTimeout(c.Context(), 3*time.Second)
 		defer cancel()
-		checks := fiber.Map{"database": "ok", "image_storage": "ok", "document_storage": "ok"}
+		checks := fiber.Map{"image_storage": "ok", "document_storage": "ok"}
 		ready := true
-		if err := d.Pool.Ping(ctx); err != nil {
-			checks["database"], ready = "error", false
-			d.Log.Warn("readiness: database", "err", err)
+		for name, pool := range d.Pools.Named() {
+			checks["database_"+name] = "ok"
+			if err := pool.Ping(ctx); err != nil {
+				checks["database_"+name], ready = "error", false
+				d.Log.Warn("readiness: database", "db", name, "err", err)
+			}
 		}
 		if err := d.Images.Ping(ctx); err != nil {
 			checks["image_storage"], ready = "error", false

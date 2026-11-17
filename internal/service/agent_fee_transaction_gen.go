@@ -22,7 +22,7 @@ func AgentFeeTransactionResource(d Deps) crud.Resource[sqlc.GetAgentFeeTransacti
 		Path:        "/agent-fee-transactions",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",
-		Filters:     []string{"payment_document_file_uuid", "tax_document_file_uuid", "bond_uuid", "marketing_agent_uuid"},
+		Filters:     []string{"bond_uuid", "marketing_agent_uuid"},
 		Store:       repository.NewAgentFeeTransactionRepository(d.TX),
 		Response:    dto.AgentFeeTransactionFromRow,
 		Nested: []crud.Nested{

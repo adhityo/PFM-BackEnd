@@ -17,7 +17,7 @@ func InvestorCouponScheduleResource(d Deps) crud.ReadResource[sqlc.GetInvestorCo
 		Path:        "/investor-coupon-schedules",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",
-		Filters:     []string{"bond_coupon_schedule_uuid", "payment_document_file_uuid", "bond_trade_uuid"},
+		Filters:     []string{"bond_coupon_schedule_uuid", "bond_trade_uuid"},
 		Store:       repository.NewInvestorCouponScheduleRepository(d.TX),
 		Response:    dto.InvestorCouponScheduleFromRow,
 		Nested: []crud.Nested{

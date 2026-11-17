@@ -20,11 +20,10 @@ WHERE t.deleted_at IS NULL
   AND ($2::bigint IS NULL OR t.cash_settlement_category_id = $2)
   AND ($3::bigint IS NULL OR t.member_id = $3)
   AND ($4::bigint IS NULL OR t.client_id = $4)
-  AND ($5::bigint IS NULL OR t.document_file_id = $5)
-  AND ($6::bigint IS NULL OR t.bond_portfolio_id = $6)
-  AND ($7::bigint IS NULL OR t.stock_portfolio_id = $7)
-  AND ($8::bigint IS NULL OR t.deposito_portfolio_id = $8)
-  AND ($9::bigint IS NULL OR t.mutual_fund_portfolio_id = $9)
+  AND ($5::bigint IS NULL OR t.bond_portfolio_id = $5)
+  AND ($6::bigint IS NULL OR t.stock_portfolio_id = $6)
+  AND ($7::bigint IS NULL OR t.deposito_portfolio_id = $7)
+  AND ($8::bigint IS NULL OR t.mutual_fund_portfolio_id = $8)
 `
 
 type CountCashSettlementParams struct {
@@ -32,7 +31,6 @@ type CountCashSettlementParams struct {
 	CashSettlementCategoryID *int64
 	MemberID                 *int64
 	ClientID                 *int64
-	DocumentFileID           *int64
 	BondPortfolioID          *int64
 	StockPortfolioID         *int64
 	DepositoPortfolioID      *int64
@@ -45,7 +43,6 @@ func (q *Queries) CountCashSettlement(ctx context.Context, arg CountCashSettleme
 		arg.CashSettlementCategoryID,
 		arg.MemberID,
 		arg.ClientID,
-		arg.DocumentFileID,
 		arg.BondPortfolioID,
 		arg.StockPortfolioID,
 		arg.DepositoPortfolioID,
@@ -57,7 +54,7 @@ func (q *Queries) CountCashSettlement(ctx context.Context, arg CountCashSettleme
 }
 
 const createCashSettlement = `-- name: CreateCashSettlement :one
-INSERT INTO cash_settlement (uuid, cash_settlement_category_id, member_id, client_id, cash_settlement_value, cash_settlement_subject, validation_number, document_file_id, description, bond_portfolio_id, stock_portfolio_id, deposito_portfolio_id, mutual_fund_portfolio_id, created_by, updated_by)
+INSERT INTO cash_settlement (uuid, cash_settlement_category_id, member_id, client_id, cash_settlement_value, cash_settlement_subject, validation_number, document_file_uuid, description, bond_portfolio_id, stock_portfolio_id, deposito_portfolio_id, mutual_fund_portfolio_id, created_by, updated_by)
 VALUES ($1,
         $2,
         $3,
@@ -84,7 +81,7 @@ type CreateCashSettlementParams struct {
 	CashSettlementValue      *decimal.Decimal
 	CashSettlementSubject    *string
 	ValidationNumber         *string
-	DocumentFileID           *int64
+	DocumentFileUuid         *uuid.UUID
 	Description              *string
 	BondPortfolioID          *int64
 	StockPortfolioID         *int64
@@ -102,7 +99,7 @@ func (q *Queries) CreateCashSettlement(ctx context.Context, arg CreateCashSettle
 		arg.CashSettlementValue,
 		arg.CashSettlementSubject,
 		arg.ValidationNumber,
-		arg.DocumentFileID,
+		arg.DocumentFileUuid,
 		arg.Description,
 		arg.BondPortfolioID,
 		arg.StockPortfolioID,
@@ -117,12 +114,11 @@ func (q *Queries) CreateCashSettlement(ctx context.Context, arg CreateCashSettle
 
 const getCashSettlementByUUID = `-- name: GetCashSettlementByUUID :one
 
-SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_id, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_member_id.uuid AS member_uuid, r_client_id.uuid AS client_uuid, r_document_file_id.uuid AS document_file_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_uuid, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_member_id.uuid AS member_uuid, r_client_id.uuid AS client_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
 FROM cash_settlement t
 LEFT JOIN cash_settlement_category r_cash_settlement_category_id ON r_cash_settlement_category_id.id = t.cash_settlement_category_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 LEFT JOIN client r_client_id ON r_client_id.id = t.client_id
-LEFT JOIN file_object r_document_file_id ON r_document_file_id.id = t.document_file_id
 LEFT JOIN bond_portfolio r_bond_portfolio_id ON r_bond_portfolio_id.id = t.bond_portfolio_id
 LEFT JOIN stock_portfolio r_stock_portfolio_id ON r_stock_portfolio_id.id = t.stock_portfolio_id
 LEFT JOIN deposito_portfolio r_deposito_portfolio_id ON r_deposito_portfolio_id.id = t.deposito_portfolio_id
@@ -145,7 +141,7 @@ type GetCashSettlementByUUIDRow struct {
 	CashSettlementValue        *decimal.Decimal
 	CashSettlementSubject      *string
 	ValidationNumber           *string
-	DocumentFileID             *int64
+	DocumentFileUuid           *uuid.UUID
 	Description                *string
 	CashSettlementStatus       *int16
 	BondPortfolioID            *int64
@@ -155,7 +151,6 @@ type GetCashSettlementByUUIDRow struct {
 	CashSettlementCategoryUuid *uuid.UUID
 	MemberUuid                 *uuid.UUID
 	ClientUuid                 *uuid.UUID
-	DocumentFileUuid           *uuid.UUID
 	BondPortfolioUuid          *uuid.UUID
 	StockPortfolioUuid         *uuid.UUID
 	DepositoPortfolioUuid      *uuid.UUID
@@ -177,7 +172,7 @@ func (q *Queries) GetCashSettlementByUUID(ctx context.Context, arg GetCashSettle
 		&i.CashSettlementValue,
 		&i.CashSettlementSubject,
 		&i.ValidationNumber,
-		&i.DocumentFileID,
+		&i.DocumentFileUuid,
 		&i.Description,
 		&i.CashSettlementStatus,
 		&i.BondPortfolioID,
@@ -187,7 +182,6 @@ func (q *Queries) GetCashSettlementByUUID(ctx context.Context, arg GetCashSettle
 		&i.CashSettlementCategoryUuid,
 		&i.MemberUuid,
 		&i.ClientUuid,
-		&i.DocumentFileUuid,
 		&i.BondPortfolioUuid,
 		&i.StockPortfolioUuid,
 		&i.DepositoPortfolioUuid,
@@ -199,12 +193,11 @@ func (q *Queries) GetCashSettlementByUUID(ctx context.Context, arg GetCashSettle
 }
 
 const listCashSettlement = `-- name: ListCashSettlement :many
-SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_id, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_member_id.uuid AS member_uuid, r_client_id.uuid AS client_uuid, r_document_file_id.uuid AS document_file_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_uuid, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_member_id.uuid AS member_uuid, r_client_id.uuid AS client_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
 FROM cash_settlement t
 LEFT JOIN cash_settlement_category r_cash_settlement_category_id ON r_cash_settlement_category_id.id = t.cash_settlement_category_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 LEFT JOIN client r_client_id ON r_client_id.id = t.client_id
-LEFT JOIN file_object r_document_file_id ON r_document_file_id.id = t.document_file_id
 LEFT JOIN bond_portfolio r_bond_portfolio_id ON r_bond_portfolio_id.id = t.bond_portfolio_id
 LEFT JOIN stock_portfolio r_stock_portfolio_id ON r_stock_portfolio_id.id = t.stock_portfolio_id
 LEFT JOIN deposito_portfolio r_deposito_portfolio_id ON r_deposito_portfolio_id.id = t.deposito_portfolio_id
@@ -214,16 +207,15 @@ WHERE t.deleted_at IS NULL
   AND ($2::bigint IS NULL OR t.cash_settlement_category_id = $2)
   AND ($3::bigint IS NULL OR t.member_id = $3)
   AND ($4::bigint IS NULL OR t.client_id = $4)
-  AND ($5::bigint IS NULL OR t.document_file_id = $5)
-  AND ($6::bigint IS NULL OR t.bond_portfolio_id = $6)
-  AND ($7::bigint IS NULL OR t.stock_portfolio_id = $7)
-  AND ($8::bigint IS NULL OR t.deposito_portfolio_id = $8)
-  AND ($9::bigint IS NULL OR t.mutual_fund_portfolio_id = $9)
+  AND ($5::bigint IS NULL OR t.bond_portfolio_id = $5)
+  AND ($6::bigint IS NULL OR t.stock_portfolio_id = $6)
+  AND ($7::bigint IS NULL OR t.deposito_portfolio_id = $7)
+  AND ($8::bigint IS NULL OR t.mutual_fund_portfolio_id = $8)
 ORDER BY
-  CASE WHEN $10::text = 'created_at' THEN t.created_at END ASC,
-  CASE WHEN $10::text = '-created_at' THEN t.created_at END DESC,
+  CASE WHEN $9::text = 'created_at' THEN t.created_at END ASC,
+  CASE WHEN $9::text = '-created_at' THEN t.created_at END DESC,
   t.id DESC
-LIMIT $12 OFFSET $11
+LIMIT $11 OFFSET $10
 `
 
 type ListCashSettlementParams struct {
@@ -231,7 +223,6 @@ type ListCashSettlementParams struct {
 	CashSettlementCategoryID *int64
 	MemberID                 *int64
 	ClientID                 *int64
-	DocumentFileID           *int64
 	BondPortfolioID          *int64
 	StockPortfolioID         *int64
 	DepositoPortfolioID      *int64
@@ -250,7 +241,7 @@ type ListCashSettlementRow struct {
 	CashSettlementValue        *decimal.Decimal
 	CashSettlementSubject      *string
 	ValidationNumber           *string
-	DocumentFileID             *int64
+	DocumentFileUuid           *uuid.UUID
 	Description                *string
 	CashSettlementStatus       *int16
 	BondPortfolioID            *int64
@@ -260,7 +251,6 @@ type ListCashSettlementRow struct {
 	CashSettlementCategoryUuid *uuid.UUID
 	MemberUuid                 *uuid.UUID
 	ClientUuid                 *uuid.UUID
-	DocumentFileUuid           *uuid.UUID
 	BondPortfolioUuid          *uuid.UUID
 	StockPortfolioUuid         *uuid.UUID
 	DepositoPortfolioUuid      *uuid.UUID
@@ -275,7 +265,6 @@ func (q *Queries) ListCashSettlement(ctx context.Context, arg ListCashSettlement
 		arg.CashSettlementCategoryID,
 		arg.MemberID,
 		arg.ClientID,
-		arg.DocumentFileID,
 		arg.BondPortfolioID,
 		arg.StockPortfolioID,
 		arg.DepositoPortfolioID,
@@ -300,7 +289,7 @@ func (q *Queries) ListCashSettlement(ctx context.Context, arg ListCashSettlement
 			&i.CashSettlementValue,
 			&i.CashSettlementSubject,
 			&i.ValidationNumber,
-			&i.DocumentFileID,
+			&i.DocumentFileUuid,
 			&i.Description,
 			&i.CashSettlementStatus,
 			&i.BondPortfolioID,
@@ -310,7 +299,6 @@ func (q *Queries) ListCashSettlement(ctx context.Context, arg ListCashSettlement
 			&i.CashSettlementCategoryUuid,
 			&i.MemberUuid,
 			&i.ClientUuid,
-			&i.DocumentFileUuid,
 			&i.BondPortfolioUuid,
 			&i.StockPortfolioUuid,
 			&i.DepositoPortfolioUuid,
@@ -356,7 +344,7 @@ SET cash_settlement_category_id = $1,
     cash_settlement_value = $4,
     cash_settlement_subject = $5,
     validation_number = $6,
-    document_file_id = $7,
+    document_file_uuid = $7,
     description = $8,
     bond_portfolio_id = $9,
     stock_portfolio_id = $10,
@@ -373,7 +361,7 @@ type UpdateCashSettlementParams struct {
 	CashSettlementValue      *decimal.Decimal
 	CashSettlementSubject    *string
 	ValidationNumber         *string
-	DocumentFileID           *int64
+	DocumentFileUuid         *uuid.UUID
 	Description              *string
 	BondPortfolioID          *int64
 	StockPortfolioID         *int64
@@ -392,7 +380,7 @@ func (q *Queries) UpdateCashSettlement(ctx context.Context, arg UpdateCashSettle
 		arg.CashSettlementValue,
 		arg.CashSettlementSubject,
 		arg.ValidationNumber,
-		arg.DocumentFileID,
+		arg.DocumentFileUuid,
 		arg.Description,
 		arg.BondPortfolioID,
 		arg.StockPortfolioID,

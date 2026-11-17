@@ -1,4 +1,7 @@
-// Package audit writes activity_log entries inside the caller's transaction.
+// Package audit records audit events (PRD §12.6). Events are written to the
+// audit_outbox of the database whose transaction caused them, so they commit
+// or roll back with the business change; Shipper then moves them to the
+// separate, append-only pfm_log database.
 package audit
 
 import (
@@ -14,12 +17,17 @@ import (
 	"pfm-backend/internal/platform/httpx"
 )
 
-// Recorder persists audit events (PRD §12.6).
+// Recorder persists audit events into one database's outbox.
 type Recorder struct {
-	tx *database.TxManager
+	tx     *database.TxManager
+	source string
 }
 
-func NewRecorder(tx *database.TxManager) *Recorder { return &Recorder{tx: tx} }
+// NewRecorder writes to the outbox of tx's database; source is its name
+// ("core", "security" or "document").
+func NewRecorder(tx *database.TxManager, source string) *Recorder {
+	return &Recorder{tx: tx, source: source}
+}
 
 // Entry describes one audited action. Description must not contain PII or secrets.
 type Entry struct {
@@ -57,7 +65,7 @@ func (r *Recorder) RecordAs(ctx context.Context, actor auth.Actor, e Entry) erro
 	if rid == "" {
 		rid = httpx.RequestIDFromContext(ctx)
 	}
-	err = r.tx.Queries(ctx).InsertActivityLog(ctx, sqlc.InsertActivityLogParams{
+	err = r.tx.Queries(ctx).InsertAuditOutbox(ctx, sqlc.InsertAuditOutboxParams{
 		Uuid:           id,
 		ActionQuery:    nonEmpty(clip(e.Route)),
 		IpAddress:      actor.IP,
@@ -67,9 +75,10 @@ func (r *Recorder) RecordAs(ctx context.Context, actor auth.Actor, e Entry) erro
 		LogTitle:       nonEmpty(clip(title)),
 		RoleCode:       nonEmpty(actor.RoleCode),
 		Username:       nonEmpty(username),
+		Source:         r.source,
 	})
 	if err != nil {
-		return fmt.Errorf("insert activity_log: %w", err)
+		return fmt.Errorf("insert audit_outbox: %w", err)
 	}
 	return nil
 }

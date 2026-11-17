@@ -22,8 +22,8 @@ type Actor struct {
 	Username   string
 	RoleID     *int64
 	RoleCode   string
-	ClientID   *int64
-	ClientUUID *uuid.UUID
+	ClientID   *int64     // client id in pfm_core (tenant filter of business data)
+	ClientUUID *uuid.UUID // same client as referenced from pfm_security
 	IP         *netip.Addr
 	UserAgent  string
 	RequestID  string
@@ -48,6 +48,15 @@ func (a Actor) Can(code string) bool {
 		return true
 	}
 	return a.perms != nil && a.perms.Has(code)
+}
+
+// ScopeClientUUID is ScopeClientID for data that references the client by
+// UUID (users in pfm_security).
+func (a Actor) ScopeClientUUID() *uuid.UUID {
+	if a.IsAdmin() {
+		return nil
+	}
+	return a.ClientUUID
 }
 
 // ScopeClientID returns the tenant filter for queries: nil means global access.

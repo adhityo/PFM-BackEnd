@@ -25,7 +25,6 @@ func NewPaymentDocumentRepository(tx *database.TxManager) PaymentDocumentReposit
 }
 
 type paymentDocumentRefs struct {
-	documentFileID           *int64
 	bondCouponScheduleID     *int64
 	documentCategoryID       *int64
 	investorCouponScheduleID *int64
@@ -35,9 +34,6 @@ type paymentDocumentRefs struct {
 func (r paymentDocumentRepository) resolve(ctx context.Context, req dto.PaymentDocumentRequest) (paymentDocumentRefs, error) {
 	var refs paymentDocumentRefs
 	var err error
-	if refs.documentFileID, err = database.RefID(ctx, r.tx, "file_object", req.DocumentFileUUID, "document_file_uuid"); err != nil {
-		return refs, err
-	}
 	if refs.bondCouponScheduleID, err = database.RefID(ctx, r.tx, "bond_coupon_schedule", req.BondCouponScheduleUUID, "bond_coupon_schedule_uuid"); err != nil {
 		return refs, err
 	}
@@ -57,10 +53,6 @@ func (r paymentDocumentRepository) Get(ctx context.Context, id uuid.UUID) (sqlc.
 
 func (r paymentDocumentRepository) List(ctx context.Context, q httpx.ListQuery) ([]sqlc.GetPaymentDocumentByUUIDRow, int64, error) {
 	scope := crud.ScopeClientID(ctx)
-	documentFileID, err := database.FilterRefID(ctx, r.tx, "file_object", "document_file_uuid", q.Text("document_file_uuid"))
-	if err != nil {
-		return nil, 0, err
-	}
 	bondCouponScheduleID, err := database.FilterRefID(ctx, r.tx, "bond_coupon_schedule", "bond_coupon_schedule_uuid", q.Text("bond_coupon_schedule_uuid"))
 	if err != nil {
 		return nil, 0, err
@@ -74,11 +66,11 @@ func (r paymentDocumentRepository) List(ctx context.Context, q httpx.ListQuery) 
 		return nil, 0, err
 	}
 	qs := r.tx.Queries(ctx)
-	rows, err := qs.ListPaymentDocument(ctx, sqlc.ListPaymentDocumentParams{ScopeClientID: scope, Q: q.Like("q"), DocumentFileID: documentFileID, BondCouponScheduleID: bondCouponScheduleID, DocumentCategoryID: documentCategoryID, InvestorCouponScheduleID: investorCouponScheduleID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
+	rows, err := qs.ListPaymentDocument(ctx, sqlc.ListPaymentDocumentParams{ScopeClientID: scope, Q: q.Like("q"), BondCouponScheduleID: bondCouponScheduleID, DocumentCategoryID: documentCategoryID, InvestorCouponScheduleID: investorCouponScheduleID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
 	if err != nil {
 		return nil, 0, database.MapError("list payment_document", err)
 	}
-	total, err := qs.CountPaymentDocument(ctx, sqlc.CountPaymentDocumentParams{ScopeClientID: scope, Q: q.Like("q"), DocumentFileID: documentFileID, BondCouponScheduleID: bondCouponScheduleID, DocumentCategoryID: documentCategoryID, InvestorCouponScheduleID: investorCouponScheduleID})
+	total, err := qs.CountPaymentDocument(ctx, sqlc.CountPaymentDocumentParams{ScopeClientID: scope, Q: q.Like("q"), BondCouponScheduleID: bondCouponScheduleID, DocumentCategoryID: documentCategoryID, InvestorCouponScheduleID: investorCouponScheduleID})
 	if err != nil {
 		return nil, 0, database.MapError("count payment_document", err)
 	}
@@ -99,7 +91,7 @@ func (r paymentDocumentRepository) Create(ctx context.Context, req dto.PaymentDo
 		Description:              crud.Text(req.Description),
 		DocumentName:             crud.Text(req.DocumentName),
 		DocumentStatus:           req.DocumentStatus,
-		DocumentFileID:           refs.documentFileID,
+		DocumentFileUuid:         crud.UUID(req.DocumentFileUUID),
 		BondCouponScheduleID:     refs.bondCouponScheduleID,
 		DocumentCategoryID:       refs.documentCategoryID,
 		InvestorCouponScheduleID: refs.investorCouponScheduleID,
@@ -117,7 +109,7 @@ func (r paymentDocumentRepository) Update(ctx context.Context, id uuid.UUID, req
 		Description:              crud.Text(req.Description),
 		DocumentName:             crud.Text(req.DocumentName),
 		DocumentStatus:           req.DocumentStatus,
-		DocumentFileID:           refs.documentFileID,
+		DocumentFileUuid:         crud.UUID(req.DocumentFileUUID),
 		BondCouponScheduleID:     refs.bondCouponScheduleID,
 		DocumentCategoryID:       refs.documentCategoryID,
 		InvestorCouponScheduleID: refs.investorCouponScheduleID,

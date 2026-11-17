@@ -27,7 +27,7 @@ func init() {
 		{Table: "cash_settlement", Label: "cash settlement", Scope: "t.client_id",
 			Required: []string{"cash_settlement_category_id", "cash_settlement_value", "cash_settlement_subject"},
 			Enum:     map[string][]string{"cash_settlement_status": settlementStatus},
-			Files:    map[string]string{"document_file_id": "cash_settlement.document"},
+			Files:    map[string]string{"document_file_uuid": "cash_settlement.document"},
 			Check:    "checkCashSettlement", CheckDelete: "checkCashSettlementDelete",
 			Validate: map[string]string{"cash_settlement_value": "dgt=0"}},
 	}

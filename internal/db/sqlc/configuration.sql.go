@@ -29,10 +29,9 @@ SELECT c.id, c.uuid, c.system_usage_type, c.company_name, c.company_address, c.d
        c.certificate_latest_counter, c.latest_agent_counter, c.latest_investor_counter, c.latest_agreement_counter,
        c.latest_generated_invoice_month, c.latest_generated_invoice_year,
        c.latest_generated_payment_month, c.latest_generated_payment_year,
-       c.emitent_code, c.proxy_api_url, c.is_using_qr_logo, c.qr_logo_file_id, f.uuid AS qr_logo_file_uuid,
+       c.emitent_code, c.proxy_api_url, c.is_using_qr_logo, c.qr_logo_file_uuid,
        c.is_using_agreement, c.updated_at
 FROM configuration c
-LEFT JOIN file_object f ON f.id = c.qr_logo_file_id AND f.deleted_at IS NULL
 WHERE c.deleted_at IS NULL
 ORDER BY c.id
 LIMIT 1
@@ -59,7 +58,6 @@ type GetConfigurationRow struct {
 	EmitentCode                 *string
 	ProxyApiUrl                 *string
 	IsUsingQrLogo               bool
-	QrLogoFileID                *int64
 	QrLogoFileUuid              *uuid.UUID
 	IsUsingAgreement            bool
 	UpdatedAt                   time.Time
@@ -89,7 +87,6 @@ func (q *Queries) GetConfiguration(ctx context.Context) (GetConfigurationRow, er
 		&i.EmitentCode,
 		&i.ProxyApiUrl,
 		&i.IsUsingQrLogo,
-		&i.QrLogoFileID,
 		&i.QrLogoFileUuid,
 		&i.IsUsingAgreement,
 		&i.UpdatedAt,
@@ -121,7 +118,7 @@ SET system_usage_type = $1, company_name = $2,
     certificate_number_template = $6,
     investor_number_template = $7, emitent_code = $8,
     proxy_api_url = $9, is_using_qr_logo = $10,
-    qr_logo_file_id = $11, is_using_agreement = $12,
+    qr_logo_file_uuid = $11, is_using_agreement = $12,
     updated_by = $13
 WHERE id = $14 AND updated_at = $15
 `
@@ -137,7 +134,7 @@ type UpdateConfigurationParams struct {
 	EmitentCode               *string
 	ProxyApiUrl               *string
 	IsUsingQrLogo             bool
-	QrLogoFileID              *int64
+	QrLogoFileUuid            *uuid.UUID
 	IsUsingAgreement          bool
 	Actor                     *string
 	ID                        int64
@@ -156,7 +153,7 @@ func (q *Queries) UpdateConfiguration(ctx context.Context, arg UpdateConfigurati
 		arg.EmitentCode,
 		arg.ProxyApiUrl,
 		arg.IsUsingQrLogo,
-		arg.QrLogoFileID,
+		arg.QrLogoFileUuid,
 		arg.IsUsingAgreement,
 		arg.Actor,
 		arg.ID,

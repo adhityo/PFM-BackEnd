@@ -188,7 +188,7 @@ func TestStockTradingLifecycle(t *testing.T) {
 	var ids []string
 	for _, code := range []string{"stock_trade:read", "stock_trade:settle", "stock_trade:cancel"} {
 		var id string
-		_ = e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id)
+		_ = e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id)
 		ids = append(ids, id)
 	}
 	rolePath := "/roles/" + role["uuid"].(string)
@@ -335,7 +335,7 @@ func TestJournalsAndCashSettlement(t *testing.T) {
 	var ids []string
 	for _, code := range []string{"cash_settlement:read", "cash_settlement:approve", "cash_settlement:reverse"} {
 		var id string
-		_ = e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id)
+		_ = e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id)
 		ids = append(ids, id)
 	}
 	rolePath := "/roles/" + role["uuid"].(string)

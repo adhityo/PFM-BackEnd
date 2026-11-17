@@ -328,13 +328,12 @@ func (s *BondTxService) PayInvestorCoupon(ctx context.Context, id uuid.UUID, exp
 		if err != nil {
 			return apperr.Invalid("payment_document_file_uuid", "uuid", "harus berupa UUID yang valid")
 		}
-		fileID, err := s.files.Attach(ctx, fileUUID, "investor_coupon_schedule.payment_document", "payment_document_file_uuid")
-		if err != nil {
+		if err := s.files.Attach(ctx, fileUUID, "investor_coupon_schedule.payment_document", "payment_document_file_uuid"); err != nil {
 			return err
 		}
 		date, actor := crud.Date(req.PaymentSettlementDate), actorName(ctx)
 		if err := q.PayInvestorCoupon(ctx, sqlc.PayInvestorCouponParams{SettlementDate: date, Reference: crud.Text(req.PaymentReferenceNumber),
-			FileID: &fileID, Actor: &actor, ID: c.ID}); err != nil {
+			FileUuid: &fileUUID, Actor: &actor, ID: c.ID}); err != nil {
 			return database.MapError("pay investor coupon", err)
 		}
 		kind := ScheduleCoupon
@@ -366,7 +365,7 @@ func (s *BondTxService) PayAgentFee(ctx context.Context, id uuid.UUID, expected 
 		if statusOf(f.Status) != 0 {
 			return apperr.Conflict("hanya fee agen draft yang dapat dibayar")
 		}
-		if f.PaymentDocumentFileID == nil {
+		if f.PaymentDocumentFileUuid == nil {
 			return apperr.Invalid("payment_document_file_uuid", "required", "lampirkan bukti pembayaran terlebih dahulu")
 		}
 		if err := q.PayAgentFee(ctx, sqlc.PayAgentFeeParams{ID: f.ID, PaymentDate: crud.Date(req.PaymentDate),

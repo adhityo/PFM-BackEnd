@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// genSQL renders internal/db/queries/<table>.sql for a CRUD resource.
+// genSQL renders internal/db/queries/core/<table>.sql for a CRUD resource.
 func genSQL(sp *Spec, t *Table) string {
 	camel := sqlcName(sp.Table)
 	cols := sp.apiColumns(t)

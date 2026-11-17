@@ -25,7 +25,6 @@ func NewMemberDocumentRepository(tx *database.TxManager) MemberDocumentRepositor
 }
 
 type memberDocumentRefs struct {
-	documentFileID         *int64
 	documentCategoryID     *int64
 	memberBenefitPayoutID  *int64
 	memberID               *int64
@@ -36,9 +35,6 @@ type memberDocumentRefs struct {
 func (r memberDocumentRepository) resolve(ctx context.Context, req dto.MemberDocumentRequest) (memberDocumentRefs, error) {
 	var refs memberDocumentRefs
 	var err error
-	if refs.documentFileID, err = database.RefID(ctx, r.tx, "file_object", req.DocumentFileUUID, "document_file_uuid"); err != nil {
-		return refs, err
-	}
 	if refs.documentCategoryID, err = database.RefID(ctx, r.tx, "document_category", req.DocumentCategoryUUID, "document_category_uuid"); err != nil {
 		return refs, err
 	}
@@ -61,10 +57,6 @@ func (r memberDocumentRepository) Get(ctx context.Context, id uuid.UUID) (sqlc.G
 
 func (r memberDocumentRepository) List(ctx context.Context, q httpx.ListQuery) ([]sqlc.GetMemberDocumentByUUIDRow, int64, error) {
 	scope := crud.ScopeClientID(ctx)
-	documentFileID, err := database.FilterRefID(ctx, r.tx, "file_object", "document_file_uuid", q.Text("document_file_uuid"))
-	if err != nil {
-		return nil, 0, err
-	}
 	documentCategoryID, err := database.FilterRefID(ctx, r.tx, "document_category", "document_category_uuid", q.Text("document_category_uuid"))
 	if err != nil {
 		return nil, 0, err
@@ -82,11 +74,11 @@ func (r memberDocumentRepository) List(ctx context.Context, q httpx.ListQuery) (
 		return nil, 0, err
 	}
 	qs := r.tx.Queries(ctx)
-	rows, err := qs.ListMemberDocument(ctx, sqlc.ListMemberDocumentParams{ScopeClientID: scope, DocumentFileID: documentFileID, DocumentCategoryID: documentCategoryID, MemberBenefitPayoutID: memberBenefitPayoutID, MemberID: memberID, MemberPremiumPaymentID: memberPremiumPaymentID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
+	rows, err := qs.ListMemberDocument(ctx, sqlc.ListMemberDocumentParams{ScopeClientID: scope, DocumentCategoryID: documentCategoryID, MemberBenefitPayoutID: memberBenefitPayoutID, MemberID: memberID, MemberPremiumPaymentID: memberPremiumPaymentID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
 	if err != nil {
 		return nil, 0, database.MapError("list member_document", err)
 	}
-	total, err := qs.CountMemberDocument(ctx, sqlc.CountMemberDocumentParams{ScopeClientID: scope, DocumentFileID: documentFileID, DocumentCategoryID: documentCategoryID, MemberBenefitPayoutID: memberBenefitPayoutID, MemberID: memberID, MemberPremiumPaymentID: memberPremiumPaymentID})
+	total, err := qs.CountMemberDocument(ctx, sqlc.CountMemberDocumentParams{ScopeClientID: scope, DocumentCategoryID: documentCategoryID, MemberBenefitPayoutID: memberBenefitPayoutID, MemberID: memberID, MemberPremiumPaymentID: memberPremiumPaymentID})
 	if err != nil {
 		return nil, 0, database.MapError("count member_document", err)
 	}
@@ -107,7 +99,7 @@ func (r memberDocumentRepository) Create(ctx context.Context, req dto.MemberDocu
 		Description:            crud.Text(req.Description),
 		DocumentDate:           crud.Date(req.DocumentDate),
 		DocumentStatus:         req.DocumentStatus,
-		DocumentFileID:         refs.documentFileID,
+		DocumentFileUuid:       crud.UUID(req.DocumentFileUUID),
 		DocumentCategoryID:     refs.documentCategoryID,
 		MemberBenefitPayoutID:  refs.memberBenefitPayoutID,
 		MemberID:               refs.memberID,
@@ -126,7 +118,7 @@ func (r memberDocumentRepository) Update(ctx context.Context, id uuid.UUID, req 
 		Description:            crud.Text(req.Description),
 		DocumentDate:           crud.Date(req.DocumentDate),
 		DocumentStatus:         req.DocumentStatus,
-		DocumentFileID:         refs.documentFileID,
+		DocumentFileUuid:       crud.UUID(req.DocumentFileUUID),
 		DocumentCategoryID:     refs.documentCategoryID,
 		MemberBenefitPayoutID:  refs.memberBenefitPayoutID,
 		MemberID:               refs.memberID,

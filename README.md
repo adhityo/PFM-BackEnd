@@ -15,12 +15,13 @@ Status: **M0–M5 selesai** (fondasi, master data, instrumen & portofolio, tradi
 ```bash
 cp .env.example .env          # isi ADMIN_PASSWORD (min 12 karakter)
 make keys                     # kunci JWT Ed25519 -> secrets/jwt_ed25519.pem
-make dev-up                   # PostgreSQL 17 + MinIO (bucket pfm-documents)
-make migrate-up               # 123 migrasi, dijalankan sebagai pfm_migrator
-make db-grants                # hak akses minimum untuk pfm_app
-make seed                     # katalog permission (tabel action) + 7 role default
+make dev-up                   # PostgreSQL 17 (4 database + role, deploy/postgres/roles.sql) + MinIO
+make migrate-up               # migrasi ke pfm_core, pfm_security, pfm_log, pfm_document (pfm_migrator)
+make db-grants                # hak akses minimum per database
+make seed                     # katalog permission & 7 role (security) + konfigurasi (core)
 make seed-admin               # admin pertama dari ADMIN_USERNAME/EMAIL/PASSWORD
 make run                      # API di :8080
+make worker                   # (terminal lain, user DB worker) kirim audit ke pfm_log + pembersihan
 ```
 
 ```bash
@@ -35,9 +36,10 @@ curl -s localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
 | `make test` | Unit test (integration dilewati tanpa `TEST_DATABASE_URL`) |
 | `make test-integration` | Semua test termasuk DB: e2e HTTP, rollback transaksi, migrasi up→down→up |
 | `make lint` / `make vuln` | golangci-lint (+gosec) / govulncheck |
-| `make sqlc` | Generate ulang `internal/db/sqlc` setelah mengubah `internal/db/queries/*.sql` |
-| `make migration name=alter_x` | Migrasi baru bernomor berurutan (jangan edit migrasi yang sudah ter-apply) |
-| `make worker` | Job pembersihan upload pending > 24 jam dan refresh token kedaluwarsa |
+| `make sqlc` | Generate ulang `internal/db/sqlc` setelah mengubah `internal/db/queries/<database>/*.sql` |
+| `make migration db=core name=alter_x` | Migrasi baru di folder database-nya; nomor global berurutan (jangan edit migrasi yang sudah ter-apply) |
+| `make worker` | Kirim audit outbox ke `pfm_log` (±5 detik), bersihkan upload pending > 24 jam dan refresh token kedaluwarsa |
+| `make schema-db` | Siapkan database gabungan (`migrate -db all`) untuk generator |
 | `make scaffold module=<nama>` | Generate query sqlc + adapter CRUD dari spec di `cmd/scaffold/specs_*.go` |
 
 ## Struktur
@@ -54,12 +56,28 @@ internal/
   handler/      HTTP handler per entitas + route
   permission/   kode permission (tabel action)
   router/       middleware + wiring repository -> service -> handler
-  db/           migrations/ (goose), queries/ (sqlc), sqlc/ (generated), schema/ (generated)
+  db/           migrations/<shared|outbox|core|security|log|document>/ (goose),
+                queries/<core|security|log|document|outbox>/ (sqlc), sqlc/ & schema/ (generated)
   platform/     database (TxManager, lookup), crud (service+handler generik), httpx, auth,
                 security, storage, audit, validatorx, logger
   apperr/ config/ testutil/
-deploy/         Dockerfile (distroless), docker-compose (dev), SQL role DB
+deploy/         Dockerfile (distroless), docker-compose (dev), SQL role & grants per database
 ```
+
+## Empat database
+
+Data dipisah agar kebocoran satu kredensial, dump, atau celah SQL injection tidak membuka data lain (PRD §7.1, §12.5).
+
+| Database | Isi | User API | Catatan |
+|---|---|---|---|
+| `pfm_core` | Seluruh data bisnis | `pfm_core_app` | Tanpa DELETE (soft delete) |
+| `pfm_security` | `app_user`, `role`, `action`, `role_action`, `auth_refresh_token` | `pfm_security_app` | Hash password & token terpisah dari data bisnis |
+| `pfm_log` | `activity_log` | `pfm_log_reader` (baca saja) | Worker menulis dengan `pfm_log_writer` (INSERT saja); tidak ada yang bisa mengubah/menghapus log |
+| `pfm_document` | `file_object` + modul dokumen | `pfm_document_app` | Metadata & key file S3/lokal |
+
+- Tidak ada FK atau transaksi lintas database. Referensi lintas database memakai kolom `*_uuid` (mis. `app_user.client_uuid`, `cash_settlement.document_file_uuid`) yang dijaga aplikasi: divalidasi saat menulis, ditolak saat dihapus bila masih dirujuk, dan fail-closed bila referensi hilang.
+- Audit ditulis ke `audit_outbox` di database asal, dalam transaksi bisnis yang sama. `make worker` memindahkannya ke `pfm_log`, sehingga `/activity-logs` baru terisi setelah worker berjalan.
+- Satu `TxManager` per database (`internal/platform/database`), dan setiap database punya DSN sendiri (`DATABASE_URL_CORE`, `_SECURITY`, `_LOG`, `_DOCUMENT`).
 
 ## Endpoint M0
 
@@ -173,6 +191,7 @@ deploy/         Dockerfile (distroless), docker-compose (dev), SQL role DB
 ## Catatan keamanan
 
 - Password legacy (SHA-256 tanpa salt) tidak dimigrasi; user lama wajib aktivasi ulang.
+- Empat database dengan user terpisah (lihat di atas). Jalankan worker dengan user `pfm_worker`/`pfm_log_writer`, bukan user API.
 - Dump legacy berisi data pribadi dan hash password: jangan simpan di repo. `secrets/` dan `.env` masuk `.gitignore`.
 - Rate limiter memakai memori proses; untuk lebih dari satu instance, pindahkan storage limiter ke Redis (PRD §5.1).
 - Unggahan PDF dicek secara heuristik (tanpa dekompresi stream); pasang ClamAV sebelum production (PRD §8.4).

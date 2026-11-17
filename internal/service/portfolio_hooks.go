@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 
 	"pfm-backend/internal/apperr"
 	"pfm-backend/internal/db/sqlc"
@@ -77,4 +78,17 @@ func snapshotDepositoPortfolio(ctx context.Context, d Deps, before, after *sqlc.
 		Uuid: crud.NewID(), Actor: actorName(ctx), ID: row.ID,
 	})
 	return database.MapError("snapshot deposito portfolio", err)
+}
+
+// checkClientDelete: users in pfm_security reference their client by UUID
+// (no FK across databases), so the reference is checked here.
+func checkClientDelete(ctx context.Context, d Deps, cur *sqlc.GetClientByUUIDRow) error {
+	n, err := d.Security.Queries(ctx).CountActiveUsersByClient(ctx, &cur.Uuid)
+	if err != nil {
+		return database.MapError("users of client", err)
+	}
+	if n > 0 {
+		return apperr.Conflict(fmt.Sprintf("client masih dipakai oleh %d pengguna", n))
+	}
+	return nil
 }

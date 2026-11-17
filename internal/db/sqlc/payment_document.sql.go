@@ -18,16 +18,14 @@ WHERE t.deleted_at IS NULL
   AND ($1::bigint IS NULL OR (SELECT sb.client_id FROM bond sb JOIN bond_coupon_schedule x ON x.bond_id = sb.id WHERE x.id = t.bond_coupon_schedule_id) = $1)
   AND ($2::text IS NULL
        OR t.document_name ILIKE '%' || $2 || '%' ESCAPE '\')
-  AND ($3::bigint IS NULL OR t.document_file_id = $3)
-  AND ($4::bigint IS NULL OR t.bond_coupon_schedule_id = $4)
-  AND ($5::bigint IS NULL OR t.document_category_id = $5)
-  AND ($6::bigint IS NULL OR t.investor_coupon_schedule_id = $6)
+  AND ($3::bigint IS NULL OR t.bond_coupon_schedule_id = $3)
+  AND ($4::bigint IS NULL OR t.document_category_id = $4)
+  AND ($5::bigint IS NULL OR t.investor_coupon_schedule_id = $5)
 `
 
 type CountPaymentDocumentParams struct {
 	ScopeClientID            *int64
 	Q                        *string
-	DocumentFileID           *int64
 	BondCouponScheduleID     *int64
 	DocumentCategoryID       *int64
 	InvestorCouponScheduleID *int64
@@ -37,7 +35,6 @@ func (q *Queries) CountPaymentDocument(ctx context.Context, arg CountPaymentDocu
 	row := q.db.QueryRow(ctx, countPaymentDocument,
 		arg.ScopeClientID,
 		arg.Q,
-		arg.DocumentFileID,
 		arg.BondCouponScheduleID,
 		arg.DocumentCategoryID,
 		arg.InvestorCouponScheduleID,
@@ -48,7 +45,7 @@ func (q *Queries) CountPaymentDocument(ctx context.Context, arg CountPaymentDocu
 }
 
 const createPaymentDocument = `-- name: CreatePaymentDocument :one
-INSERT INTO payment_document (uuid, description, document_name, document_status, document_file_id, bond_coupon_schedule_id, document_category_id, investor_coupon_schedule_id, created_by, updated_by)
+INSERT INTO payment_document (uuid, description, document_name, document_status, document_file_uuid, bond_coupon_schedule_id, document_category_id, investor_coupon_schedule_id, created_by, updated_by)
 VALUES ($1,
         $2,
         $3,
@@ -67,7 +64,7 @@ type CreatePaymentDocumentParams struct {
 	Description              *string
 	DocumentName             *string
 	DocumentStatus           *int16
-	DocumentFileID           *int64
+	DocumentFileUuid         *uuid.UUID
 	BondCouponScheduleID     *int64
 	DocumentCategoryID       *int64
 	InvestorCouponScheduleID *int64
@@ -80,7 +77,7 @@ func (q *Queries) CreatePaymentDocument(ctx context.Context, arg CreatePaymentDo
 		arg.Description,
 		arg.DocumentName,
 		arg.DocumentStatus,
-		arg.DocumentFileID,
+		arg.DocumentFileUuid,
 		arg.BondCouponScheduleID,
 		arg.DocumentCategoryID,
 		arg.InvestorCouponScheduleID,
@@ -93,9 +90,8 @@ func (q *Queries) CreatePaymentDocument(ctx context.Context, arg CreatePaymentDo
 
 const getPaymentDocumentByUUID = `-- name: GetPaymentDocumentByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_id, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_document_file_id.uuid AS document_file_uuid, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_uuid, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
 FROM payment_document t
-LEFT JOIN file_object r_document_file_id ON r_document_file_id.id = t.document_file_id
 LEFT JOIN bond_coupon_schedule r_bond_coupon_schedule_id ON r_bond_coupon_schedule_id.id = t.bond_coupon_schedule_id
 LEFT JOIN document_category r_document_category_id ON r_document_category_id.id = t.document_category_id
 LEFT JOIN investor_coupon_schedule r_investor_coupon_schedule_id ON r_investor_coupon_schedule_id.id = t.investor_coupon_schedule_id
@@ -114,11 +110,10 @@ type GetPaymentDocumentByUUIDRow struct {
 	Description                *string
 	DocumentName               *string
 	DocumentStatus             *int16
-	DocumentFileID             *int64
+	DocumentFileUuid           *uuid.UUID
 	BondCouponScheduleID       *int64
 	DocumentCategoryID         *int64
 	InvestorCouponScheduleID   *int64
-	DocumentFileUuid           *uuid.UUID
 	BondCouponScheduleUuid     *uuid.UUID
 	DocumentCategoryUuid       *uuid.UUID
 	InvestorCouponScheduleUuid *uuid.UUID
@@ -136,11 +131,10 @@ func (q *Queries) GetPaymentDocumentByUUID(ctx context.Context, arg GetPaymentDo
 		&i.Description,
 		&i.DocumentName,
 		&i.DocumentStatus,
-		&i.DocumentFileID,
+		&i.DocumentFileUuid,
 		&i.BondCouponScheduleID,
 		&i.DocumentCategoryID,
 		&i.InvestorCouponScheduleID,
-		&i.DocumentFileUuid,
 		&i.BondCouponScheduleUuid,
 		&i.DocumentCategoryUuid,
 		&i.InvestorCouponScheduleUuid,
@@ -151,9 +145,8 @@ func (q *Queries) GetPaymentDocumentByUUID(ctx context.Context, arg GetPaymentDo
 }
 
 const listPaymentDocument = `-- name: ListPaymentDocument :many
-SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_id, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_document_file_id.uuid AS document_file_uuid, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_uuid, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
 FROM payment_document t
-LEFT JOIN file_object r_document_file_id ON r_document_file_id.id = t.document_file_id
 LEFT JOIN bond_coupon_schedule r_bond_coupon_schedule_id ON r_bond_coupon_schedule_id.id = t.bond_coupon_schedule_id
 LEFT JOIN document_category r_document_category_id ON r_document_category_id.id = t.document_category_id
 LEFT JOIN investor_coupon_schedule r_investor_coupon_schedule_id ON r_investor_coupon_schedule_id.id = t.investor_coupon_schedule_id
@@ -161,21 +154,19 @@ WHERE t.deleted_at IS NULL
   AND ($1::bigint IS NULL OR (SELECT sb.client_id FROM bond sb JOIN bond_coupon_schedule x ON x.bond_id = sb.id WHERE x.id = t.bond_coupon_schedule_id) = $1)
   AND ($2::text IS NULL
        OR t.document_name ILIKE '%' || $2 || '%' ESCAPE '\')
-  AND ($3::bigint IS NULL OR t.document_file_id = $3)
-  AND ($4::bigint IS NULL OR t.bond_coupon_schedule_id = $4)
-  AND ($5::bigint IS NULL OR t.document_category_id = $5)
-  AND ($6::bigint IS NULL OR t.investor_coupon_schedule_id = $6)
+  AND ($3::bigint IS NULL OR t.bond_coupon_schedule_id = $3)
+  AND ($4::bigint IS NULL OR t.document_category_id = $4)
+  AND ($5::bigint IS NULL OR t.investor_coupon_schedule_id = $5)
 ORDER BY
-  CASE WHEN $7::text = 'created_at' THEN t.created_at END ASC,
-  CASE WHEN $7::text = '-created_at' THEN t.created_at END DESC,
+  CASE WHEN $6::text = 'created_at' THEN t.created_at END ASC,
+  CASE WHEN $6::text = '-created_at' THEN t.created_at END DESC,
   t.id DESC
-LIMIT $9 OFFSET $8
+LIMIT $8 OFFSET $7
 `
 
 type ListPaymentDocumentParams struct {
 	ScopeClientID            *int64
 	Q                        *string
-	DocumentFileID           *int64
 	BondCouponScheduleID     *int64
 	DocumentCategoryID       *int64
 	InvestorCouponScheduleID *int64
@@ -190,11 +181,10 @@ type ListPaymentDocumentRow struct {
 	Description                *string
 	DocumentName               *string
 	DocumentStatus             *int16
-	DocumentFileID             *int64
+	DocumentFileUuid           *uuid.UUID
 	BondCouponScheduleID       *int64
 	DocumentCategoryID         *int64
 	InvestorCouponScheduleID   *int64
-	DocumentFileUuid           *uuid.UUID
 	BondCouponScheduleUuid     *uuid.UUID
 	DocumentCategoryUuid       *uuid.UUID
 	InvestorCouponScheduleUuid *uuid.UUID
@@ -206,7 +196,6 @@ func (q *Queries) ListPaymentDocument(ctx context.Context, arg ListPaymentDocume
 	rows, err := q.db.Query(ctx, listPaymentDocument,
 		arg.ScopeClientID,
 		arg.Q,
-		arg.DocumentFileID,
 		arg.BondCouponScheduleID,
 		arg.DocumentCategoryID,
 		arg.InvestorCouponScheduleID,
@@ -227,11 +216,10 @@ func (q *Queries) ListPaymentDocument(ctx context.Context, arg ListPaymentDocume
 			&i.Description,
 			&i.DocumentName,
 			&i.DocumentStatus,
-			&i.DocumentFileID,
+			&i.DocumentFileUuid,
 			&i.BondCouponScheduleID,
 			&i.DocumentCategoryID,
 			&i.InvestorCouponScheduleID,
-			&i.DocumentFileUuid,
 			&i.BondCouponScheduleUuid,
 			&i.DocumentCategoryUuid,
 			&i.InvestorCouponScheduleUuid,
@@ -273,7 +261,7 @@ UPDATE payment_document t
 SET description = $1,
     document_name = $2,
     document_status = $3,
-    document_file_id = $4,
+    document_file_uuid = $4,
     bond_coupon_schedule_id = $5,
     document_category_id = $6,
     investor_coupon_schedule_id = $7,
@@ -285,7 +273,7 @@ type UpdatePaymentDocumentParams struct {
 	Description              *string
 	DocumentName             *string
 	DocumentStatus           *int16
-	DocumentFileID           *int64
+	DocumentFileUuid         *uuid.UUID
 	BondCouponScheduleID     *int64
 	DocumentCategoryID       *int64
 	InvestorCouponScheduleID *int64
@@ -299,7 +287,7 @@ func (q *Queries) UpdatePaymentDocument(ctx context.Context, arg UpdatePaymentDo
 		arg.Description,
 		arg.DocumentName,
 		arg.DocumentStatus,
-		arg.DocumentFileID,
+		arg.DocumentFileUuid,
 		arg.BondCouponScheduleID,
 		arg.DocumentCategoryID,
 		arg.InvestorCouponScheduleID,

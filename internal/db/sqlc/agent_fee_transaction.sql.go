@@ -17,35 +17,25 @@ const countAgentFeeTransaction = `-- name: CountAgentFeeTransaction :one
 SELECT count(*) FROM agent_fee_transaction t
 WHERE t.deleted_at IS NULL
   AND ($1::bigint IS NULL OR (SELECT sb.client_id FROM bond sb WHERE sb.id = t.bond_id) = $1)
-  AND ($2::bigint IS NULL OR t.payment_document_file_id = $2)
-  AND ($3::bigint IS NULL OR t.tax_document_file_id = $3)
-  AND ($4::bigint IS NULL OR t.bond_id = $4)
-  AND ($5::bigint IS NULL OR t.marketing_agent_id = $5)
+  AND ($2::bigint IS NULL OR t.bond_id = $2)
+  AND ($3::bigint IS NULL OR t.marketing_agent_id = $3)
 `
 
 type CountAgentFeeTransactionParams struct {
-	ScopeClientID         *int64
-	PaymentDocumentFileID *int64
-	TaxDocumentFileID     *int64
-	BondID                *int64
-	MarketingAgentID      *int64
+	ScopeClientID    *int64
+	BondID           *int64
+	MarketingAgentID *int64
 }
 
 func (q *Queries) CountAgentFeeTransaction(ctx context.Context, arg CountAgentFeeTransactionParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countAgentFeeTransaction,
-		arg.ScopeClientID,
-		arg.PaymentDocumentFileID,
-		arg.TaxDocumentFileID,
-		arg.BondID,
-		arg.MarketingAgentID,
-	)
+	row := q.db.QueryRow(ctx, countAgentFeeTransaction, arg.ScopeClientID, arg.BondID, arg.MarketingAgentID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createAgentFeeTransaction = `-- name: CreateAgentFeeTransaction :one
-INSERT INTO agent_fee_transaction (uuid, agent_name, description, outstanding_value, payment_document_file_id, request_date, tax_document_file_id, tax_value, bond_id, marketing_agent_id, agent_level, agent_number, agent_type, bank, bank_account_name, bank_account_number, bank_branch, email, identity_number, leader_commision, npwp, personal_commision, created_by, updated_by)
+INSERT INTO agent_fee_transaction (uuid, agent_name, description, outstanding_value, payment_document_file_uuid, request_date, tax_document_file_uuid, tax_value, bond_id, marketing_agent_id, agent_level, agent_number, agent_type, bank, bank_account_name, bank_account_number, bank_branch, email, identity_number, leader_commision, npwp, personal_commision, created_by, updated_by)
 VALUES ($1,
         (SELECT s.marketing_agent_name FROM marketing_agent s WHERE s.id = $2),
         $3,
@@ -74,19 +64,19 @@ RETURNING uuid
 `
 
 type CreateAgentFeeTransactionParams struct {
-	Uuid                  uuid.UUID
-	MarketingAgentID      *int64
-	Description           *string
-	OutstandingValue      *decimal.Decimal
-	PaymentDocumentFileID *int64
-	RequestDate           *time.Time
-	TaxDocumentFileID     *int64
-	TaxValue              *decimal.Decimal
-	BondID                *int64
-	AgentType             *string
-	LeaderCommision       *decimal.Decimal
-	PersonalCommision     *decimal.Decimal
-	Actor                 *string
+	Uuid                    uuid.UUID
+	MarketingAgentID        *int64
+	Description             *string
+	OutstandingValue        *decimal.Decimal
+	PaymentDocumentFileUuid *uuid.UUID
+	RequestDate             *time.Time
+	TaxDocumentFileUuid     *uuid.UUID
+	TaxValue                *decimal.Decimal
+	BondID                  *int64
+	AgentType               *string
+	LeaderCommision         *decimal.Decimal
+	PersonalCommision       *decimal.Decimal
+	Actor                   *string
 }
 
 func (q *Queries) CreateAgentFeeTransaction(ctx context.Context, arg CreateAgentFeeTransactionParams) (uuid.UUID, error) {
@@ -95,9 +85,9 @@ func (q *Queries) CreateAgentFeeTransaction(ctx context.Context, arg CreateAgent
 		arg.MarketingAgentID,
 		arg.Description,
 		arg.OutstandingValue,
-		arg.PaymentDocumentFileID,
+		arg.PaymentDocumentFileUuid,
 		arg.RequestDate,
-		arg.TaxDocumentFileID,
+		arg.TaxDocumentFileUuid,
 		arg.TaxValue,
 		arg.BondID,
 		arg.AgentType,
@@ -112,10 +102,8 @@ func (q *Queries) CreateAgentFeeTransaction(ctx context.Context, arg CreateAgent
 
 const getAgentFeeTransactionByUUID = `-- name: GetAgentFeeTransactionByUUID :one
 
-SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_id, t.request_date, t.status, t.tax_document_file_id, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_payment_document_file_id.uuid AS payment_document_file_uuid, r_tax_document_file_id.uuid AS tax_document_file_uuid, r_bond_id.uuid AS bond_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_uuid, t.request_date, t.status, t.tax_document_file_uuid, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_bond_id.uuid AS bond_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
 FROM agent_fee_transaction t
-LEFT JOIN file_object r_payment_document_file_id ON r_payment_document_file_id.id = t.payment_document_file_id
-LEFT JOIN file_object r_tax_document_file_id ON r_tax_document_file_id.id = t.tax_document_file_id
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -135,10 +123,10 @@ type GetAgentFeeTransactionByUUIDRow struct {
 	OutstandingValue        *decimal.Decimal
 	PaidValue               *decimal.Decimal
 	PaymentDate             *time.Time
-	PaymentDocumentFileID   *int64
+	PaymentDocumentFileUuid *uuid.UUID
 	RequestDate             *time.Time
 	Status                  *int16
-	TaxDocumentFileID       *int64
+	TaxDocumentFileUuid     *uuid.UUID
 	TaxPaidValue            *decimal.Decimal
 	TaxValue                *decimal.Decimal
 	BondID                  *int64
@@ -155,8 +143,6 @@ type GetAgentFeeTransactionByUUIDRow struct {
 	LeaderCommision         *decimal.Decimal
 	Npwp                    *string
 	PersonalCommision       *decimal.Decimal
-	PaymentDocumentFileUuid *uuid.UUID
-	TaxDocumentFileUuid     *uuid.UUID
 	BondUuid                *uuid.UUID
 	MarketingAgentUuid      *uuid.UUID
 	CreatedAt               time.Time
@@ -175,10 +161,10 @@ func (q *Queries) GetAgentFeeTransactionByUUID(ctx context.Context, arg GetAgent
 		&i.OutstandingValue,
 		&i.PaidValue,
 		&i.PaymentDate,
-		&i.PaymentDocumentFileID,
+		&i.PaymentDocumentFileUuid,
 		&i.RequestDate,
 		&i.Status,
-		&i.TaxDocumentFileID,
+		&i.TaxDocumentFileUuid,
 		&i.TaxPaidValue,
 		&i.TaxValue,
 		&i.BondID,
@@ -195,8 +181,6 @@ func (q *Queries) GetAgentFeeTransactionByUUID(ctx context.Context, arg GetAgent
 		&i.LeaderCommision,
 		&i.Npwp,
 		&i.PersonalCommision,
-		&i.PaymentDocumentFileUuid,
-		&i.TaxDocumentFileUuid,
 		&i.BondUuid,
 		&i.MarketingAgentUuid,
 		&i.CreatedAt,
@@ -206,34 +190,28 @@ func (q *Queries) GetAgentFeeTransactionByUUID(ctx context.Context, arg GetAgent
 }
 
 const listAgentFeeTransaction = `-- name: ListAgentFeeTransaction :many
-SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_id, t.request_date, t.status, t.tax_document_file_id, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_payment_document_file_id.uuid AS payment_document_file_uuid, r_tax_document_file_id.uuid AS tax_document_file_uuid, r_bond_id.uuid AS bond_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_uuid, t.request_date, t.status, t.tax_document_file_uuid, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_bond_id.uuid AS bond_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
 FROM agent_fee_transaction t
-LEFT JOIN file_object r_payment_document_file_id ON r_payment_document_file_id.id = t.payment_document_file_id
-LEFT JOIN file_object r_tax_document_file_id ON r_tax_document_file_id.id = t.tax_document_file_id
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
 WHERE t.deleted_at IS NULL
   AND ($1::bigint IS NULL OR (SELECT sb.client_id FROM bond sb WHERE sb.id = t.bond_id) = $1)
-  AND ($2::bigint IS NULL OR t.payment_document_file_id = $2)
-  AND ($3::bigint IS NULL OR t.tax_document_file_id = $3)
-  AND ($4::bigint IS NULL OR t.bond_id = $4)
-  AND ($5::bigint IS NULL OR t.marketing_agent_id = $5)
+  AND ($2::bigint IS NULL OR t.bond_id = $2)
+  AND ($3::bigint IS NULL OR t.marketing_agent_id = $3)
 ORDER BY
-  CASE WHEN $6::text = 'created_at' THEN t.created_at END ASC,
-  CASE WHEN $6::text = '-created_at' THEN t.created_at END DESC,
+  CASE WHEN $4::text = 'created_at' THEN t.created_at END ASC,
+  CASE WHEN $4::text = '-created_at' THEN t.created_at END DESC,
   t.id DESC
-LIMIT $8 OFFSET $7
+LIMIT $6 OFFSET $5
 `
 
 type ListAgentFeeTransactionParams struct {
-	ScopeClientID         *int64
-	PaymentDocumentFileID *int64
-	TaxDocumentFileID     *int64
-	BondID                *int64
-	MarketingAgentID      *int64
-	Sort                  string
-	Offset                int32
-	Limit                 int32
+	ScopeClientID    *int64
+	BondID           *int64
+	MarketingAgentID *int64
+	Sort             string
+	Offset           int32
+	Limit            int32
 }
 
 type ListAgentFeeTransactionRow struct {
@@ -244,10 +222,10 @@ type ListAgentFeeTransactionRow struct {
 	OutstandingValue        *decimal.Decimal
 	PaidValue               *decimal.Decimal
 	PaymentDate             *time.Time
-	PaymentDocumentFileID   *int64
+	PaymentDocumentFileUuid *uuid.UUID
 	RequestDate             *time.Time
 	Status                  *int16
-	TaxDocumentFileID       *int64
+	TaxDocumentFileUuid     *uuid.UUID
 	TaxPaidValue            *decimal.Decimal
 	TaxValue                *decimal.Decimal
 	BondID                  *int64
@@ -264,8 +242,6 @@ type ListAgentFeeTransactionRow struct {
 	LeaderCommision         *decimal.Decimal
 	Npwp                    *string
 	PersonalCommision       *decimal.Decimal
-	PaymentDocumentFileUuid *uuid.UUID
-	TaxDocumentFileUuid     *uuid.UUID
 	BondUuid                *uuid.UUID
 	MarketingAgentUuid      *uuid.UUID
 	CreatedAt               time.Time
@@ -275,8 +251,6 @@ type ListAgentFeeTransactionRow struct {
 func (q *Queries) ListAgentFeeTransaction(ctx context.Context, arg ListAgentFeeTransactionParams) ([]ListAgentFeeTransactionRow, error) {
 	rows, err := q.db.Query(ctx, listAgentFeeTransaction,
 		arg.ScopeClientID,
-		arg.PaymentDocumentFileID,
-		arg.TaxDocumentFileID,
 		arg.BondID,
 		arg.MarketingAgentID,
 		arg.Sort,
@@ -298,10 +272,10 @@ func (q *Queries) ListAgentFeeTransaction(ctx context.Context, arg ListAgentFeeT
 			&i.OutstandingValue,
 			&i.PaidValue,
 			&i.PaymentDate,
-			&i.PaymentDocumentFileID,
+			&i.PaymentDocumentFileUuid,
 			&i.RequestDate,
 			&i.Status,
-			&i.TaxDocumentFileID,
+			&i.TaxDocumentFileUuid,
 			&i.TaxPaidValue,
 			&i.TaxValue,
 			&i.BondID,
@@ -318,8 +292,6 @@ func (q *Queries) ListAgentFeeTransaction(ctx context.Context, arg ListAgentFeeT
 			&i.LeaderCommision,
 			&i.Npwp,
 			&i.PersonalCommision,
-			&i.PaymentDocumentFileUuid,
-			&i.TaxDocumentFileUuid,
 			&i.BondUuid,
 			&i.MarketingAgentUuid,
 			&i.CreatedAt,
@@ -360,9 +332,9 @@ UPDATE agent_fee_transaction t
 SET agent_name = (SELECT s.marketing_agent_name FROM marketing_agent s WHERE s.id = $1),
     description = $2,
     outstanding_value = $3,
-    payment_document_file_id = $4,
+    payment_document_file_uuid = $4,
     request_date = $5,
-    tax_document_file_id = $6,
+    tax_document_file_uuid = $6,
     tax_value = $7,
     bond_id = $8,
     marketing_agent_id = $1,
@@ -383,20 +355,20 @@ WHERE t.uuid = $13 AND t.updated_at = $14 AND t.deleted_at IS NULL
 `
 
 type UpdateAgentFeeTransactionParams struct {
-	MarketingAgentID      *int64
-	Description           *string
-	OutstandingValue      *decimal.Decimal
-	PaymentDocumentFileID *int64
-	RequestDate           *time.Time
-	TaxDocumentFileID     *int64
-	TaxValue              *decimal.Decimal
-	BondID                *int64
-	AgentType             *string
-	LeaderCommision       *decimal.Decimal
-	PersonalCommision     *decimal.Decimal
-	Actor                 *string
-	Uuid                  uuid.UUID
-	ExpectedUpdatedAt     time.Time
+	MarketingAgentID        *int64
+	Description             *string
+	OutstandingValue        *decimal.Decimal
+	PaymentDocumentFileUuid *uuid.UUID
+	RequestDate             *time.Time
+	TaxDocumentFileUuid     *uuid.UUID
+	TaxValue                *decimal.Decimal
+	BondID                  *int64
+	AgentType               *string
+	LeaderCommision         *decimal.Decimal
+	PersonalCommision       *decimal.Decimal
+	Actor                   *string
+	Uuid                    uuid.UUID
+	ExpectedUpdatedAt       time.Time
 }
 
 func (q *Queries) UpdateAgentFeeTransaction(ctx context.Context, arg UpdateAgentFeeTransactionParams) (int64, error) {
@@ -404,9 +376,9 @@ func (q *Queries) UpdateAgentFeeTransaction(ctx context.Context, arg UpdateAgent
 		arg.MarketingAgentID,
 		arg.Description,
 		arg.OutstandingValue,
-		arg.PaymentDocumentFileID,
+		arg.PaymentDocumentFileUuid,
 		arg.RequestDate,
-		arg.TaxDocumentFileID,
+		arg.TaxDocumentFileUuid,
 		arg.TaxValue,
 		arg.BondID,
 		arg.AgentType,

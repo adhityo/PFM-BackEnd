@@ -263,7 +263,7 @@ func TestPortfolioTenantScope(t *testing.T) {
 	var ids []string
 	for _, code := range []string{"client:read", "portfolio:read", "portfolio:create", "portfolio:update", "portfolio_note:read", "portfolio_note:create"} {
 		var id string
-		if err := e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id); err != nil {
+		if err := e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM action WHERE action_code=$1", code).Scan(&id); err != nil {
 			t.Fatal(code, err)
 		}
 		ids = append(ids, id)

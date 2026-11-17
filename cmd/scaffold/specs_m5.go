@@ -110,7 +110,7 @@ func init() {
 			Validate: withPeriod(map[string]string{"benefit_payout_value": "dgte=0", "benefit_payout_tax_value": "dgte=0"})},
 
 		{Table: "member_document", Label: "dokumen peserta", Scope: scopeViaMember, NestedUnder: []string{"member_id"},
-			Required: []string{"member_id", "document_file_id"}, Check: "checkMemberDocument",
-			Files: map[string]string{"document_file_id": "member_document.document"}},
+			Required: []string{"member_id", "document_file_uuid"}, Check: "checkMemberDocument",
+			Files: map[string]string{"document_file_uuid": "member_document.document"}},
 	}
 }

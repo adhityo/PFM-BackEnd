@@ -28,7 +28,6 @@ type cashSettlementRefs struct {
 	cashSettlementCategoryID *int64
 	memberID                 *int64
 	clientID                 *int64
-	documentFileID           *int64
 	bondPortfolioID          *int64
 	stockPortfolioID         *int64
 	depositoPortfolioID      *int64
@@ -46,9 +45,6 @@ func (r cashSettlementRepository) resolve(ctx context.Context, req dto.CashSettl
 		return refs, err
 	}
 	if refs.clientID, err = database.RefID(ctx, r.tx, "client", req.ClientUUID, "client_uuid"); err != nil {
-		return refs, err
-	}
-	if refs.documentFileID, err = database.RefID(ctx, r.tx, "file_object", req.DocumentFileUUID, "document_file_uuid"); err != nil {
 		return refs, err
 	}
 	if refs.bondPortfolioID, err = database.RefID(ctx, r.tx, "bond_portfolio", req.BondPortfolioUUID, "bond_portfolio_uuid"); err != nil {
@@ -85,10 +81,6 @@ func (r cashSettlementRepository) List(ctx context.Context, q httpx.ListQuery) (
 	if err != nil {
 		return nil, 0, err
 	}
-	documentFileID, err := database.FilterRefID(ctx, r.tx, "file_object", "document_file_uuid", q.Text("document_file_uuid"))
-	if err != nil {
-		return nil, 0, err
-	}
 	bondPortfolioID, err := database.FilterRefID(ctx, r.tx, "bond_portfolio", "bond_portfolio_uuid", q.Text("bond_portfolio_uuid"))
 	if err != nil {
 		return nil, 0, err
@@ -106,11 +98,11 @@ func (r cashSettlementRepository) List(ctx context.Context, q httpx.ListQuery) (
 		return nil, 0, err
 	}
 	qs := r.tx.Queries(ctx)
-	rows, err := qs.ListCashSettlement(ctx, sqlc.ListCashSettlementParams{ScopeClientID: scope, CashSettlementCategoryID: cashSettlementCategoryID, MemberID: memberID, ClientID: clientID, DocumentFileID: documentFileID, BondPortfolioID: bondPortfolioID, StockPortfolioID: stockPortfolioID, DepositoPortfolioID: depositoPortfolioID, MutualFundPortfolioID: mutualFundPortfolioID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
+	rows, err := qs.ListCashSettlement(ctx, sqlc.ListCashSettlementParams{ScopeClientID: scope, CashSettlementCategoryID: cashSettlementCategoryID, MemberID: memberID, ClientID: clientID, BondPortfolioID: bondPortfolioID, StockPortfolioID: stockPortfolioID, DepositoPortfolioID: depositoPortfolioID, MutualFundPortfolioID: mutualFundPortfolioID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
 	if err != nil {
 		return nil, 0, database.MapError("list cash_settlement", err)
 	}
-	total, err := qs.CountCashSettlement(ctx, sqlc.CountCashSettlementParams{ScopeClientID: scope, CashSettlementCategoryID: cashSettlementCategoryID, MemberID: memberID, ClientID: clientID, DocumentFileID: documentFileID, BondPortfolioID: bondPortfolioID, StockPortfolioID: stockPortfolioID, DepositoPortfolioID: depositoPortfolioID, MutualFundPortfolioID: mutualFundPortfolioID})
+	total, err := qs.CountCashSettlement(ctx, sqlc.CountCashSettlementParams{ScopeClientID: scope, CashSettlementCategoryID: cashSettlementCategoryID, MemberID: memberID, ClientID: clientID, BondPortfolioID: bondPortfolioID, StockPortfolioID: stockPortfolioID, DepositoPortfolioID: depositoPortfolioID, MutualFundPortfolioID: mutualFundPortfolioID})
 	if err != nil {
 		return nil, 0, database.MapError("count cash_settlement", err)
 	}
@@ -134,7 +126,7 @@ func (r cashSettlementRepository) Create(ctx context.Context, req dto.CashSettle
 		CashSettlementValue:      crud.Decimal(req.CashSettlementValue),
 		CashSettlementSubject:    crud.Text(req.CashSettlementSubject),
 		ValidationNumber:         crud.Text(req.ValidationNumber),
-		DocumentFileID:           refs.documentFileID,
+		DocumentFileUuid:         crud.UUID(req.DocumentFileUUID),
 		Description:              crud.Text(req.Description),
 		BondPortfolioID:          refs.bondPortfolioID,
 		StockPortfolioID:         refs.stockPortfolioID,
@@ -157,7 +149,7 @@ func (r cashSettlementRepository) Update(ctx context.Context, id uuid.UUID, req 
 		CashSettlementValue:      crud.Decimal(req.CashSettlementValue),
 		CashSettlementSubject:    crud.Text(req.CashSettlementSubject),
 		ValidationNumber:         crud.Text(req.ValidationNumber),
-		DocumentFileID:           refs.documentFileID,
+		DocumentFileUuid:         crud.UUID(req.DocumentFileUUID),
 		Description:              crud.Text(req.Description),
 		BondPortfolioID:          refs.bondPortfolioID,
 		StockPortfolioID:         refs.stockPortfolioID,

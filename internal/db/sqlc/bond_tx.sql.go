@@ -585,17 +585,17 @@ func (q *Queries) LockAgentChangeRequest(ctx context.Context, argUuid uuid.UUID)
 
 const lockAgentFee = `-- name: LockAgentFee :one
 
-SELECT id, uuid, status, outstanding_value, payment_document_file_id, updated_at
+SELECT id, uuid, status, outstanding_value, payment_document_file_uuid, updated_at
 FROM agent_fee_transaction WHERE uuid = $1 AND deleted_at IS NULL FOR UPDATE
 `
 
 type LockAgentFeeRow struct {
-	ID                    int64
-	Uuid                  uuid.UUID
-	Status                *int16
-	OutstandingValue      *decimal.Decimal
-	PaymentDocumentFileID *int64
-	UpdatedAt             time.Time
+	ID                      int64
+	Uuid                    uuid.UUID
+	Status                  *int16
+	OutstandingValue        *decimal.Decimal
+	PaymentDocumentFileUuid *uuid.UUID
+	UpdatedAt               time.Time
 }
 
 // ---------------------------------------------------------------- agent fee
@@ -607,7 +607,7 @@ func (q *Queries) LockAgentFee(ctx context.Context, argUuid uuid.UUID) (LockAgen
 		&i.Uuid,
 		&i.Status,
 		&i.OutstandingValue,
-		&i.PaymentDocumentFileID,
+		&i.PaymentDocumentFileUuid,
 		&i.UpdatedAt,
 	)
 	return i, err
@@ -887,7 +887,7 @@ func (q *Queries) PayAgentFee(ctx context.Context, arg PayAgentFeeParams) error 
 const payInvestorCoupon = `-- name: PayInvestorCoupon :exec
 UPDATE investor_coupon_schedule
 SET coupon_status = 1, coupon_paid_value = coupon_value, payment_settlement_date = $1,
-    payment_reference_number = $2, payment_document_file_id = $3,
+    payment_reference_number = $2, payment_document_file_uuid = $3,
     updated_by = $4
 WHERE id = $5
 `
@@ -895,7 +895,7 @@ WHERE id = $5
 type PayInvestorCouponParams struct {
 	SettlementDate *time.Time
 	Reference      *string
-	FileID         *int64
+	FileUuid       *uuid.UUID
 	Actor          *string
 	ID             int64
 }
@@ -904,7 +904,7 @@ func (q *Queries) PayInvestorCoupon(ctx context.Context, arg PayInvestorCouponPa
 	_, err := q.db.Exec(ctx, payInvestorCoupon,
 		arg.SettlementDate,
 		arg.Reference,
-		arg.FileID,
+		arg.FileUuid,
 		arg.Actor,
 		arg.ID,
 	)

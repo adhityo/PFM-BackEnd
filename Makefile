@@ -19,7 +19,12 @@ keys: ## Buat kunci JWT Ed25519 untuk development (secrets/jwt_ed25519.pem)
 sqlc: ## Generate kode query dari internal/db/queries
 	sqlc generate
 
+# Database gabungan (semua set migrasi) khusus generator: make schema-db
 SCAFFOLD_DATABASE_URL ?= postgres://postgres:postgres@localhost:5432/pfm_schema?sslmode=disable
+
+.PHONY: schema-db
+schema-db: ## Siapkan database gabungan untuk generator (migrate -db all)
+	SCAFFOLD_DATABASE_URL="$(SCAFFOLD_DATABASE_URL)" $(GO) run ./cmd/migrate -db all up
 
 .PHONY: scaffold
 scaffold: ## Generate CRUD dari spec: make scaffold module=masterdata (butuh DB ter-migrate)
@@ -38,14 +43,15 @@ run: ## Jalankan API (butuh .env)
 	$(GO) run ./cmd/api
 
 .PHONY: worker
-worker: ## Jalankan worker pembersihan
+worker: ## Jalankan worker: kirim audit outbox ke pfm_log + pembersihan (pakai user DB worker)
 	$(GO) run ./cmd/worker
 
 .PHONY: migrate-up migrate-down migrate-status seed seed-admin
-migrate-up: ## Terapkan semua migrasi
+migrate-up: ## Terapkan migrasi ke keempat database
 	$(GO) run ./cmd/migrate up
-migrate-down: ## Rollback satu migrasi
-	$(GO) run ./cmd/migrate down
+migrate-down: ## Rollback satu migrasi: make migrate-down db=core
+	@test -n "$(db)" || (echo "pakai: make migrate-down db=<core|security|log|document>" && exit 1)
+	$(GO) run ./cmd/migrate -db $(db) down
 migrate-status: ## Status migrasi
 	$(GO) run ./cmd/migrate status
 seed: ## Sinkronkan katalog permission & role default
@@ -54,13 +60,20 @@ seed-admin: ## Buat admin pertama (ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD)
 	$(GO) run ./cmd/migrate seed-admin
 
 .PHONY: db-grants
-db-grants: ## Terapkan hak akses pfm_app setelah migrasi (PRD §12.5)
-	psql "$(MIGRATION_DATABASE_URL)" -v ON_ERROR_STOP=1 -f deploy/postgres/grants-after-migrate.sql
+db-grants: ## Terapkan hak akses minimum ke 4 database setelah migrasi (PRD §7.1, §12.5)
+	psql "$(MIGRATION_DATABASE_URL_CORE)"     -v ON_ERROR_STOP=1 -f deploy/postgres/grants-core.sql
+	psql "$(MIGRATION_DATABASE_URL_SECURITY)" -v ON_ERROR_STOP=1 -f deploy/postgres/grants-security.sql
+	psql "$(MIGRATION_DATABASE_URL_LOG)"      -v ON_ERROR_STOP=1 -f deploy/postgres/grants-log.sql
+	psql "$(MIGRATION_DATABASE_URL_DOCUMENT)" -v ON_ERROR_STOP=1 -f deploy/postgres/grants-document.sql
 
 .PHONY: migration
-migration: ## Buat file migrasi baru berurutan: make migration name=alter_bond_add_isin
-	@test -n "$(name)" || (echo "pakai: make migration name=<nama>" && exit 1)
-	$(GO) run github.com/pressly/goose/v3/cmd/goose@v3.30.1 -s -dir internal/db/migrations create $(name) sql
+migration: ## Buat migrasi baru: make migration db=core name=alter_bond_add_isin (nomor global berurutan)
+	@test -n "$(name)" -a -n "$(db)" || (echo "pakai: make migration db=<core|security|log|document> name=<nama>" && exit 1)
+	@test -d internal/db/migrations/$(db) || (echo "db tidak dikenal: $(db)" && exit 1)
+	@next=$$(ls internal/db/migrations/*/*.sql | sed -E 's#.*/([0-9]+)_.*#\1#' | sort -n | tail -1); \
+	 file=internal/db/migrations/$(db)/$$(printf '%05d' $$((10#$$next + 1)))_$(name).sql; \
+	 printf -- '-- +goose Up\n-- +goose StatementBegin\n\n-- +goose StatementEnd\n\n-- +goose Down\n-- +goose StatementBegin\n\n-- +goose StatementEnd\n' > $$file; \
+	 echo "dibuat: $$file"
 
 .PHONY: test
 test: ## Unit test (integration test dilewati tanpa TEST_DATABASE_URL)

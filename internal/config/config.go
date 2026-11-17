@@ -17,9 +17,22 @@ type Config struct {
 	MetricsAddr string `env:"METRICS_ADDR" envDefault:"127.0.0.1:9090"`
 	LogLevel    string `env:"LOG_LEVEL" envDefault:"info"`
 
-	DatabaseURL          string `env:"DATABASE_URL"`
-	MigrationDatabaseURL string `env:"MIGRATION_DATABASE_URL"`
-	DBMaxConns           int32  `env:"DB_MAX_CONNS" envDefault:"20"`
+	// Four databases (PRD §7.1), each with its own credentials: a leaked DSN
+	// exposes one database only. The log DSN of the API should be read-only;
+	// the worker uses an INSERT-only log user to ship the audit outbox.
+	DatabaseURLCore     string `env:"DATABASE_URL_CORE"`
+	DatabaseURLSecurity string `env:"DATABASE_URL_SECURITY"`
+	DatabaseURLLog      string `env:"DATABASE_URL_LOG"`
+	DatabaseURLDocument string `env:"DATABASE_URL_DOCUMENT"`
+
+	MigrationURLCore     string `env:"MIGRATION_DATABASE_URL_CORE"`
+	MigrationURLSecurity string `env:"MIGRATION_DATABASE_URL_SECURITY"`
+	MigrationURLLog      string `env:"MIGRATION_DATABASE_URL_LOG"`
+	MigrationURLDocument string `env:"MIGRATION_DATABASE_URL_DOCUMENT"`
+	// ScaffoldDatabaseURL is the dev-only union database for cmd/scaffold and `migrate -db all`.
+	ScaffoldDatabaseURL string `env:"SCAFFOLD_DATABASE_URL"`
+
+	DBMaxConns int32 `env:"DB_MAX_CONNS" envDefault:"20"`
 
 	JWTPrivateKeyFile string        `env:"JWT_PRIVATE_KEY_FILE"`
 	JWTIssuer         string        `env:"JWT_ISSUER" envDefault:"pfm-backend"`
@@ -61,9 +74,7 @@ func Load() (Config, error) {
 // ValidateAPI checks the settings the HTTP server needs.
 func (c Config) ValidateAPI() error {
 	var errs []error
-	if c.DatabaseURL == "" {
-		errs = append(errs, errors.New("DATABASE_URL wajib diisi"))
-	}
+	errs = append(errs, c.ValidateDatabases()...)
 	if c.JWTPrivateKeyFile == "" {
 		errs = append(errs, errors.New("JWT_PRIVATE_KEY_FILE wajib diisi"))
 	}
@@ -100,10 +111,39 @@ func (c Config) ValidateAPI() error {
 	return errors.Join(errs...)
 }
 
-// MigrationURL returns the DSN used for schema migrations.
-func (c Config) MigrationURL() string {
-	if c.MigrationDatabaseURL != "" {
-		return c.MigrationDatabaseURL
+// DatabaseURLs returns the runtime DSNs by database name.
+func (c Config) DatabaseURLs() map[string]string {
+	return map[string]string{"core": c.DatabaseURLCore, "security": c.DatabaseURLSecurity,
+		"log": c.DatabaseURLLog, "document": c.DatabaseURLDocument}
+}
+
+// ValidateDatabases requires the four runtime DSNs and forbids sharing one
+// DSN between databases (that would undo the separation).
+func (c Config) ValidateDatabases() []error {
+	var errs []error
+	seen := map[string]string{}
+	for _, name := range []string{"core", "security", "log", "document"} {
+		dsn := c.DatabaseURLs()[name]
+		if dsn == "" {
+			errs = append(errs, fmt.Errorf("DATABASE_URL_%s wajib diisi", strings.ToUpper(name)))
+			continue
+		}
+		if other, dup := seen[dsn]; dup {
+			errs = append(errs, fmt.Errorf("DATABASE_URL_%s sama dengan DATABASE_URL_%s; tiap database harus terpisah",
+				strings.ToUpper(name), strings.ToUpper(other)))
+		}
+		seen[dsn] = name
 	}
-	return c.DatabaseURL
+	return errs
+}
+
+// MigrationURL returns the DSN used to migrate one database (falls back to
+// the runtime DSN); "all" is the scaffold union database.
+func (c Config) MigrationURL(name string) string {
+	m := map[string]string{"core": c.MigrationURLCore, "security": c.MigrationURLSecurity,
+		"log": c.MigrationURLLog, "document": c.MigrationURLDocument, "all": c.ScaffoldDatabaseURL}
+	if m[name] != "" || name == "all" {
+		return m[name]
+	}
+	return c.DatabaseURLs()[name]
 }

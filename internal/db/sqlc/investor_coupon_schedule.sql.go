@@ -18,24 +18,17 @@ SELECT count(*) FROM investor_coupon_schedule t
 WHERE t.deleted_at IS NULL
   AND ($1::bigint IS NULL OR (SELECT sb.client_id FROM bond sb JOIN bond_trade x ON x.bond_id = sb.id WHERE x.id = t.bond_trade_id) = $1)
   AND ($2::bigint IS NULL OR t.bond_coupon_schedule_id = $2)
-  AND ($3::bigint IS NULL OR t.payment_document_file_id = $3)
-  AND ($4::bigint IS NULL OR t.bond_trade_id = $4)
+  AND ($3::bigint IS NULL OR t.bond_trade_id = $3)
 `
 
 type CountInvestorCouponScheduleParams struct {
-	ScopeClientID         *int64
-	BondCouponScheduleID  *int64
-	PaymentDocumentFileID *int64
-	BondTradeID           *int64
+	ScopeClientID        *int64
+	BondCouponScheduleID *int64
+	BondTradeID          *int64
 }
 
 func (q *Queries) CountInvestorCouponSchedule(ctx context.Context, arg CountInvestorCouponScheduleParams) (int64, error) {
-	row := q.db.QueryRow(ctx, countInvestorCouponSchedule,
-		arg.ScopeClientID,
-		arg.BondCouponScheduleID,
-		arg.PaymentDocumentFileID,
-		arg.BondTradeID,
-	)
+	row := q.db.QueryRow(ctx, countInvestorCouponSchedule, arg.ScopeClientID, arg.BondCouponScheduleID, arg.BondTradeID)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
@@ -43,10 +36,9 @@ func (q *Queries) CountInvestorCouponSchedule(ctx context.Context, arg CountInve
 
 const getInvestorCouponScheduleByUUID = `-- name: GetInvestorCouponScheduleByUUID :one
 
-SELECT t.id, t.uuid, t.bond_coupon_schedule_id, t.coupon_value, t.coupon_paid_value, t.payment_settlement_date, t.payment_reference_number, t.description, t.coupon_status, t.payment_document_file_id, t.bond_trade_id, t.transaction_type, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_payment_document_file_id.uuid AS payment_document_file_uuid, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_coupon_schedule_id, t.coupon_value, t.coupon_paid_value, t.payment_settlement_date, t.payment_reference_number, t.description, t.coupon_status, t.payment_document_file_uuid, t.bond_trade_id, t.transaction_type, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
 FROM investor_coupon_schedule t
 LEFT JOIN bond_coupon_schedule r_bond_coupon_schedule_id ON r_bond_coupon_schedule_id.id = t.bond_coupon_schedule_id
-LEFT JOIN file_object r_payment_document_file_id ON r_payment_document_file_id.id = t.payment_document_file_id
 LEFT JOIN bond_trade r_bond_trade_id ON r_bond_trade_id.id = t.bond_trade_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
   AND ($2::bigint IS NULL OR (SELECT sb.client_id FROM bond sb JOIN bond_trade x ON x.bond_id = sb.id WHERE x.id = t.bond_trade_id) = $2)
@@ -67,11 +59,10 @@ type GetInvestorCouponScheduleByUUIDRow struct {
 	PaymentReferenceNumber  *string
 	Description             *string
 	CouponStatus            *int16
-	PaymentDocumentFileID   *int64
+	PaymentDocumentFileUuid *uuid.UUID
 	BondTradeID             *int64
 	TransactionType         *int16
 	BondCouponScheduleUuid  *uuid.UUID
-	PaymentDocumentFileUuid *uuid.UUID
 	BondTradeUuid           *uuid.UUID
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
@@ -91,11 +82,10 @@ func (q *Queries) GetInvestorCouponScheduleByUUID(ctx context.Context, arg GetIn
 		&i.PaymentReferenceNumber,
 		&i.Description,
 		&i.CouponStatus,
-		&i.PaymentDocumentFileID,
+		&i.PaymentDocumentFileUuid,
 		&i.BondTradeID,
 		&i.TransactionType,
 		&i.BondCouponScheduleUuid,
-		&i.PaymentDocumentFileUuid,
 		&i.BondTradeUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -104,31 +94,28 @@ func (q *Queries) GetInvestorCouponScheduleByUUID(ctx context.Context, arg GetIn
 }
 
 const listInvestorCouponSchedule = `-- name: ListInvestorCouponSchedule :many
-SELECT t.id, t.uuid, t.bond_coupon_schedule_id, t.coupon_value, t.coupon_paid_value, t.payment_settlement_date, t.payment_reference_number, t.description, t.coupon_status, t.payment_document_file_id, t.bond_trade_id, t.transaction_type, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_payment_document_file_id.uuid AS payment_document_file_uuid, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_coupon_schedule_id, t.coupon_value, t.coupon_paid_value, t.payment_settlement_date, t.payment_reference_number, t.description, t.coupon_status, t.payment_document_file_uuid, t.bond_trade_id, t.transaction_type, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
 FROM investor_coupon_schedule t
 LEFT JOIN bond_coupon_schedule r_bond_coupon_schedule_id ON r_bond_coupon_schedule_id.id = t.bond_coupon_schedule_id
-LEFT JOIN file_object r_payment_document_file_id ON r_payment_document_file_id.id = t.payment_document_file_id
 LEFT JOIN bond_trade r_bond_trade_id ON r_bond_trade_id.id = t.bond_trade_id
 WHERE t.deleted_at IS NULL
   AND ($1::bigint IS NULL OR (SELECT sb.client_id FROM bond sb JOIN bond_trade x ON x.bond_id = sb.id WHERE x.id = t.bond_trade_id) = $1)
   AND ($2::bigint IS NULL OR t.bond_coupon_schedule_id = $2)
-  AND ($3::bigint IS NULL OR t.payment_document_file_id = $3)
-  AND ($4::bigint IS NULL OR t.bond_trade_id = $4)
+  AND ($3::bigint IS NULL OR t.bond_trade_id = $3)
 ORDER BY
-  CASE WHEN $5::text = 'created_at' THEN t.created_at END ASC,
-  CASE WHEN $5::text = '-created_at' THEN t.created_at END DESC,
+  CASE WHEN $4::text = 'created_at' THEN t.created_at END ASC,
+  CASE WHEN $4::text = '-created_at' THEN t.created_at END DESC,
   t.id DESC
-LIMIT $7 OFFSET $6
+LIMIT $6 OFFSET $5
 `
 
 type ListInvestorCouponScheduleParams struct {
-	ScopeClientID         *int64
-	BondCouponScheduleID  *int64
-	PaymentDocumentFileID *int64
-	BondTradeID           *int64
-	Sort                  string
-	Offset                int32
-	Limit                 int32
+	ScopeClientID        *int64
+	BondCouponScheduleID *int64
+	BondTradeID          *int64
+	Sort                 string
+	Offset               int32
+	Limit                int32
 }
 
 type ListInvestorCouponScheduleRow struct {
@@ -141,11 +128,10 @@ type ListInvestorCouponScheduleRow struct {
 	PaymentReferenceNumber  *string
 	Description             *string
 	CouponStatus            *int16
-	PaymentDocumentFileID   *int64
+	PaymentDocumentFileUuid *uuid.UUID
 	BondTradeID             *int64
 	TransactionType         *int16
 	BondCouponScheduleUuid  *uuid.UUID
-	PaymentDocumentFileUuid *uuid.UUID
 	BondTradeUuid           *uuid.UUID
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
@@ -155,7 +141,6 @@ func (q *Queries) ListInvestorCouponSchedule(ctx context.Context, arg ListInvest
 	rows, err := q.db.Query(ctx, listInvestorCouponSchedule,
 		arg.ScopeClientID,
 		arg.BondCouponScheduleID,
-		arg.PaymentDocumentFileID,
 		arg.BondTradeID,
 		arg.Sort,
 		arg.Offset,
@@ -178,11 +163,10 @@ func (q *Queries) ListInvestorCouponSchedule(ctx context.Context, arg ListInvest
 			&i.PaymentReferenceNumber,
 			&i.Description,
 			&i.CouponStatus,
-			&i.PaymentDocumentFileID,
+			&i.PaymentDocumentFileUuid,
 			&i.BondTradeID,
 			&i.TransactionType,
 			&i.BondCouponScheduleUuid,
-			&i.PaymentDocumentFileUuid,
 			&i.BondTradeUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

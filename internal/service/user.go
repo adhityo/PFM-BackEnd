@@ -47,7 +47,7 @@ func (s *UserService) List(ctx context.Context, f model.UserFilter, p model.Pagi
 	if err != nil {
 		return nil, 0, err
 	}
-	f.ScopeClientID = actor.ScopeClientID()
+	f.ScopeClientUUID = actor.ScopeClientUUID()
 	users, total, err := s.users.List(ctx, f, p)
 	if err != nil {
 		return nil, 0, err
@@ -66,7 +66,7 @@ func (s *UserService) Get(ctx context.Context, id uuid.UUID) (model.User, error)
 	if err != nil {
 		return model.User{}, err
 	}
-	return s.users.GetByUUID(ctx, id, actor.ScopeClientID())
+	return s.users.GetByUUID(ctx, id, actor.ScopeClientUUID())
 }
 
 // Response converts a user for output.
@@ -89,21 +89,21 @@ func (s *UserService) resolveRole(ctx context.Context, actor auth.Actor, roleUUI
 }
 
 // resolveClient enforces tenant scope: scoped actors can only manage users of
-// their own client.
-func (s *UserService) resolveClient(ctx context.Context, actor auth.Actor, clientUUID string) (*int64, error) {
-	scope := actor.ScopeClientID()
+// their own client. The client lives in pfm_core and is checked there (no FK
+// across databases).
+func (s *UserService) resolveClient(ctx context.Context, actor auth.Actor, clientUUID string) (*uuid.UUID, error) {
+	scope := actor.ScopeClientUUID()
 	if clientUUID == "" {
 		return scope, nil
 	}
 	id, _ := uuid.Parse(clientUUID)
-	cid, err := s.clients.ClientIDByUUID(ctx, id)
-	if err != nil {
+	if _, err := s.clients.ClientIDByUUID(ctx, id); err != nil {
 		return nil, err
 	}
-	if scope != nil && *scope != cid {
+	if scope != nil && *scope != id {
 		return nil, apperr.Forbidden("tidak dapat mengelola pengguna client lain")
 	}
-	return &cid, nil
+	return &id, nil
 }
 
 func (s *UserService) newActivationKey() (raw, hash string, exp time.Time, err error) {
@@ -134,7 +134,7 @@ func (s *UserService) Create(ctx context.Context, in dto.CreateUserRequest) (dto
 		id := crud.NewID()
 		if _, err := s.users.Create(ctx, model.NewUser{UUID: id, Username: in.Username, Email: in.Email,
 			FirstName: crud.Text(in.FirstName), Description: crud.Text(in.Description), Status: model.StatusCode(in.Status),
-			RoleID: role.ID, ClientID: clientID, IsSupervisor: in.IsSupervisor, ActivationKeyHash: hash,
+			RoleID: role.ID, ClientUUID: clientID, IsSupervisor: in.IsSupervisor, ActivationKeyHash: hash,
 			ActivationExpires: exp, Actor: actor.AuditName()}); err != nil {
 			return err
 		}
@@ -151,7 +151,7 @@ func (s *UserService) Create(ctx context.Context, in dto.CreateUserRequest) (dto
 
 // loadManaged loads a user the actor is allowed to modify.
 func (s *UserService) loadManaged(ctx context.Context, actor auth.Actor, id uuid.UUID) (model.User, error) {
-	u, err := s.users.GetByUUID(ctx, id, actor.ScopeClientID())
+	u, err := s.users.GetByUUID(ctx, id, actor.ScopeClientUUID())
 	if err != nil {
 		return model.User{}, err
 	}
@@ -185,7 +185,7 @@ func (s *UserService) Update(ctx context.Context, id uuid.UUID, in dto.UpdateUse
 			return apperr.Invalid("role_uuid", "self", "tidak dapat mengubah role atau menonaktifkan akun sendiri")
 		}
 		if _, err := s.users.Update(ctx, model.UserChange{UUID: id, Email: in.Email, FirstName: crud.Text(in.FirstName),
-			Description: crud.Text(in.Description), Status: status, RoleID: role.ID, ClientID: clientID,
+			Description: crud.Text(in.Description), Status: status, RoleID: role.ID, ClientUUID: clientID,
 			IsSupervisor: in.IsSupervisor, Actor: actor.AuditName(), Expected: expected}); err != nil {
 			return err
 		}

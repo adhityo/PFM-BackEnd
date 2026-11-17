@@ -63,7 +63,7 @@ func (s *ConfigurationService) Update(ctx context.Context, req dto.Configuration
 			CompanyAddress: crud.Text(req.CompanyAddress), DefaultProrateDays: req.DefaultProrateDays,
 			AgentNumberTemplate: crud.Text(req.AgentNumberTemplate), CertificateNumberTemplate: crud.Text(req.CertificateNumberTemplate),
 			InvestorNumberTemplate: crud.Text(req.InvestorNumberTemplate), EmitentCode: crud.Text(req.EmitentCode),
-			ProxyApiUrl: crud.Text(req.ProxyAPIURL), IsUsingQrLogo: req.IsUsingQRLogo, QrLogoFileID: logoID,
+			ProxyApiUrl: crud.Text(req.ProxyAPIURL), IsUsingQrLogo: req.IsUsingQRLogo, QrLogoFileUuid: logoID,
 			IsUsingAgreement: req.IsUsingAgreement, Actor: ptr(actor.AuditName()), ID: id, ExpectedUpdatedAt: expected,
 		}); err != nil {
 			return err
@@ -78,7 +78,7 @@ func (s *ConfigurationService) Update(ctx context.Context, req dto.Configuration
 }
 
 // resolveLogo keeps the current logo, clears it, or attaches a new pending upload.
-func (s *ConfigurationService) resolveLogo(ctx context.Context, raw string, cur sqlc.GetConfigurationRow) (*int64, error) {
+func (s *ConfigurationService) resolveLogo(ctx context.Context, raw string, cur sqlc.GetConfigurationRow) (*uuid.UUID, error) {
 	if raw == "" {
 		return nil, nil
 	}
@@ -87,11 +87,10 @@ func (s *ConfigurationService) resolveLogo(ctx context.Context, raw string, cur 
 		return nil, apperr.Invalid("qr_logo_file_uuid", "uuid", "harus berupa UUID yang valid")
 	}
 	if cur.QrLogoFileUuid != nil && *cur.QrLogoFileUuid == id {
-		return cur.QrLogoFileID, nil
+		return &id, nil
 	}
-	fid, err := s.files.Attach(ctx, id, qrLogoPurpose, "qr_logo_file_uuid")
-	if err != nil {
+	if err := s.files.Attach(ctx, id, qrLogoPurpose, "qr_logo_file_uuid"); err != nil {
 		return nil, err
 	}
-	return &fid, nil
+	return &id, nil
 }

@@ -19,7 +19,7 @@ func PaymentDocumentResource(d Deps) crud.Resource[sqlc.GetPaymentDocumentByUUID
 		Path:        "/payment-documents",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",
-		Filters:     []string{"q", "document_file_uuid", "bond_coupon_schedule_uuid", "document_category_uuid", "investor_coupon_schedule_uuid"},
+		Filters:     []string{"q", "bond_coupon_schedule_uuid", "document_category_uuid", "investor_coupon_schedule_uuid"},
 		Store:       repository.NewPaymentDocumentRepository(d.TX),
 		Response:    dto.PaymentDocumentFromRow,
 		Nested: []crud.Nested{

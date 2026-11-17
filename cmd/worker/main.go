@@ -1,5 +1,12 @@
-// Command worker runs periodic maintenance jobs:
-// removing stale pending uploads and expired refresh tokens.
+// Command worker runs background jobs:
+//   - every few seconds: ship the audit outboxes (pfm_core, pfm_security,
+//     pfm_document) into pfm_log;
+//   - every 15 minutes: remove stale pending uploads (pfm_document) and expired
+//     refresh tokens (pfm_security).
+//
+// It reads the same DATABASE_URL_* variables as the API, but should run with
+// its own users: one that may read/delete audit_outbox in the source
+// databases and one that may only INSERT into pfm_log (deploy/postgres).
 package main
 
 import (
@@ -12,6 +19,7 @@ import (
 	"time"
 
 	"pfm-backend/internal/config"
+	"pfm-backend/internal/db"
 	"pfm-backend/internal/platform/audit"
 	"pfm-backend/internal/platform/database"
 	"pfm-backend/internal/platform/logger"
@@ -21,7 +29,8 @@ import (
 )
 
 const (
-	interval          = 15 * time.Minute
+	shipInterval      = 5 * time.Second
+	cleanupInterval   = 15 * time.Minute
 	pendingFileMaxAge = 24 * time.Hour
 )
 
@@ -37,15 +46,18 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if errs := cfg.ValidateDatabases(); len(errs) > 0 {
+		return fmt.Errorf("konfigurasi tidak valid: %v", errs)
+	}
 	log := logger.New(os.Stdout, cfg.LogLevel)
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	pool, err := database.NewPool(ctx, cfg.DatabaseURL, 4)
+	pools, err := database.OpenPools(ctx, cfg.DatabaseURLs(), 4)
 	if err != nil {
 		return err
 	}
-	defer pool.Close()
+	defer pools.Close()
 	images, err := storage.NewLocalImageStorage(cfg.StorageImageRoot)
 	if err != nil {
 		return err
@@ -59,29 +71,41 @@ func run() error {
 		return err
 	}
 
-	tx := database.NewTxManager(pool)
-	files := service.NewFileService(tx, repository.NewFileObjectRepository(tx), images, docs, audit.NewRecorder(tx), log, cfg.S3PresignTTL)
+	core, sec := database.NewTxManager(pools.Core), database.NewTxManager(pools.Security)
+	docTx, logTx := database.NewTxManager(pools.Document), database.NewTxManager(pools.Log)
+	shipper := audit.NewShipper(logTx, map[string]*database.TxManager{db.Core: core, db.Security: sec, db.Document: docTx})
+	files := service.NewFileService(docTx, repository.NewFileObjectRepository(docTx), images, docs,
+		audit.NewRecorder(docTx, db.Document), log, cfg.S3PresignTTL)
 
-	tick := time.NewTicker(interval)
-	defer tick.Stop()
+	ship := time.NewTicker(shipInterval)
+	defer ship.Stop()
+	cleanup := time.NewTicker(cleanupInterval)
+	defer cleanup.Stop()
+	runCleanup(ctx, log, sec, files)
 	for {
-		runOnce(ctx, log, tx, files)
+		if n, err := shipper.ShipAll(ctx); err != nil {
+			log.Error("ship audit outbox", "err", err)
+		} else if n > 0 {
+			log.Debug("ship audit outbox", "events", n)
+		}
 		select {
 		case <-ctx.Done():
 			log.Info("worker stopped")
 			return nil
-		case <-tick.C:
+		case <-cleanup.C:
+			runCleanup(ctx, log, sec, files)
+		case <-ship.C:
 		}
 	}
 }
 
-func runOnce(ctx context.Context, log *slog.Logger, tx *database.TxManager, files *service.FileService) {
+func runCleanup(ctx context.Context, log *slog.Logger, sec *database.TxManager, files *service.FileService) {
 	if n, err := files.CleanupStale(ctx, time.Now().Add(-pendingFileMaxAge)); err != nil {
 		log.Error("cleanup stale files", "err", err)
 	} else if n > 0 {
 		log.Info("cleanup stale files", "deleted", n)
 	}
-	if n, err := tx.Queries(ctx).DeleteExpiredRefreshTokens(ctx); err != nil {
+	if n, err := sec.Queries(ctx).DeleteExpiredRefreshTokens(ctx); err != nil {
 		log.Error("cleanup refresh tokens", "err", err)
 	} else if n > 0 {
 		log.Info("cleanup refresh tokens", "deleted", n)

@@ -21,7 +21,7 @@ func CashSettlementResource(d Deps) crud.Resource[sqlc.GetCashSettlementByUUIDRo
 		Path:        "/cash-settlements",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",
-		Filters:     []string{"cash_settlement_category_uuid", "member_uuid", "client_uuid", "document_file_uuid", "bond_portfolio_uuid", "stock_portfolio_uuid", "deposito_portfolio_uuid", "mutual_fund_portfolio_uuid"},
+		Filters:     []string{"cash_settlement_category_uuid", "member_uuid", "client_uuid", "bond_portfolio_uuid", "stock_portfolio_uuid", "deposito_portfolio_uuid", "mutual_fund_portfolio_uuid"},
 		Store:       repository.NewCashSettlementRepository(d.TX),
 		Response:    dto.CashSettlementFromRow,
 		Check: func(ctx context.Context, req *dto.CashSettlementRequest, cur *sqlc.GetCashSettlementByUUIDRow) error {

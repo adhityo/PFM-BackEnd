@@ -146,6 +146,11 @@ func columnPlan(sp *Spec, t *Table, c Column) (*reqField, respField, error) {
 		rf.Type = ptrIf(c.Nullable, "time.Time")
 		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("datetime=2006-01-02T15:04:05Z07:00"),
 			Param: "crud.Time(req." + goName(c.Name) + ")", TrimString: true}
+	case "uuid":
+		// Reference to a row of another database (PRD §7.1): stored as its UUID, no FK.
+		rf.Type = ptrIf(c.Nullable, "uuid.UUID")
+		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("uuid"),
+			Param: "crud.UUID(req." + goName(c.Name) + ")", TrimString: true}
 	case "inet":
 		rf.Type = "*netip.Addr"
 		req = &reqField{Col: c.Name, Name: goName(c.Name), Type: "string", JSON: c.Name, Validate: tags("ip"),
@@ -444,7 +449,10 @@ func genService(p *plan) (string, error) {
 		slices.Sort(cols)
 		w("\t\tFiles: []crud.FileField[%s, dto.%sRequest]{\n", p.rowType, p.gn)
 		for _, c := range cols {
-			field := fkBase(c) + "_uuid"
+			field := c // *_file_uuid column (file_object lives in pfm_document)
+			if !strings.HasSuffix(c, "_uuid") {
+				field = fkBase(c) + "_uuid"
+			}
 			w("\t\t\t{Field: %q, Purpose: %q,\n\t\t\t\tGet: func(r *dto.%sRequest) string { return r.%s },\n\t\t\t\tCurrent: func(r *%s) *uuid.UUID { return r.%s }},\n",
 				field, p.sp.Files[c], p.gn, goName(field), p.rowType, sqlcName(field))
 		}

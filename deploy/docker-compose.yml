@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pfm
+      # roles.sql membuat pfm_core, pfm_security, pfm_log dan pfm_document beserta role-nya.
     ports:
       - "127.0.0.1:5432:5432"
     volumes:

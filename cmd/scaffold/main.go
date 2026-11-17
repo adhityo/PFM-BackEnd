@@ -1,11 +1,13 @@
 // Command scaffold generates CRUD plumbing from the migrated schema (dev tool).
 //
 //	scaffold schema            -> internal/db/schema/schema_gen.go
-//	scaffold module <name>     -> per table of the module: internal/db/queries/<table>.sql,
+//	scaffold module <name>     -> per table of the module: internal/db/queries/core/<table>.sql,
 //	                              internal/dto/<table>_gen.go, internal/repository/<table>_gen.go,
 //	                              internal/service/<table>_gen.go; plus internal/service/resources_<name>_gen.go
 //
-// It introspects SCAFFOLD_DATABASE_URL (a database migrated with `migrate up`).
+// It introspects SCAFFOLD_DATABASE_URL: a database migrated with the union of
+// every set (`migrate -db all up`). Scaffolded tables live in pfm_core;
+// references to other databases are plain UUID columns without FK.
 // Generated files are marked "DO NOT EDIT": change the spec or add a hook in
 // a hand-written file instead, then regenerate and run `sqlc generate`.
 package main
@@ -64,7 +66,7 @@ func run(args []string) error {
 			for _, c := range append(append(append([]string{}, sp.Required...), sp.Search...), sp.ReadOnly...) {
 				mustColumn(t, c, sp.Table)
 			}
-			sqlPath := filepath.Join("internal/db/queries", sp.Table+".sql")
+			sqlPath := filepath.Join("internal/db/queries/core", sp.Table+".sql")
 			if err := guardGenerated(sqlPath); err != nil {
 				return err
 			}

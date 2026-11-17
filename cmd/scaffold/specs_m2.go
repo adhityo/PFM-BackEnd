@@ -98,7 +98,7 @@ func init() {
 	}
 
 	moduleSpecs["portfolio"] = []*Spec{
-		{Table: "client", Label: "client", Scope: "t.id",
+		{Table: "client", Label: "client", Scope: "t.id", CheckDelete: "checkClientDelete",
 			Validate: map[string]string{"email": "email", "base_platform_url": "url"}},
 		{Table: "portfolio", Label: "portofolio", Scope: "t.client_id", Check: "checkPortfolio",
 			NestedUnder: []string{"client_id"},

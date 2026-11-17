@@ -3,6 +3,8 @@
 package service
 
 import (
+	"context"
+
 	"pfm-backend/internal/db/sqlc"
 	"pfm-backend/internal/dto"
 	"pfm-backend/internal/platform/crud"
@@ -20,5 +22,8 @@ func ClientResource(d Deps) crud.Resource[sqlc.GetClientByUUIDRow, dto.ClientReq
 		Filters:     []string{"q", "sector_uuid"},
 		Store:       repository.NewClientRepository(d.TX),
 		Response:    dto.ClientFromRow,
+		CheckDelete: func(ctx context.Context, cur *sqlc.GetClientByUUIDRow) error {
+			return checkClientDelete(ctx, d, cur)
+		},
 	}
 }

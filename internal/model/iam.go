@@ -47,8 +47,7 @@ type Credential struct {
 	LockedUntil  *time.Time
 	RoleID       *int64
 	RoleCode     string
-	ClientID     *int64
-	ClientUUID   *uuid.UUID
+	ClientUUID   *uuid.UUID // client in pfm_core
 }
 
 // CanAuthenticate reports whether the account may hold a session at time now.
@@ -71,7 +70,6 @@ type User struct {
 	RoleID       *int64
 	RoleUUID     *uuid.UUID
 	RoleCode     *string
-	ClientID     *int64
 	ClientUUID   *uuid.UUID
 	IsSupervisor bool
 	PasswordSet  bool
@@ -83,10 +81,10 @@ type User struct {
 
 // UserFilter holds list filters for users.
 type UserFilter struct {
-	ScopeClientID *int64
-	Q             *string
-	RoleID        *int64
-	Status        *int16
+	ScopeClientUUID *uuid.UUID
+	Q               *string
+	RoleID          *int64
+	Status          *int16
 }
 
 // NewUser is the data needed to insert a user.
@@ -98,7 +96,7 @@ type NewUser struct {
 	Description       *string
 	Status            int16
 	RoleID            int64
-	ClientID          *int64
+	ClientUUID        *uuid.UUID
 	IsSupervisor      bool
 	ActivationKeyHash string
 	ActivationExpires time.Time
@@ -113,7 +111,7 @@ type UserChange struct {
 	Description  *string
 	Status       int16
 	RoleID       int64
-	ClientID     *int64
+	ClientUUID   *uuid.UUID
 	IsSupervisor bool
 	Actor        string
 	Expected     time.Time

@@ -12,6 +12,18 @@ import (
 	"github.com/google/uuid"
 )
 
+const countActiveUsersByClient = `-- name: CountActiveUsersByClient :one
+SELECT count(*) FROM app_user WHERE client_uuid = $1 AND deleted_at IS NULL
+`
+
+// Cross-database guard: a client (pfm_core) may not be deleted while users reference it.
+func (q *Queries) CountActiveUsersByClient(ctx context.Context, clientUuid *uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, countActiveUsersByClient, clientUuid)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countActiveUsersByRole = `-- name: CountActiveUsersByRole :one
 SELECT count(*) FROM app_user WHERE role_id = $1 AND deleted_at IS NULL
 `
@@ -27,7 +39,7 @@ const countUsers = `-- name: CountUsers :one
 SELECT count(*)
 FROM app_user u
 WHERE u.deleted_at IS NULL
-  AND ($1::bigint IS NULL OR u.client_id = $1)
+  AND ($1::uuid IS NULL OR u.client_uuid = $1)
   AND ($2::text IS NULL
        OR u.username ILIKE '%' || $2 || '%' ESCAPE '\'
        OR u.email ILIKE '%' || $2 || '%' ESCAPE '\'
@@ -37,15 +49,15 @@ WHERE u.deleted_at IS NULL
 `
 
 type CountUsersParams struct {
-	ScopeClientID *int64
-	Q             *string
-	RoleID        *int64
-	Status        *int16
+	ScopeClientUuid *uuid.UUID
+	Q               *string
+	RoleID          *int64
+	Status          *int16
 }
 
 func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, error) {
 	row := q.db.QueryRow(ctx, countUsers,
-		arg.ScopeClientID,
+		arg.ScopeClientUuid,
 		arg.Q,
 		arg.RoleID,
 		arg.Status,
@@ -56,7 +68,7 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO app_user (uuid, username, email, first_name, description, status, role_id, client_id,
+INSERT INTO app_user (uuid, username, email, first_name, description, status, role_id, client_uuid,
                       is_supervisor, activation_key_hash, activation_key_expires_at, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $5,
         $6, $7, $8, $9,
@@ -72,7 +84,7 @@ type CreateUserParams struct {
 	Description            *string
 	Status                 *int16
 	RoleID                 *int64
-	ClientID               *int64
+	ClientUuid             *uuid.UUID
 	IsSupervisor           bool
 	ActivationKeyHash      *string
 	ActivationKeyExpiresAt *time.Time
@@ -95,7 +107,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 		arg.Description,
 		arg.Status,
 		arg.RoleID,
-		arg.ClientID,
+		arg.ClientUuid,
 		arg.IsSupervisor,
 		arg.ActivationKeyHash,
 		arg.ActivationKeyExpiresAt,
@@ -113,10 +125,9 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 
 const getUserAuthByID = `-- name: GetUserAuthByID :one
 SELECT u.id, u.uuid, u.username, u.email, u.status, u.password_hash, u.failed_login_count,
-       u.locked_until, u.role_id, r.role_code, c.uuid AS client_uuid, u.client_id
+       u.locked_until, u.role_id, r.role_code, u.client_uuid
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id AND r.deleted_at IS NULL
-LEFT JOIN client c ON c.id = u.client_id AND c.deleted_at IS NULL
 WHERE u.id = $1 AND u.deleted_at IS NULL
 `
 
@@ -132,7 +143,6 @@ type GetUserAuthByIDRow struct {
 	RoleID           *int64
 	RoleCode         *string
 	ClientUuid       *uuid.UUID
-	ClientID         *int64
 }
 
 func (q *Queries) GetUserAuthByID(ctx context.Context, id int64) (GetUserAuthByIDRow, error) {
@@ -150,17 +160,15 @@ func (q *Queries) GetUserAuthByID(ctx context.Context, id int64) (GetUserAuthByI
 		&i.RoleID,
 		&i.RoleCode,
 		&i.ClientUuid,
-		&i.ClientID,
 	)
 	return i, err
 }
 
 const getUserAuthByLogin = `-- name: GetUserAuthByLogin :one
 SELECT u.id, u.uuid, u.username, u.email, u.status, u.password_hash, u.failed_login_count,
-       u.locked_until, u.role_id, r.role_code, c.uuid AS client_uuid, u.client_id
+       u.locked_until, u.role_id, r.role_code, u.client_uuid
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id AND r.deleted_at IS NULL
-LEFT JOIN client c ON c.id = u.client_id AND c.deleted_at IS NULL
 WHERE (lower(u.username) = lower($1::text) OR lower(u.email) = lower($1::text))
   AND u.deleted_at IS NULL
 ORDER BY u.id
@@ -179,7 +187,6 @@ type GetUserAuthByLoginRow struct {
 	RoleID           *int64
 	RoleCode         *string
 	ClientUuid       *uuid.UUID
-	ClientID         *int64
 }
 
 func (q *Queries) GetUserAuthByLogin(ctx context.Context, login string) (GetUserAuthByLoginRow, error) {
@@ -197,17 +204,15 @@ func (q *Queries) GetUserAuthByLogin(ctx context.Context, login string) (GetUser
 		&i.RoleID,
 		&i.RoleCode,
 		&i.ClientUuid,
-		&i.ClientID,
 	)
 	return i, err
 }
 
 const getUserAuthByUUID = `-- name: GetUserAuthByUUID :one
 SELECT u.id, u.uuid, u.username, u.email, u.status, u.password_hash, u.failed_login_count,
-       u.locked_until, u.role_id, r.role_code, c.uuid AS client_uuid, u.client_id
+       u.locked_until, u.role_id, r.role_code, u.client_uuid
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id AND r.deleted_at IS NULL
-LEFT JOIN client c ON c.id = u.client_id AND c.deleted_at IS NULL
 WHERE u.uuid = $1 AND u.deleted_at IS NULL
 `
 
@@ -223,7 +228,6 @@ type GetUserAuthByUUIDRow struct {
 	RoleID           *int64
 	RoleCode         *string
 	ClientUuid       *uuid.UUID
-	ClientID         *int64
 }
 
 func (q *Queries) GetUserAuthByUUID(ctx context.Context, argUuid uuid.UUID) (GetUserAuthByUUIDRow, error) {
@@ -241,7 +245,6 @@ func (q *Queries) GetUserAuthByUUID(ctx context.Context, argUuid uuid.UUID) (Get
 		&i.RoleID,
 		&i.RoleCode,
 		&i.ClientUuid,
-		&i.ClientID,
 	)
 	return i, err
 }
@@ -273,17 +276,16 @@ func (q *Queries) GetUserByActivationKeyHashForUpdate(ctx context.Context, activ
 }
 
 const getUserByUUID = `-- name: GetUserByUUID :one
-SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_id, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, r.uuid AS role_uuid, r.role_code, c.uuid AS client_uuid
+SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_uuid, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, r.uuid AS role_uuid, r.role_code
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id
-LEFT JOIN client c ON c.id = u.client_id
 WHERE u.uuid = $1 AND u.deleted_at IS NULL
-  AND ($2::bigint IS NULL OR u.client_id = $2)
+  AND ($2::uuid IS NULL OR u.client_uuid = $2)
 `
 
 type GetUserByUUIDParams struct {
-	Uuid          uuid.UUID
-	ScopeClientID *int64
+	Uuid            uuid.UUID
+	ScopeClientUuid *uuid.UUID
 }
 
 type GetUserByUUIDRow struct {
@@ -297,7 +299,7 @@ type GetUserByUUIDRow struct {
 	Status                 *int16
 	Username               *string
 	RoleID                 *int64
-	ClientID               *int64
+	ClientUuid             *uuid.UUID
 	IsSupervisor           bool
 	PasswordHash           *string
 	ActivationKeyHash      *string
@@ -313,11 +315,10 @@ type GetUserByUUIDRow struct {
 	DeletedBy              *string
 	RoleUuid               *uuid.UUID
 	RoleCode               *string
-	ClientUuid             *uuid.UUID
 }
 
 func (q *Queries) GetUserByUUID(ctx context.Context, arg GetUserByUUIDParams) (GetUserByUUIDRow, error) {
-	row := q.db.QueryRow(ctx, getUserByUUID, arg.Uuid, arg.ScopeClientID)
+	row := q.db.QueryRow(ctx, getUserByUUID, arg.Uuid, arg.ScopeClientUuid)
 	var i GetUserByUUIDRow
 	err := row.Scan(
 		&i.ID,
@@ -330,7 +331,7 @@ func (q *Queries) GetUserByUUID(ctx context.Context, arg GetUserByUUIDParams) (G
 		&i.Status,
 		&i.Username,
 		&i.RoleID,
-		&i.ClientID,
+		&i.ClientUuid,
 		&i.IsSupervisor,
 		&i.PasswordHash,
 		&i.ActivationKeyHash,
@@ -346,18 +347,16 @@ func (q *Queries) GetUserByUUID(ctx context.Context, arg GetUserByUUIDParams) (G
 		&i.DeletedBy,
 		&i.RoleUuid,
 		&i.RoleCode,
-		&i.ClientUuid,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_id, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, r.uuid AS role_uuid, r.role_code, c.uuid AS client_uuid
+SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_uuid, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, r.uuid AS role_uuid, r.role_code
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id
-LEFT JOIN client c ON c.id = u.client_id
 WHERE u.deleted_at IS NULL
-  AND ($1::bigint IS NULL OR u.client_id = $1)
+  AND ($1::uuid IS NULL OR u.client_uuid = $1)
   AND ($2::text IS NULL
        OR u.username ILIKE '%' || $2 || '%' ESCAPE '\'
        OR u.email ILIKE '%' || $2 || '%' ESCAPE '\'
@@ -374,13 +373,13 @@ LIMIT $7 OFFSET $6
 `
 
 type ListUsersParams struct {
-	ScopeClientID *int64
-	Q             *string
-	RoleID        *int64
-	Status        *int16
-	Sort          string
-	Offset        int32
-	Limit         int32
+	ScopeClientUuid *uuid.UUID
+	Q               *string
+	RoleID          *int64
+	Status          *int16
+	Sort            string
+	Offset          int32
+	Limit           int32
 }
 
 type ListUsersRow struct {
@@ -394,7 +393,7 @@ type ListUsersRow struct {
 	Status                 *int16
 	Username               *string
 	RoleID                 *int64
-	ClientID               *int64
+	ClientUuid             *uuid.UUID
 	IsSupervisor           bool
 	PasswordHash           *string
 	ActivationKeyHash      *string
@@ -410,12 +409,11 @@ type ListUsersRow struct {
 	DeletedBy              *string
 	RoleUuid               *uuid.UUID
 	RoleCode               *string
-	ClientUuid             *uuid.UUID
 }
 
 func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUsersRow, error) {
 	rows, err := q.db.Query(ctx, listUsers,
-		arg.ScopeClientID,
+		arg.ScopeClientUuid,
 		arg.Q,
 		arg.RoleID,
 		arg.Status,
@@ -441,7 +439,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.Status,
 			&i.Username,
 			&i.RoleID,
-			&i.ClientID,
+			&i.ClientUuid,
 			&i.IsSupervisor,
 			&i.PasswordHash,
 			&i.ActivationKeyHash,
@@ -457,7 +455,6 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.DeletedBy,
 			&i.RoleUuid,
 			&i.RoleCode,
-			&i.ClientUuid,
 		); err != nil {
 			return nil, err
 		}
@@ -617,7 +614,7 @@ func (q *Queries) SoftDeleteUser(ctx context.Context, arg SoftDeleteUserParams) 
 const updateUser = `-- name: UpdateUser :one
 UPDATE app_user
 SET email = $1, first_name = $2, description = $3,
-    status = $4, role_id = $5, client_id = $6,
+    status = $4, role_id = $5, client_uuid = $6,
     is_supervisor = $7, updated_by = $8
 WHERE uuid = $9 AND updated_at = $10 AND deleted_at IS NULL
 RETURNING id, updated_at
@@ -629,7 +626,7 @@ type UpdateUserParams struct {
 	Description       *string
 	Status            *int16
 	RoleID            *int64
-	ClientID          *int64
+	ClientUuid        *uuid.UUID
 	IsSupervisor      bool
 	Actor             *string
 	Uuid              uuid.UUID
@@ -648,7 +645,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (UpdateU
 		arg.Description,
 		arg.Status,
 		arg.RoleID,
-		arg.ClientID,
+		arg.ClientUuid,
 		arg.IsSupervisor,
 		arg.Actor,
 		arg.Uuid,

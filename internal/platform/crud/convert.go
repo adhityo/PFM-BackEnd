@@ -61,6 +61,19 @@ func Time(s string) *time.Time {
 	return &t
 }
 
+// UUID parses an optional (already validated) UUID; empty means NULL.
+func UUID(s string) *uuid.UUID {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	id, err := uuid.Parse(s)
+	if err != nil {
+		return nil
+	}
+	return &id
+}
+
 // NewID returns a time-ordered UUIDv7.
 func NewID() uuid.UUID {
 	id, err := uuid.NewV7()

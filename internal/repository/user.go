@@ -21,7 +21,7 @@ type UserRepository interface {
 	SetPassword(ctx context.Context, id int64, hash, actor string) error
 	ActivationTargetForUpdate(ctx context.Context, keyHash string) (model.ActivationTarget, error)
 
-	GetByUUID(ctx context.Context, id uuid.UUID, scopeClientID *int64) (model.User, error)
+	GetByUUID(ctx context.Context, id uuid.UUID, scopeClientUUID *uuid.UUID) (model.User, error)
 	List(ctx context.Context, f model.UserFilter, p model.Paging) ([]model.User, int64, error)
 	Create(ctx context.Context, u model.NewUser) (int64, error)
 	Update(ctx context.Context, u model.UserChange) (int64, error)
@@ -42,8 +42,7 @@ type credentialRow interface {
 func toCredential[T credentialRow](row T) model.Credential {
 	r := sqlc.GetUserAuthByLoginRow(row)
 	c := model.Credential{ID: r.ID, UUID: r.Uuid, Username: deref(r.Username), PasswordHash: r.PasswordHash,
-		LockedUntil: r.LockedUntil, RoleID: r.RoleID, RoleCode: deref(r.RoleCode), ClientID: r.ClientID,
-		ClientUUID: r.ClientUuid}
+		LockedUntil: r.LockedUntil, RoleID: r.RoleID, RoleCode: deref(r.RoleCode), ClientUUID: r.ClientUuid}
 	if r.Status != nil {
 		c.Status = *r.Status
 	}
@@ -101,12 +100,12 @@ func (r *userRepository) ActivationTargetForUpdate(ctx context.Context, keyHash 
 func toUser(r sqlc.GetUserByUUIDRow) model.User {
 	return model.User{ID: r.ID, UUID: r.Uuid, Username: deref(r.Username), Email: deref(r.Email), FirstName: r.FirstName,
 		Description: r.Description, Status: r.Status, RoleID: r.RoleID, RoleUUID: r.RoleUuid, RoleCode: r.RoleCode,
-		ClientID: r.ClientID, ClientUUID: r.ClientUuid, IsSupervisor: r.IsSupervisor, PasswordSet: r.PasswordHash != nil,
+		ClientUUID: r.ClientUuid, IsSupervisor: r.IsSupervisor, PasswordSet: r.PasswordHash != nil,
 		LockedUntil: r.LockedUntil, LastLoginAt: r.LastLoginAt, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt}
 }
 
-func (r *userRepository) GetByUUID(ctx context.Context, id uuid.UUID, scopeClientID *int64) (model.User, error) {
-	row, err := r.tx.Queries(ctx).GetUserByUUID(ctx, sqlc.GetUserByUUIDParams{Uuid: id, ScopeClientID: scopeClientID})
+func (r *userRepository) GetByUUID(ctx context.Context, id uuid.UUID, scopeClientUUID *uuid.UUID) (model.User, error) {
+	row, err := r.tx.Queries(ctx).GetUserByUUID(ctx, sqlc.GetUserByUUIDParams{Uuid: id, ScopeClientUuid: scopeClientUUID})
 	if err != nil {
 		return model.User{}, database.MapError("get user", err)
 	}
@@ -115,12 +114,12 @@ func (r *userRepository) GetByUUID(ctx context.Context, id uuid.UUID, scopeClien
 
 func (r *userRepository) List(ctx context.Context, f model.UserFilter, p model.Paging) ([]model.User, int64, error) {
 	q := r.tx.Queries(ctx)
-	rows, err := q.ListUsers(ctx, sqlc.ListUsersParams{ScopeClientID: f.ScopeClientID, Q: f.Q, RoleID: f.RoleID,
+	rows, err := q.ListUsers(ctx, sqlc.ListUsersParams{ScopeClientUuid: f.ScopeClientUUID, Q: f.Q, RoleID: f.RoleID,
 		Status: f.Status, Sort: p.Sort, Limit: p.Limit, Offset: p.Offset})
 	if err != nil {
 		return nil, 0, database.MapError("list users", err)
 	}
-	total, err := q.CountUsers(ctx, sqlc.CountUsersParams{ScopeClientID: f.ScopeClientID, Q: f.Q, RoleID: f.RoleID, Status: f.Status})
+	total, err := q.CountUsers(ctx, sqlc.CountUsersParams{ScopeClientUuid: f.ScopeClientUUID, Q: f.Q, RoleID: f.RoleID, Status: f.Status})
 	if err != nil {
 		return nil, 0, database.MapError("count users", err)
 	}
@@ -134,7 +133,7 @@ func (r *userRepository) List(ctx context.Context, f model.UserFilter, p model.P
 func (r *userRepository) Create(ctx context.Context, u model.NewUser) (int64, error) {
 	row, err := r.tx.Queries(ctx).CreateUser(ctx, sqlc.CreateUserParams{
 		Uuid: u.UUID, Username: &u.Username, Email: &u.Email, FirstName: u.FirstName, Description: u.Description,
-		Status: &u.Status, RoleID: &u.RoleID, ClientID: u.ClientID, IsSupervisor: u.IsSupervisor,
+		Status: &u.Status, RoleID: &u.RoleID, ClientUuid: u.ClientUUID, IsSupervisor: u.IsSupervisor,
 		ActivationKeyHash: &u.ActivationKeyHash, ActivationKeyExpiresAt: &u.ActivationExpires, Actor: &u.Actor,
 	})
 	if err != nil {
@@ -146,7 +145,7 @@ func (r *userRepository) Create(ctx context.Context, u model.NewUser) (int64, er
 func (r *userRepository) Update(ctx context.Context, u model.UserChange) (int64, error) {
 	row, err := r.tx.Queries(ctx).UpdateUser(ctx, sqlc.UpdateUserParams{
 		Email: &u.Email, FirstName: u.FirstName, Description: u.Description, Status: &u.Status, RoleID: &u.RoleID,
-		ClientID: u.ClientID, IsSupervisor: u.IsSupervisor, Actor: &u.Actor, Uuid: u.UUID, ExpectedUpdatedAt: u.Expected,
+		ClientUuid: u.ClientUUID, IsSupervisor: u.IsSupervisor, Actor: &u.Actor, Uuid: u.UUID, ExpectedUpdatedAt: u.Expected,
 	})
 	if err != nil {
 		return 0, staleIfNoRows("update user", err)

@@ -21,7 +21,7 @@ func MemberDocumentResource(d Deps) crud.Resource[sqlc.GetMemberDocumentByUUIDRo
 		Path:        "/member-documents",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",
-		Filters:     []string{"document_file_uuid", "document_category_uuid", "member_benefit_payout_uuid", "member_uuid", "member_premium_payment_uuid"},
+		Filters:     []string{"document_category_uuid", "member_benefit_payout_uuid", "member_uuid", "member_premium_payment_uuid"},
 		Store:       repository.NewMemberDocumentRepository(d.TX),
 		Response:    dto.MemberDocumentFromRow,
 		Nested: []crud.Nested{

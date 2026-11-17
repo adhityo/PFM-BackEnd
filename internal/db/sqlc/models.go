@@ -40,42 +40,43 @@ type ActivityLog struct {
 	RoleCode       *string
 	Username       *string
 	CreatedAt      time.Time
+	Source         *string
 }
 
 type AgentFeeTransaction struct {
-	ID                    int64
-	Uuid                  uuid.UUID
-	AgentName             *string
-	Description           *string
-	OutstandingValue      *decimal.Decimal
-	PaidValue             *decimal.Decimal
-	PaymentDate           *time.Time
-	PaymentDocumentFileID *int64
-	RequestDate           *time.Time
-	Status                *int16
-	TaxDocumentFileID     *int64
-	TaxPaidValue          *decimal.Decimal
-	TaxValue              *decimal.Decimal
-	BondID                *int64
-	MarketingAgentID      *int64
-	AgentLevel            *string
-	AgentNumber           *string
-	AgentType             *string
-	Bank                  *string
-	BankAccountName       *string
-	BankAccountNumber     *string
-	BankBranch            *string
-	Email                 *string
-	IdentityNumber        *string
-	LeaderCommision       *decimal.Decimal
-	Npwp                  *string
-	PersonalCommision     *decimal.Decimal
-	CreatedAt             time.Time
-	CreatedBy             *string
-	UpdatedAt             time.Time
-	UpdatedBy             *string
-	DeletedAt             *time.Time
-	DeletedBy             *string
+	ID                      int64
+	Uuid                    uuid.UUID
+	AgentName               *string
+	Description             *string
+	OutstandingValue        *decimal.Decimal
+	PaidValue               *decimal.Decimal
+	PaymentDate             *time.Time
+	PaymentDocumentFileUuid *uuid.UUID
+	RequestDate             *time.Time
+	Status                  *int16
+	TaxDocumentFileUuid     *uuid.UUID
+	TaxPaidValue            *decimal.Decimal
+	TaxValue                *decimal.Decimal
+	BondID                  *int64
+	MarketingAgentID        *int64
+	AgentLevel              *string
+	AgentNumber             *string
+	AgentType               *string
+	Bank                    *string
+	BankAccountName         *string
+	BankAccountNumber       *string
+	BankBranch              *string
+	Email                   *string
+	IdentityNumber          *string
+	LeaderCommision         *decimal.Decimal
+	Npwp                    *string
+	PersonalCommision       *decimal.Decimal
+	CreatedAt               time.Time
+	CreatedBy               *string
+	UpdatedAt               time.Time
+	UpdatedBy               *string
+	DeletedAt               *time.Time
+	DeletedBy               *string
 }
 
 type AppUser struct {
@@ -89,7 +90,7 @@ type AppUser struct {
 	Status                 *int16
 	Username               *string
 	RoleID                 *int64
-	ClientID               *int64
+	ClientUuid             *uuid.UUID
 	IsSupervisor           bool
 	PasswordHash           *string
 	ActivationKeyHash      *string
@@ -137,6 +138,21 @@ type AssetClassFinanceAccount struct {
 	UpdatedBy               *string
 	DeletedAt               *time.Time
 	DeletedBy               *string
+}
+
+type AuditOutbox struct {
+	ID             int64
+	Uuid           uuid.UUID
+	ActionQuery    *string
+	IpAddress      *netip.Addr
+	LogAction      *string
+	LogDescription *string
+	LogSessionCode *string
+	LogTime        time.Time
+	LogTitle       *string
+	RoleCode       *string
+	Username       *string
+	Source         string
 }
 
 type AuthRefreshToken struct {
@@ -630,7 +646,7 @@ type CashSettlement struct {
 	CashSettlementValue      *decimal.Decimal
 	CashSettlementSubject    *string
 	ValidationNumber         *string
-	DocumentFileID           *int64
+	DocumentFileUuid         *uuid.UUID
 	Description              *string
 	CashSettlementStatus     *int16
 	BondPortfolioID          *int64
@@ -727,7 +743,7 @@ type Configuration struct {
 	EmitentCode                  *string
 	ProxyApiUrl                  *string
 	IsUsingQrLogo                bool
-	QrLogoFileID                 *int64
+	QrLogoFileUuid               *uuid.UUID
 	IsUsingAgreement             bool
 	LatestAgreementCounter       *int32
 	CreatedAt                    time.Time
@@ -999,25 +1015,25 @@ type DepositoPortfolioHistory struct {
 }
 
 type Document struct {
-	ID                 int64
-	Uuid               uuid.UUID
-	DocumentName       *string
-	DocumentCategoryID *int64
-	Description        *string
-	DocumentFileID     *int64
-	DocumentStatus     *int16
-	BondTradeID        *int64
-	InvestorID         *int64
-	MarketingAgentID   *int64
-	MutualFundTradeID  *int64
-	StockTradeID       *int64
-	BondID             *int64
-	CreatedAt          time.Time
-	CreatedBy          *string
-	UpdatedAt          time.Time
-	UpdatedBy          *string
-	DeletedAt          *time.Time
-	DeletedBy          *string
+	ID                   int64
+	Uuid                 uuid.UUID
+	DocumentName         *string
+	DocumentCategoryUuid *uuid.UUID
+	Description          *string
+	DocumentFileID       *int64
+	DocumentStatus       *int16
+	BondTradeUuid        *uuid.UUID
+	InvestorUuid         *uuid.UUID
+	MarketingAgentUuid   *uuid.UUID
+	MutualFundTradeUuid  *uuid.UUID
+	StockTradeUuid       *uuid.UUID
+	BondUuid             *uuid.UUID
+	CreatedAt            time.Time
+	CreatedBy            *string
+	UpdatedAt            time.Time
+	UpdatedBy            *string
+	DeletedAt            *time.Time
+	DeletedBy            *string
 }
 
 type DocumentAuthorizationTable struct {
@@ -1032,7 +1048,7 @@ type DocumentAuthorizationTable struct {
 	Status             *int16
 	UpdateAuth         *string
 	DocumentID         *int64
-	RoleID             *int64
+	RoleUuid           *uuid.UUID
 	CreatedAt          time.Time
 	CreatedBy          *string
 	UpdatedAt          time.Time
@@ -1056,49 +1072,49 @@ type DocumentCategory struct {
 }
 
 type DocumentCategoryAuthorizationTable struct {
-	ID                 int64
-	Uuid               uuid.UUID
-	AuthorizationNotes *string
-	CreateAuth         *string
-	DeleteAuth         *string
-	DownloadAuth       *string
-	ReadAuth           *string
-	Status             *int16
-	UpdateAuth         *string
-	DocumentCategoryID *int64
-	RoleID             *int64
-	CreatedAt          time.Time
-	CreatedBy          *string
-	UpdatedAt          time.Time
-	UpdatedBy          *string
-	DeletedAt          *time.Time
-	DeletedBy          *string
+	ID                   int64
+	Uuid                 uuid.UUID
+	AuthorizationNotes   *string
+	CreateAuth           *string
+	DeleteAuth           *string
+	DownloadAuth         *string
+	ReadAuth             *string
+	Status               *int16
+	UpdateAuth           *string
+	DocumentCategoryUuid *uuid.UUID
+	RoleUuid             *uuid.UUID
+	CreatedAt            time.Time
+	CreatedBy            *string
+	UpdatedAt            time.Time
+	UpdatedBy            *string
+	DeletedAt            *time.Time
+	DeletedBy            *string
 }
 
 type DocumentDataHistory struct {
-	ID                         int64
-	Uuid                       uuid.UUID
-	Description                *string
-	DocumentName               *string
-	DocumentStatus             *int16
-	DocumentFileID             *int64
-	PreviousDescription        *string
-	PreviousDocumentCategoryID *int64
-	PreviousDocumentName       *string
-	PreviousDocumentFileID     *int64
-	BondTradeID                *int64
-	DocumentCategoryID         *int64
-	DocumentID                 *int64
-	InvestorID                 *int64
-	MarketingAgentID           *int64
-	MutualFundTradeID          *int64
-	StockTradeID               *int64
-	CreatedAt                  time.Time
-	CreatedBy                  *string
-	UpdatedAt                  time.Time
-	UpdatedBy                  *string
-	DeletedAt                  *time.Time
-	DeletedBy                  *string
+	ID                           int64
+	Uuid                         uuid.UUID
+	Description                  *string
+	DocumentName                 *string
+	DocumentStatus               *int16
+	DocumentFileID               *int64
+	PreviousDescription          *string
+	PreviousDocumentCategoryUuid *uuid.UUID
+	PreviousDocumentName         *string
+	PreviousDocumentFileID       *int64
+	BondTradeUuid                *uuid.UUID
+	DocumentCategoryUuid         *uuid.UUID
+	DocumentID                   *int64
+	InvestorUuid                 *uuid.UUID
+	MarketingAgentUuid           *uuid.UUID
+	MutualFundTradeUuid          *uuid.UUID
+	StockTradeUuid               *uuid.UUID
+	CreatedAt                    time.Time
+	CreatedBy                    *string
+	UpdatedAt                    time.Time
+	UpdatedBy                    *string
+	DeletedAt                    *time.Time
+	DeletedBy                    *string
 }
 
 type Emitent struct {
@@ -1337,24 +1353,24 @@ type InvestorCategory struct {
 }
 
 type InvestorCouponSchedule struct {
-	ID                     int64
-	Uuid                   uuid.UUID
-	BondCouponScheduleID   *int64
-	CouponValue            *decimal.Decimal
-	CouponPaidValue        *decimal.Decimal
-	PaymentSettlementDate  *time.Time
-	PaymentReferenceNumber *string
-	Description            *string
-	CouponStatus           *int16
-	PaymentDocumentFileID  *int64
-	BondTradeID            *int64
-	TransactionType        *int16
-	CreatedAt              time.Time
-	CreatedBy              *string
-	UpdatedAt              time.Time
-	UpdatedBy              *string
-	DeletedAt              *time.Time
-	DeletedBy              *string
+	ID                      int64
+	Uuid                    uuid.UUID
+	BondCouponScheduleID    *int64
+	CouponValue             *decimal.Decimal
+	CouponPaidValue         *decimal.Decimal
+	PaymentSettlementDate   *time.Time
+	PaymentReferenceNumber  *string
+	Description             *string
+	CouponStatus            *int16
+	PaymentDocumentFileUuid *uuid.UUID
+	BondTradeID             *int64
+	TransactionType         *int16
+	CreatedAt               time.Time
+	CreatedBy               *string
+	UpdatedAt               time.Time
+	UpdatedBy               *string
+	DeletedAt               *time.Time
+	DeletedBy               *string
 }
 
 type InvestorDataHistory struct {
@@ -1597,7 +1613,7 @@ type MemberDocument struct {
 	Description            *string
 	DocumentDate           *time.Time
 	DocumentStatus         *int16
-	DocumentFileID         *int64
+	DocumentFileUuid       *uuid.UUID
 	DocumentCategoryID     *int64
 	MemberBenefitPayoutID  *int64
 	MemberID               *int64
@@ -1821,21 +1837,21 @@ type MutualFundTrade struct {
 }
 
 type Newsletter struct {
-	ID                  int64
-	Uuid                uuid.UUID
-	Description         *string
-	DocumentFileID      *int64
-	EmailTemplateFileID *int64
-	NewsletterCode      *string
-	NewsletterDate      *time.Time
-	NewsletterName      *string
-	Status              *int16
-	CreatedAt           time.Time
-	CreatedBy           *string
-	UpdatedAt           time.Time
-	UpdatedBy           *string
-	DeletedAt           *time.Time
-	DeletedBy           *string
+	ID                    int64
+	Uuid                  uuid.UUID
+	Description           *string
+	DocumentFileUuid      *uuid.UUID
+	EmailTemplateFileUuid *uuid.UUID
+	NewsletterCode        *string
+	NewsletterDate        *time.Time
+	NewsletterName        *string
+	Status                *int16
+	CreatedAt             time.Time
+	CreatedBy             *string
+	UpdatedAt             time.Time
+	UpdatedBy             *string
+	DeletedAt             *time.Time
+	DeletedBy             *string
 }
 
 type Notification struct {
@@ -1904,7 +1920,7 @@ type PaymentDocument struct {
 	Description              *string
 	DocumentName             *string
 	DocumentStatus           *int16
-	DocumentFileID           *int64
+	DocumentFileUuid         *uuid.UUID
 	BondCouponScheduleID     *int64
 	DocumentCategoryID       *int64
 	InvestorCouponScheduleID *int64
@@ -2596,7 +2612,7 @@ type TaskAssignment struct {
 	Notes          *string
 	Status         *int16
 	TaskID         *int64
-	UserID         *int64
+	UserUuid       *uuid.UUID
 	CreatedAt      time.Time
 	CreatedBy      *string
 	UpdatedAt      time.Time
@@ -2611,7 +2627,7 @@ type TaskDocument struct {
 	DeadlineDate       *time.Time
 	Status             *int16
 	DocumentCategoryID *int64
-	DocumentID         *int64
+	DocumentUuid       *uuid.UUID
 	TaskID             *int64
 	CreatedAt          time.Time
 	CreatedBy          *string

@@ -25,22 +25,14 @@ func NewAgentFeeTransactionRepository(tx *database.TxManager) AgentFeeTransactio
 }
 
 type agentFeeTransactionRefs struct {
-	paymentDocumentFileID *int64
-	taxDocumentFileID     *int64
-	bondID                *int64
-	marketingAgentID      *int64
+	bondID           *int64
+	marketingAgentID *int64
 }
 
 // resolve turns *_uuid fields into internal ids (FOR SHARE inside the transaction).
 func (r agentFeeTransactionRepository) resolve(ctx context.Context, req dto.AgentFeeTransactionRequest) (agentFeeTransactionRefs, error) {
 	var refs agentFeeTransactionRefs
 	var err error
-	if refs.paymentDocumentFileID, err = database.RefID(ctx, r.tx, "file_object", req.PaymentDocumentFileUUID, "payment_document_file_uuid"); err != nil {
-		return refs, err
-	}
-	if refs.taxDocumentFileID, err = database.RefID(ctx, r.tx, "file_object", req.TaxDocumentFileUUID, "tax_document_file_uuid"); err != nil {
-		return refs, err
-	}
 	if refs.bondID, err = database.RefID(ctx, r.tx, "bond", req.BondUUID, "bond_uuid"); err != nil {
 		return refs, err
 	}
@@ -57,14 +49,6 @@ func (r agentFeeTransactionRepository) Get(ctx context.Context, id uuid.UUID) (s
 
 func (r agentFeeTransactionRepository) List(ctx context.Context, q httpx.ListQuery) ([]sqlc.GetAgentFeeTransactionByUUIDRow, int64, error) {
 	scope := crud.ScopeClientID(ctx)
-	paymentDocumentFileID, err := database.FilterRefID(ctx, r.tx, "file_object", "payment_document_file_uuid", q.Text("payment_document_file_uuid"))
-	if err != nil {
-		return nil, 0, err
-	}
-	taxDocumentFileID, err := database.FilterRefID(ctx, r.tx, "file_object", "tax_document_file_uuid", q.Text("tax_document_file_uuid"))
-	if err != nil {
-		return nil, 0, err
-	}
 	bondID, err := database.FilterRefID(ctx, r.tx, "bond", "bond_uuid", q.Text("bond_uuid"))
 	if err != nil {
 		return nil, 0, err
@@ -74,11 +58,11 @@ func (r agentFeeTransactionRepository) List(ctx context.Context, q httpx.ListQue
 		return nil, 0, err
 	}
 	qs := r.tx.Queries(ctx)
-	rows, err := qs.ListAgentFeeTransaction(ctx, sqlc.ListAgentFeeTransactionParams{ScopeClientID: scope, PaymentDocumentFileID: paymentDocumentFileID, TaxDocumentFileID: taxDocumentFileID, BondID: bondID, MarketingAgentID: marketingAgentID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
+	rows, err := qs.ListAgentFeeTransaction(ctx, sqlc.ListAgentFeeTransactionParams{ScopeClientID: scope, BondID: bondID, MarketingAgentID: marketingAgentID, Sort: q.Sort, Limit: q.Page.Limit(), Offset: q.Page.Offset()})
 	if err != nil {
 		return nil, 0, database.MapError("list agent_fee_transaction", err)
 	}
-	total, err := qs.CountAgentFeeTransaction(ctx, sqlc.CountAgentFeeTransactionParams{ScopeClientID: scope, PaymentDocumentFileID: paymentDocumentFileID, TaxDocumentFileID: taxDocumentFileID, BondID: bondID, MarketingAgentID: marketingAgentID})
+	total, err := qs.CountAgentFeeTransaction(ctx, sqlc.CountAgentFeeTransactionParams{ScopeClientID: scope, BondID: bondID, MarketingAgentID: marketingAgentID})
 	if err != nil {
 		return nil, 0, database.MapError("count agent_fee_transaction", err)
 	}
@@ -95,19 +79,19 @@ func (r agentFeeTransactionRepository) Create(ctx context.Context, req dto.Agent
 		return uuid.Nil, err
 	}
 	id, err := r.tx.Queries(ctx).CreateAgentFeeTransaction(ctx, sqlc.CreateAgentFeeTransactionParams{
-		Uuid:                  crud.NewID(),
-		Description:           crud.Text(req.Description),
-		OutstandingValue:      crud.Decimal(req.OutstandingValue),
-		PaymentDocumentFileID: refs.paymentDocumentFileID,
-		RequestDate:           crud.Date(req.RequestDate),
-		TaxDocumentFileID:     refs.taxDocumentFileID,
-		TaxValue:              crud.Decimal(req.TaxValue),
-		BondID:                refs.bondID,
-		MarketingAgentID:      refs.marketingAgentID,
-		AgentType:             crud.Text(req.AgentType),
-		LeaderCommision:       crud.Decimal(req.LeaderCommision),
-		PersonalCommision:     crud.Decimal(req.PersonalCommision),
-		Actor:                 &actor,
+		Uuid:                    crud.NewID(),
+		Description:             crud.Text(req.Description),
+		OutstandingValue:        crud.Decimal(req.OutstandingValue),
+		PaymentDocumentFileUuid: crud.UUID(req.PaymentDocumentFileUUID),
+		RequestDate:             crud.Date(req.RequestDate),
+		TaxDocumentFileUuid:     crud.UUID(req.TaxDocumentFileUUID),
+		TaxValue:                crud.Decimal(req.TaxValue),
+		BondID:                  refs.bondID,
+		MarketingAgentID:        refs.marketingAgentID,
+		AgentType:               crud.Text(req.AgentType),
+		LeaderCommision:         crud.Decimal(req.LeaderCommision),
+		PersonalCommision:       crud.Decimal(req.PersonalCommision),
+		Actor:                   &actor,
 	})
 	return id, database.MapError("create agent_fee_transaction", err)
 }
@@ -118,20 +102,20 @@ func (r agentFeeTransactionRepository) Update(ctx context.Context, id uuid.UUID,
 		return err
 	}
 	n, err := r.tx.Queries(ctx).UpdateAgentFeeTransaction(ctx, sqlc.UpdateAgentFeeTransactionParams{
-		Description:           crud.Text(req.Description),
-		OutstandingValue:      crud.Decimal(req.OutstandingValue),
-		PaymentDocumentFileID: refs.paymentDocumentFileID,
-		RequestDate:           crud.Date(req.RequestDate),
-		TaxDocumentFileID:     refs.taxDocumentFileID,
-		TaxValue:              crud.Decimal(req.TaxValue),
-		BondID:                refs.bondID,
-		MarketingAgentID:      refs.marketingAgentID,
-		AgentType:             crud.Text(req.AgentType),
-		LeaderCommision:       crud.Decimal(req.LeaderCommision),
-		PersonalCommision:     crud.Decimal(req.PersonalCommision),
-		Actor:                 &actor,
-		Uuid:                  id,
-		ExpectedUpdatedAt:     expected,
+		Description:             crud.Text(req.Description),
+		OutstandingValue:        crud.Decimal(req.OutstandingValue),
+		PaymentDocumentFileUuid: crud.UUID(req.PaymentDocumentFileUUID),
+		RequestDate:             crud.Date(req.RequestDate),
+		TaxDocumentFileUuid:     crud.UUID(req.TaxDocumentFileUUID),
+		TaxValue:                crud.Decimal(req.TaxValue),
+		BondID:                  refs.bondID,
+		MarketingAgentID:        refs.marketingAgentID,
+		AgentType:               crud.Text(req.AgentType),
+		LeaderCommision:         crud.Decimal(req.LeaderCommision),
+		PersonalCommision:       crud.Decimal(req.PersonalCommision),
+		Actor:                   &actor,
+		Uuid:                    id,
+		ExpectedUpdatedAt:       expected,
 	})
 	return crud.Affected("update agent_fee_transaction", n, err)
 }

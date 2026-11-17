@@ -17,6 +17,7 @@ var SoftDelete = map[string]bool{
 	"app_user":                              true,
 	"asset_class":                           true,
 	"asset_class_finance_account":           true,
+	"audit_outbox":                          false,
 	"auth_refresh_token":                    false,
 	"bank":                                  true,
 	"bank_account":                          true,
@@ -141,9 +142,6 @@ var ReferencedBy = map[string][]Ref{
 	"action": {
 		{Table: "role_action", Column: "action_id"},
 	},
-	"app_user": {
-		{Table: "task_assignment", Column: "user_id"},
-	},
 	"asset_class": {
 		{Table: "asset_class", Column: "parent_asset_class_id"},
 		{Table: "asset_class_finance_account", Column: "asset_class_id"},
@@ -173,7 +171,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "bond_portfolio", Column: "bond_id"},
 		{Table: "bond_rating", Column: "bond_id"},
 		{Table: "bond_trade", Column: "bond_id"},
-		{Table: "document", Column: "bond_id"},
 	},
 	"bond_coupon_schedule": {
 		{Table: "investor_coupon_schedule", Column: "bond_coupon_schedule_id"},
@@ -188,7 +185,6 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"bond_trade": {
 		{Table: "bond_trade", Column: "parent_bond_trade_id"},
-		{Table: "document", Column: "bond_trade_id"},
 		{Table: "finance_transaction", Column: "bond_trade_id"},
 		{Table: "investor_coupon_schedule", Column: "bond_trade_id"},
 	},
@@ -212,7 +208,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "member_group", Column: "city_id"},
 	},
 	"client": {
-		{Table: "app_user", Column: "client_id"},
 		{Table: "bond", Column: "client_id"},
 		{Table: "cash_settlement", Column: "client_id"},
 		{Table: "invoice", Column: "client_id"},
@@ -255,11 +250,8 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"document": {
 		{Table: "document_authorization_table", Column: "document_id"},
-		{Table: "task_document", Column: "document_id"},
 	},
 	"document_category": {
-		{Table: "document", Column: "document_category_id"},
-		{Table: "document_category_authorization_table", Column: "document_category_id"},
 		{Table: "member_document", Column: "document_category_id"},
 		{Table: "payment_document", Column: "document_category_id"},
 		{Table: "task_document", Column: "document_category_id"},
@@ -268,16 +260,7 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "bond", Column: "emitent_id"},
 	},
 	"file_object": {
-		{Table: "agent_fee_transaction", Column: "payment_document_file_id"},
-		{Table: "agent_fee_transaction", Column: "tax_document_file_id"},
-		{Table: "cash_settlement", Column: "document_file_id"},
-		{Table: "configuration", Column: "qr_logo_file_id"},
 		{Table: "document", Column: "document_file_id"},
-		{Table: "investor_coupon_schedule", Column: "payment_document_file_id"},
-		{Table: "member_document", Column: "document_file_id"},
-		{Table: "newsletter", Column: "document_file_id"},
-		{Table: "newsletter", Column: "email_template_file_id"},
-		{Table: "payment_document", Column: "document_file_id"},
 	},
 	"finance_account": {
 		{Table: "asset_class_finance_account", Column: "buy_account_id"},
@@ -314,7 +297,6 @@ var ReferencedBy = map[string][]Ref{
 	"investor": {
 		{Table: "bank_account", Column: "investor_id"},
 		{Table: "bond_trade", Column: "investor_id"},
-		{Table: "document", Column: "investor_id"},
 	},
 	"investor_category": {
 		{Table: "investor", Column: "investor_category_id"},
@@ -329,7 +311,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "agent_fee_transaction", Column: "marketing_agent_id"},
 		{Table: "bank_account", Column: "marketing_agent_id"},
 		{Table: "bond_trade", Column: "marketing_agent_id"},
-		{Table: "document", Column: "marketing_agent_id"},
 		{Table: "marketing_agent", Column: "leader_agent_id"},
 	},
 	"member": {
@@ -362,7 +343,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "cash_settlement", Column: "mutual_fund_portfolio_id"},
 	},
 	"mutual_fund_trade": {
-		{Table: "document", Column: "mutual_fund_trade_id"},
 		{Table: "finance_transaction", Column: "mutual_fund_trade_id"},
 	},
 	"newsletter": {
@@ -425,8 +405,6 @@ var ReferencedBy = map[string][]Ref{
 	},
 	"role": {
 		{Table: "app_user", Column: "role_id"},
-		{Table: "document_authorization_table", Column: "role_id"},
-		{Table: "document_category_authorization_table", Column: "role_id"},
 		{Table: "role_action", Column: "role_id"},
 	},
 	"sector": {
@@ -457,7 +435,6 @@ var ReferencedBy = map[string][]Ref{
 		{Table: "stock_size_classification_history", Column: "stock_size_classification_id"},
 	},
 	"stock_trade": {
-		{Table: "document", Column: "stock_trade_id"},
 		{Table: "finance_transaction", Column: "stock_trade_id"},
 	},
 	"stock_type": {

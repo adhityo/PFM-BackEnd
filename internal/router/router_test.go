@@ -24,6 +24,7 @@ import (
 
 	"pfm-backend/internal/config"
 	"pfm-backend/internal/model"
+	"pfm-backend/internal/platform/audit"
 	"pfm-backend/internal/platform/database"
 	"pfm-backend/internal/platform/security"
 	"pfm-backend/internal/platform/storage"
@@ -60,21 +61,34 @@ func (f *fakeDocs) Ping(context.Context) error { return nil }
 type env struct {
 	t    *testing.T
 	app  *fiber.App
-	pool *pgxpool.Pool
-	docs *fakeDocs
+	pool *pgxpool.Pool // pfm_core
+	// The other databases (PRD §7.1).
+	secPool, logPool, docPool *pgxpool.Pool
+	docs                      *fakeDocs
+}
+
+// ship moves audit events from the outboxes into pfm_log, as the worker does.
+func (e *env) ship() {
+	e.t.Helper()
+	s := audit.NewShipper(database.NewTxManager(e.logPool), map[string]*database.TxManager{
+		"core": database.NewTxManager(e.pool), "security": database.NewTxManager(e.secPool),
+		"document": database.NewTxManager(e.docPool)})
+	if _, err := s.ShipAll(context.Background()); err != nil {
+		e.t.Fatal(err)
+	}
 }
 
 const adminPassword = "Admin-Password-123"
 
 func setup(t *testing.T) *env {
 	t.Helper()
-	pool := testutil.NewDB(t)
+	pools := testutil.NewPools(t)
 	ctx := context.Background()
-	tx := database.NewTxManager(pool)
+	tx := database.NewTxManager(pools.Security)
 	if err := service.SyncCatalog(ctx, tx, repository.NewActionRepository(tx), repository.NewRoleRepository(tx), Catalog()); err != nil {
 		t.Fatal(err)
 	}
-	if err := repository.NewConfigurationRepository(tx).Ensure(ctx); err != nil {
+	if err := repository.NewConfigurationRepository(database.NewTxManager(pools.Core)).Ensure(ctx); err != nil {
 		t.Fatal(err)
 	}
 	hasher := security.NewPasswordHasher(security.Argon2Params{MemoryKiB: 8 * 1024, Iterations: 1, Parallelism: 1, SaltLen: 16, KeyLen: 32})
@@ -107,9 +121,9 @@ func setup(t *testing.T) *env {
 	cfg := config.Config{AppEnv: "test", JWTAccessTTL: 15 * time.Minute, JWTRefreshTTL: time.Hour,
 		ActivationKeyTTL: time.Hour, LoginMaxAttempts: 5, LoginLockFor: 15 * time.Minute,
 		RequestTimeout: 10 * time.Second, RateLimitPerMinute: 10000, S3PresignTTL: 5 * time.Minute}
-	app := New(Deps{Cfg: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Pool: pool, Images: images, Docs: docs,
+	app := New(Deps{Cfg: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Pools: pools, Images: images, Docs: docs,
 		Signer: security.NewJWTSigner(priv, "pfm", "pfm-api", cfg.JWTAccessTTL), Hasher: hasher})
-	return &env{t: t, app: app, pool: pool, docs: docs}
+	return &env{t: t, app: app, pool: pools.Core, secPool: pools.Security, logPool: pools.Log, docPool: pools.Document, docs: docs}
 }
 
 type resp struct {
@@ -226,7 +240,8 @@ func TestLoginLockoutAndGenericErrors(t *testing.T) {
 	}
 	e.expect(e.do("POST", "/api/v1/auth/login", "", map[string]string{"login": "admin", "password": adminPassword}), 401, "locked account")
 	var n int
-	_ = e.pool.QueryRow(context.Background(), "SELECT count(*) FROM activity_log WHERE log_action LIKE 'auth.login%'").Scan(&n)
+	e.ship()
+	_ = e.logPool.QueryRow(context.Background(), "SELECT count(*) FROM activity_log WHERE log_action LIKE 'auth.login%' AND source = 'security'").Scan(&n)
 	if n < 7 {
 		t.Fatalf("expected login attempts to be audited, got %d", n)
 	}
@@ -343,10 +358,11 @@ func TestRBACScopeAndOptimisticLocking(t *testing.T) {
 
 	// ADMIN role is protected.
 	var adminRoleUUID string
-	_ = e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM role WHERE role_code='ADMIN'").Scan(&adminRoleUUID)
+	_ = e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM role WHERE role_code='ADMIN'").Scan(&adminRoleUUID)
 	aEtag := e.expect(e.do("GET", "/api/v1/roles/"+adminRoleUUID, admin, nil), 200, "get admin role").header.Get("ETag")
 	e.expect(e.do("DELETE", "/api/v1/roles/"+adminRoleUUID, admin, nil, "If-Match", aEtag), 409, "delete ADMIN role")
 
+	e.ship()
 	logs := e.expect(e.do("GET", "/api/v1/activity-logs?log_action=app_user.delete", admin, nil), 200, "activity logs")
 	if logs.body["meta"].(map[string]any)["total"].(float64) != 1 {
 		t.Fatalf("delete not audited: %s", logs.raw)
@@ -370,8 +386,8 @@ func TestPrivilegeEscalationBlocked(t *testing.T) {
 	hr, _ := e.login("hrd", "Hr-Passw0rd-123")
 
 	var adminRoleUUID, adminUserUUID string
-	_ = e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM role WHERE role_code='ADMIN'").Scan(&adminRoleUUID)
-	_ = e.pool.QueryRow(context.Background(), "SELECT uuid::text FROM app_user WHERE username='admin'").Scan(&adminUserUUID)
+	_ = e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM role WHERE role_code='ADMIN'").Scan(&adminRoleUUID)
+	_ = e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM app_user WHERE username='admin'").Scan(&adminUserUUID)
 
 	e.expect(e.do("POST", "/api/v1/users", hr, map[string]any{"username": "evil", "email": "evil@example.test",
 		"role_uuid": adminRoleUUID, "status": "active"}), 403, "assign ADMIN role")

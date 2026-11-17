@@ -186,35 +186,34 @@ func (s *FileService) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-// Attach marks a pending upload as used by an entity field. It must be called
-// inside the entity's transaction and returns the file_object id for the FK.
-func (s *FileService) Attach(ctx context.Context, fileUUID uuid.UUID, purpose, field string) (int64, error) {
+// Attach claims a pending upload for an entity field (pending -> active).
+// file_object lives in pfm_document, so the claim commits there before the
+// caller's transaction in pfm_core: if that transaction rolls back, the file
+// merely stays active without a reference (harmless); the opposite order
+// could leave a reference to a file already removed by CleanupStale.
+func (s *FileService) Attach(ctx context.Context, fileUUID uuid.UUID, purpose, field string) error {
 	actor, err := auth.MustActor(ctx)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	if !database.InTx(ctx) {
-		return 0, errors.New("file.Attach must run inside a transaction")
-	}
-	o, err := s.repo.GetByUUIDForUpdate(ctx, fileUUID)
-	if err != nil {
-		if errors.Is(err, apperr.ErrNotFound) {
-			return 0, apperr.Invalid(field, "exists", "file tidak ditemukan")
+	return s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		o, err := s.repo.GetByUUIDForUpdate(ctx, fileUUID)
+		if err != nil {
+			if errors.Is(err, apperr.ErrNotFound) {
+				return apperr.Invalid(field, "exists", "file tidak ditemukan")
+			}
+			return err
 		}
-		return 0, err
-	}
-	switch {
-	case o.CreatedBy == nil || *o.CreatedBy != actor.AuditName():
-		return 0, apperr.Invalid(field, "owner", "file harus diunggah oleh pengguna yang sama")
-	case o.Status != "pending":
-		return 0, apperr.Invalid(field, "pending", "file sudah dipakai atau tidak valid")
-	case !KeyMatchesPurpose(o.ObjectKey, purpose):
-		return 0, apperr.Invalid(field, "purpose", "file diunggah untuk keperluan lain")
-	}
-	if err := s.repo.Activate(ctx, o.ID, actor.AuditName()); err != nil {
-		return 0, err
-	}
-	return o.ID, nil
+		switch {
+		case o.CreatedBy == nil || *o.CreatedBy != actor.AuditName():
+			return apperr.Invalid(field, "owner", "file harus diunggah oleh pengguna yang sama")
+		case o.Status != "pending":
+			return apperr.Invalid(field, "pending", "file sudah dipakai atau tidak valid")
+		case !KeyMatchesPurpose(o.ObjectKey, purpose):
+			return apperr.Invalid(field, "purpose", "file diunggah untuk keperluan lain")
+		}
+		return s.repo.Activate(ctx, o.ID, actor.AuditName())
+	})
 }
 
 // CleanupStale deletes pending uploads older than before (worker job).

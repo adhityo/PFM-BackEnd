@@ -227,7 +227,7 @@ CONSTRAINT uq_<tabel>_uuid UNIQUE (uuid)
 | `synchronized_data.data_json` | `JSONB` | |
 | `bond_trade_data_history.bondTradeId tinyblob` | dihapus → `bond_trade_id BIGINT` FK | |
 | `DEFAULT '0000-00-00 00:00:00'` | `NULL` | Tidak valid di PostgreSQL |
-| Kolom `*_url` file | `*_file_id BIGINT` FK → `file_object` | Lihat §8 |
+| Kolom `*_url` file | `*_file_id BIGINT` FK → `file_object` di `pfm_document`; tabel di `pfm_core` memakai `*_file_uuid UUID` tanpa FK (§7.1) | Lihat §8 |
 
 ### 6.3 Kolom Audit & Soft Delete (standar di semua tabel)
 
@@ -259,7 +259,7 @@ Pengecualian: `activity_log` dan `auth_refresh_token` hanya punya `created_at`, 
 | 8 | `unique_code`/`uniqueCode` varchar(36) di `crypto*`, `broker_api_setting`, `deposito` | Digantikan `uuid`. ETL memakai nilai lama bila berupa UUID valid |
 | 9 | Tabel `user` (reserved word) | → `app_user` |
 | 10 | Secret di DB | `password` → `password_hash` (argon2id); `token`/`token_expire_time` → tabel `auth_refresh_token` (hash); `activation_key` → `activation_key_hash`; `configuration.proxy_api_username/password/current_token` → env/secret manager |
-| 11 | Path file di 11 kolom `*_url` | → `*_file_id` FK ke `file_object` |
+| 11 | Path file di 11 kolom `*_url` | → `*_file_id` FK ke `file_object` (dalam `pfm_document`) atau `*_file_uuid` (tabel `pfm_core`) |
 | 12 | Kolom snapshot terdenormalisasi (mis. `bond_trade.bond_code`, `investor_name`) | Dipertahankan sebagai snapshot saat transaksi. **Diisi service dari master**, bukan dari input klien |
 | 13 | Unique code | Partial unique index `WHERE deleted_at IS NULL` pada `<tabel>_code`, `stock_code`, `bond_code`, `investor_number`, `marketing_agent_number`, `member_number`, `client_code`, `invoice_number`, `finance_account_number`, `app_user.username/email` |
 | 14 | `[USULAN]` kolom yang hilang | `crypto.crypto_code/crypto_name`, `crypto_exchange.crypto_exchange_code/name`, `crypto_portfolio.portfolio_id/crypto_id`, `property_asset.property_asset_type_id` (ditandai `-- [USULAN]` di DDL; konfirmasi di §17) |
@@ -313,43 +313,67 @@ DROP TABLE IF EXISTS bank;
 
 ## 7. Migrasi (Goose)
 
-### 7.1 Aturan
+### 7.1 Empat Database
 
-1. **Satu tabel per file.** Nama file `NNNNN_create_<tabel>.sql`, 5 digit, berurutan (sequential, bukan timestamp). File baru dibuat dengan `goose -s -dir internal/db/migrations create create_<tabel> sql`.
-2. **Urutan mengikuti dependensi FK.** Tabel induk selalu bernomor lebih kecil daripada tabel anak. Urutan dihitung dengan topological sort atas graf FK (8 level, tanpa siklus). Self-reference (mis. `portfolio.parent_portfolio_id`) didefinisikan di file tabel itu sendiri.
+Data dipisah ke empat database PostgreSQL, masing-masing dengan kredensial sendiri. Bila satu kredensial, dump, atau celah SQL injection bocor, database lain tetap tertutup, dan jejak audit tidak bisa dihapus dengan kredensial aplikasi.
+
+| Database | Isi | User runtime | Catatan |
+|---|---|---|---|
+| `pfm_core` | Seluruh data bisnis (master data, portofolio, trading, akuntansi, obligasi, dana pensiun, workflow) + `audit_outbox` | `pfm_core_app`: SELECT/INSERT/UPDATE; `audit_outbox` INSERT saja | Soft delete: tanpa DELETE |
+| `pfm_security` | `app_user`, `role`, `action`, `role_action`, `auth_refresh_token` + `audit_outbox` | `pfm_security_app` | Hash password dan token tidak ikut bocor bila core bocor |
+| `pfm_log` | `activity_log` | API: `pfm_log_reader` (SELECT); worker: `pfm_log_writer` (INSERT saja, tanpa SELECT) | Append-only: tidak ada role runtime yang boleh UPDATE/DELETE |
+| `pfm_document` | `file_object`, `document`, `document_data_history`, `document_authorization_table`, `document_category_authorization_table` + `audit_outbox` | `pfm_document_app` | Metadata dan key penyimpanan file |
+
+Role `pfm_worker` hanya boleh membaca dan menghapus `audit_outbox` (serta file pending/token kedaluwarsa), tanpa akses ke data bisnis. Setiap role hanya bisa CONNECT ke database miliknya (`deploy/postgres/roles.sql`, `grants-*.sql`).
+
+Aturan:
+
+1. **Tidak ada FK lintas database.** Referensi ke database lain disimpan sebagai kolom `<nama>_uuid UUID`, misalnya `cash_settlement.document_file_uuid`, `app_user.client_uuid`, dan `document.bond_uuid`. Referensi ini dijaga aplikasi dengan tiga cara:
+   - keberadaannya divalidasi saat menulis;
+   - data yang masih dirujuk tidak boleh dihapus (mis. client yang masih punya user);
+   - fail-closed bila referensi hilang (user yang client-nya tidak ada ditolak saat mengakses API).
+2. **Tidak ada transaksi lintas database.** Urutan ditetapkan agar aman: klaim file (`pending` → `active`) di `pfm_document` di-commit sebelum transaksi bisnis di `pfm_core`. Bila transaksi bisnis gagal, file hanya tertinggal aktif tanpa rujukan, dan itu tidak berbahaya.
+3. **Audit lewat outbox.**
+   - Event ditulis ke `audit_outbox` di database asal, dalam transaksi yang sama dengan perubahan bisnis (atomik).
+   - `cmd/worker` memindahkannya ke `pfm_log.activity_log` setiap ±5 detik. Pengiriman idempoten lewat `uuid` dan aman dijalankan beberapa worker dengan `SKIP LOCKED`; kolom `source` mencatat database asal.
+   - Log baru terlihat di `/activity-logs` setelah dikirim worker. Bila worker mati, event menumpuk di outbox dan tidak hilang.
+4. **Satu `TxManager` per database.** Kunci transaksi di context dibuat per database, sehingga transaksi satu database tidak pernah dipakai database lain.
+5. **Kredensial terpisah.** DSN diatur lewat `DATABASE_URL_CORE`, `DATABASE_URL_SECURITY`, `DATABASE_URL_LOG`, dan `DATABASE_URL_DOCUMENT`; konfigurasi menolak satu DSN dipakai dua database. Di production, `pfm_log` dan `pfm_security` sebaiknya berada di instance terpisah dengan backup terpisah.
+6. **Batasan.** Bila proses API diambil alih seluruhnya (RCE), penyerang memegang semua kredensial yang dipegang API. Pemisahan membatasi dampak kebocoran satu DSN, dump, atau SQL injection, dan log tetap tidak bisa diubah atau dihapus dari kredensial API.
+
+### 7.2 Aturan
+
+1. **Satu tabel per file, di folder database-nya:** `internal/db/migrations/<core|security|log|document>/NNNNN_create_<tabel>.sql`. Nomor 5 digit berurutan, **global dan unik di semua folder** (bukan timestamp). File baru dibuat dengan `make migration db=<database> name=<nama>`. Karena nomornya global, gabungan semua folder tetap urutan goose yang valid; ini dipakai generator lewat `migrate -db all`. Folder `shared/` (fungsi `set_updated_at`) ikut ke semua database, sedangkan `outbox/` ke core, security, dan document.
+2. **Urutan mengikuti dependensi FK di dalam satu database.** Tabel induk selalu bernomor lebih kecil daripada tabel anak. Urutan dihitung dengan topological sort atas graf FK (8 level, tanpa siklus). Self-reference (mis. `portfolio.parent_portfolio_id`) didefinisikan di file tabel itu sendiri.
 3. **Isi setiap file:** `CREATE TABLE`, constraint (PK, UUID unique, FK), index FK, partial unique index, dan trigger `updated_at`. Semuanya diapit `-- +goose StatementBegin/End`.
 4. **Setiap file wajib punya `-- +goose Down`** yang menghapus tabel tersebut, sehingga `down` berjalan terbalik tanpa melanggar FK.
-5. **File yang sudah ter-apply di environment mana pun tidak boleh diedit.** Perubahan dibuat sebagai file baru, mis. `00124_alter_bond_add_isin.sql`.
+5. **File yang sudah ter-apply di environment mana pun tidak boleh diedit.** Perubahan dibuat sebagai file baru, mis. `core/00130_alter_bond_add_isin.sql`.
 6. `CREATE INDEX CONCURRENTLY` pada tabel besar memakai `-- +goose NO TRANSACTION` di file terpisah.
 7. Data referensi (role, action/permission, trade_type, asset_class, dst.) dimuat oleh ETL/seed command, **bukan** dicampur ke migrasi DDL. User admin awal dibuat lewat `cmd/migrate seed-admin` dengan password dari env. Tidak ada kredensial default.
-8. Migrasi dijalankan sebagai langkah deploy terpisah (`cmd/migrate up`) memakai role DB `pfm_migrator`, bukan saat API start. Gunakan `goose.NewProvider(..., goose.WithSessionLocker(...))` (advisory lock) agar dua runner tidak berjalan bersamaan.
+8. Migrasi dijalankan sebagai langkah deploy terpisah memakai role DB `pfm_migrator`, bukan saat API start. `cmd/migrate up` menjalankan keempat database berurutan; `-db <nama>` membatasi ke satu database, dan `down`/`reset` wajib menyebut satu database. Setelah migrasi, jalankan `make db-grants`. Gunakan `goose.NewProvider(..., goose.WithSessionLocker(...))` (advisory lock) agar dua runner tidak berjalan bersamaan.
 
-### 7.2 Runner (embed)
+### 7.3 Runner (embed)
 
 ```go
 // internal/db/embed.go
-package db
+//go:embed migrations
+var migrations embed.FS
 
-import "embed"
-
-//go:embed migrations/*.sql
-var Migrations embed.FS
+// Migrations(db.Core) menggabungkan shared/ + outbox/ + core/ menjadi satu
+// direktori datar (nama file wajib unik); db.All = semua folder (generator).
+func Migrations(name string) (fs.FS, error)
 ```
 
 ```go
-// cmd/migrate/main.go (inti)
-sqlDB := stdlib.OpenDBFromPool(pool) // github.com/jackc/pgx/v5/stdlib
-migrationsFS, _ := fs.Sub(db.Migrations, "migrations")
-locker, _ := lock.NewPostgresSessionLocker()
-provider, err := goose.NewProvider(goose.DialectPostgres, sqlDB, migrationsFS,
-    goose.WithSessionLocker(locker))
-if err != nil { return err }
-_, err = provider.Up(ctx)
+// cmd/migrate: satu goose Provider per database, dengan advisory lock
+p, err := db.NewMigrator(stdlib.OpenDBFromPool(pool), db.Core)
+_, err = p.Up(ctx)
 ```
 
-### 7.3 Pemeriksaan CI
+### 7.4 Pemeriksaan CI
 
-- `goose validate`, lalu `up` → `down-to 0` → `up` di PostgreSQL ephemeral (testcontainers / service container).
+- Untuk setiap database dan gabungan `all`: `up` → `down-to 0` → `up` di PostgreSQL ephemeral. Untuk `all`, nomor migrasi wajib tanpa celah.
+- Test integrasi membuat empat database terpisah per test. Test lain memastikan setiap database hanya berisi tabelnya sendiri, outbox tidak pernah mengirim event dari transaksi yang gagal, dan user yang client-nya hilang ditolak.
 - Query pemeriksa: setiap tabel punya kolom `uuid`, setiap FK punya index, dan tidak ada kolom `double precision` / `timestamp without time zone`.
 
 Urutan lengkap ada di **Lampiran A**.
@@ -362,9 +386,9 @@ Urutan lengkap ada di **Lampiran A**.
 
 | Kategori | Storage | Dipakai oleh | Tipe diizinkan | Ukuran maks |
 |---|---|---|---|---|
-| **Image** | Filesystem lokal (`STORAGE_IMAGE_ROOT`) | `configuration.qr_logo_file_id` (dan logo/foto di masa depan) | `image/png`, `image/jpeg`, `image/webp` | 2 MB, maks 4096×4096 px |
-| **Dokumen** | S3 (`S3_BUCKET`) | `document.document_file_id`, `document_data_history.document_file_id`/`previous_document_file_id`, `member_document.document_file_id`, `payment_document.document_file_id`, `cash_settlement.document_file_id`, `investor_coupon_schedule.payment_document_file_id`, `agent_fee_transaction.payment_document_file_id`/`tax_document_file_id`, `newsletter.document_file_id` | `application/pdf` | 20 MB |
-| **Dokumen (template)** | S3 | `newsletter.email_template_file_id` | `text/html` | 512 KB |
+| **Image** | Filesystem lokal (`STORAGE_IMAGE_ROOT`) | `configuration.qr_logo_file_uuid` (dan logo/foto di masa depan) | `image/png`, `image/jpeg`, `image/webp` | 2 MB, maks 4096×4096 px |
+| **Dokumen** | S3 (`S3_BUCKET`) | `document.document_file_id`, `document_data_history.document_file_id`/`previous_document_file_id`, `member_document.document_file_uuid`, `payment_document.document_file_uuid`, `cash_settlement.document_file_uuid`, `investor_coupon_schedule.payment_document_file_uuid`, `agent_fee_transaction.payment_document_file_uuid`/`tax_document_file_uuid`, `newsletter.document_file_uuid` | `application/pdf` | 20 MB |
+| **Dokumen (template)** | S3 | `newsletter.email_template_file_uuid` | `text/html` | 512 KB |
 
 Allowlist didefinisikan **per field**, bukan global.
 
@@ -702,7 +726,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | 00006 | `bank_class` | `bank-classes` | MASTER | L G C U D | — |
 | 00008 | `bond_periode_option` | `bond-periode-options` | MASTER | L G C U D | Template nomor sertifikat divalidasi placeholder-nya (`{bondCode}`, `{series}`, `{counter}`). |
 | 00009 | `bond_type` | `bond-types` | MASTER | L G C U D | — |
-| 00011 | `configuration` | `configuration` | SINGLETON | G U | Hanya `GET` & `PUT /configuration`. Upload logo QR → image lokal. Counter (`latest_*_counter`) read-only, diubah service dengan `SELECT … FOR UPDATE`. Kredensial proxy dipindah ke env/secret manager. File: `qr_logo_file_id`. |
+| 00011 | `configuration` | `configuration` | SINGLETON | G U | Hanya `GET` & `PUT /configuration`. Upload logo QR → image lokal. Counter (`latest_*_counter`) read-only, diubah service dengan `SELECT … FOR UPDATE`. Kredensial proxy dipindah ke env/secret manager. File: `qr_logo_file_uuid`. |
 | 00012 | `country` | `countries` | MASTER | L G C U D | — |
 | 00015 | `document_category` | `document-categories` | MASTER | L G C U D | — |
 | 00016 | `finance_account_type` | `finance-account-types` | MASTER | L G C U D | — |
@@ -793,7 +817,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | 00044 | `marketing_agent_data_history` | `marketing-agent-data-histories` | APPROVAL | L G + approve/reject | Pola sama dengan investor_data_history; ajukan lewat `POST /marketing-agents/{uuid}/change-requests`. |
 | 00064 | `bond` | `bonds` | MASTER | L G C U D | Aksi `/activate`, `/generate-coupon-schedule` (insert semua `bond_coupon_schedule` dalam 1 transaksi). Perubahan harga/rating → insert `bond_history`. |
 | 00071 | `investor` | `investors` | MASTER | L G C U D | `investor_number` dari template+counter (`SELECT … FOR UPDATE` di `configuration`). Perubahan data oleh non-ADMIN lewat `investor_data_history` (maker-checker). |
-| 00086 | `agent_fee_transaction` | `agent-fee-transactions` | TRX | L G C U* D* + aksi | Komisi agen. Upload bukti bayar & bukti pajak (PDF → S3). Aksi `/pay`. File: `payment_document_file_id`, `tax_document_file_id`. |
+| 00086 | `agent_fee_transaction` | `agent-fee-transactions` | TRX | L G C U* D* + aksi | Komisi agen. Upload bukti bayar & bukti pajak (PDF → S3). Aksi `/pay`. File: `payment_document_file_uuid`, `tax_document_file_uuid`. |
 | 00088 | `bank_account` | `bank-accounts` | CHILD | L G C U D | Milik investor ATAU marketing_agent (tepat satu; CHECK di service + DB). |
 | 00089 | `bond_coupon_schedule` | `bond-coupon-schedules` | CHILD | L G C U D | Digenerate dari bond. Aksi `/pay` → generate/bayar `investor_coupon_schedule` untuk semua `bond_trade` aktif (1 transaksi). |
 | 00090 | `bond_history` | `bond-histories` | HIST | L G | — |
@@ -802,8 +826,8 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | 00097 | `investor_data_history` | `investor-data-histories` | APPROVAL | L G + approve/reject | Change request: ajukan lewat `POST /investors/{uuid}/change-requests`, lalu `/approve` & `/reject` (checker ≠ maker). Approve → update `investor` + simpan IP & approver, 1 transaksi. |
 | 00107 | `bond_trade` | `bond-trades` | TRX | L G C U* D* + aksi | Subscription investor. Draft → approved → (redeemed/rollover). Approve: nomor sertifikat (counter + row lock), generate `investor_coupon_schedule`, update total di `bond` — 1 transaksi. Dokumen subscription/transfer → S3. Header `Idempotency-Key` wajib. |
 | 00112 | `bond_trade_data_history` | `bond-trade-data-histories` | HIST | L G | Snapshot sebelum `bond_trade` diubah. |
-| 00115 | `investor_coupon_schedule` | `investor-coupon-schedules` | CHILD | L G C U D | Aksi `/pay` + upload bukti bayar (PDF → S3). File: `payment_document_file_id`. |
-| 00121 | `payment_document` | `payment-documents` | CHILD | L G C U D | Upload PDF → S3. File: `document_file_id`. |
+| 00115 | `investor_coupon_schedule` | `investor-coupon-schedules` | CHILD | L G C U D | Aksi `/pay` + upload bukti bayar (PDF → S3). File: `payment_document_file_uuid`. |
+| 00121 | `payment_document` | `payment-documents` | CHILD | L G C U D | Upload PDF → S3. File: `document_file_uuid`. |
 
 #### Dana Pensiun (DPLK) — package `internal/module/pension` (12 tabel)
 
@@ -820,7 +844,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | 00110 | `member_portfolio_transaction` | `member-portfolio-transactions` | TRX | L G C U* D* + aksi | Subscribe/redeem unit pada NAV efektif; `/settle` update `member_portfolio` + insert history, 1 transaksi; `/cancel`. |
 | 00111 | `tax_report` | `tax-reports` | CHILD | L G C U D | Milik member atau dependant. |
 | 00116 | `member_benefit_payout` | `member-benefit-payouts` | CHILD | L G C U D | Baris dalam `benefit_payout_batch`. |
-| 00120 | `member_document` | `member-documents` | CHILD | L G C U D | Upload PDF → S3; nested di member. File: `document_file_id`. |
+| 00120 | `member_document` | `member-documents` | CHILD | L G C U D | Upload PDF → S3; nested di member. File: `document_file_uuid`. |
 
 #### Akuntansi & Settlement — package `internal/module/accounting` (5 tabel)
 
@@ -828,7 +852,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 |---|---|---|---|---|---|
 | 00069 | `finance_account` | `finance-accounts` | MASTER | L G C U D | Chart of account (tree). Tidak bisa dihapus bila punya transaksi. |
 | 00094 | `cash_settlement_category` | `cash-settlement-categories` | MASTER | L G C U D | — |
-| 00108 | `cash_settlement` | `cash-settlements` | TRX | L G C U* D* + aksi | Upload dokumen (PDF → S3). Aksi `/approve` memposting jurnal (1 transaksi). File: `document_file_id`. |
+| 00108 | `cash_settlement` | `cash-settlements` | TRX | L G C U* D* + aksi | Upload dokumen (PDF → S3). Aksi `/approve` memposting jurnal (1 transaksi). File: `document_file_uuid`. |
 | 00114 | `finance_transaction` | `finance-transactions` | TRX | L G C U* D* + aksi | Jurnal header + detail dibuat dalam 1 transaksi; validasi Σdebit = Σcredit. Jurnal posted immutable — koreksi via `/reverse`. |
 | 00119 | `finance_transaction_detail` | `finance-transaction-details` | CHILD | L G C U D | Hanya lewat header (nested, read-only setelah posted). |
 
@@ -845,7 +869,7 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 
 | Mig | Tabel | Base path `/api/v1/…` | Kelas | Operasi | Aturan khusus |
 |---|---|---|---|---|---|
-| 00022 | `newsletter` | `newsletters` | MASTER | L G C U D | PDF & template email → S3. Aksi `/send` membuat baris `notification` (1 transaksi) lalu kirim async. File: `document_file_id`, `email_template_file_id`. |
+| 00022 | `newsletter` | `newsletters` | MASTER | L G C U D | PDF & template email → S3. Aksi `/send` membuat baris `notification` (1 transaksi) lalu kirim async. File: `document_file_uuid`, `email_template_file_uuid`. |
 | 00034 | `task` | `tasks` | MASTER | L G C U D | — |
 | 00046 | `notification` | `notifications` | LOG | L G | Dibuat sistem. Aksi `/resend`. |
 | 00059 | `notification_download_counter` | `notification-download-counters` | LOG | L G | Ditulis endpoint tracking publik (rate-limited, tanpa PII). |
@@ -1028,29 +1052,25 @@ Tambahan:
 
 ### 12.5 Database
 
-```sql
--- role terpisah: pemilik skema vs aplikasi
-CREATE ROLE pfm_migrator LOGIN;   -- dipakai cmd/migrate (DDL)
-CREATE ROLE pfm_app LOGIN;        -- dipakai API (DML saja)
+Empat database dengan role hak minimum (§7.1). `deploy/postgres/roles.sql` dijalankan sekali oleh superuser; `deploy/postgres/grants-<database>.sql` dijalankan oleh `pfm_migrator` setelah setiap migrasi (`make db-grants`).
 
-GRANT USAGE ON SCHEMA public TO pfm_app;
-GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO pfm_app;
-GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO pfm_app;
-ALTER DEFAULT PRIVILEGES FOR ROLE pfm_migrator IN SCHEMA public
-    GRANT SELECT, INSERT, UPDATE ON TABLES TO pfm_app;
+| Role | Database | Hak |
+|---|---|---|
+| `pfm_migrator` | semua (owner) | DDL saat migrasi |
+| `pfm_core_app` | `pfm_core` | SELECT/INSERT/UPDATE; `audit_outbox` INSERT saja |
+| `pfm_security_app` | `pfm_security` | SELECT/INSERT/UPDATE; `audit_outbox` INSERT saja |
+| `pfm_document_app` | `pfm_document` | SELECT/INSERT/UPDATE; `audit_outbox` INSERT saja |
+| `pfm_log_reader` | `pfm_log` | SELECT `activity_log` (endpoint `/activity-logs`) |
+| `pfm_log_writer` | `pfm_log` | INSERT `activity_log` saja (worker) |
+| `pfm_worker` | core, security, document | SELECT/UPDATE/DELETE `audit_outbox` (klaim `FOR UPDATE SKIP LOCKED`); DELETE `file_object` pending dan `auth_refresh_token` kedaluwarsa |
 
--- soft delete: aplikasi tidak butuh DELETE, kecuali pembersihan token & file orphan
-GRANT DELETE ON auth_refresh_token, file_object TO pfm_app;
-
--- log append-only
-REVOKE UPDATE ON activity_log, notification_download_counter, synchronized_data FROM pfm_app;
-```
+`CONNECT` ke keempat database dicabut dari `PUBLIC`, dan `CREATE` pada schema `public` hanya untuk `pfm_migrator`. Tidak ada role runtime dengan DELETE pada data bisnis maupun UPDATE/DELETE pada `activity_log`.
 
 Kredensial DB, kunci JWT, kredensial S3, dan kredensial proxy API (dulu di tabel `configuration`) disimpan di secret manager/env. Tidak ada yang di repo maupun di DB.
 
 ### 12.6 Audit Log
 
-Setiap mutasi dan aksi sensitif (login, akses PII, download dokumen) ditulis ke `activity_log`:
+Setiap mutasi dan aksi sensitif (login, akses PII, download dokumen) ditulis ke `audit_outbox` di database asal, dalam transaksi yang sama. Worker lalu memindahkannya ke `pfm_log.activity_log` (§7.1), dengan kolom berikut:
 
 - `username` — UUID user
 - `role_code`
@@ -1060,6 +1080,7 @@ Setiap mutasi dan aksi sensitif (login, akses PII, download dokumen) ditulis ke 
 - `log_description` — ringkasan field yang berubah, **tanpa** nilai PII/secret
 - `log_session_code` — `request_id`
 - `log_time`
+- `source` — database asal (`core`, `security`, `document`)
 
 Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 
@@ -1092,9 +1113,12 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | `APP_ENV` | `production` | |
 | `HTTP_ADDR` | `:8080` | |
 | `METRICS_ADDR` | `:9090` | Internal |
-| `DATABASE_URL` | `postgres://pfm_app@…/pfm?sslmode=verify-full` | |
-| `DB_MAX_CONNS` | `20` | |
-| `MIGRATION_DATABASE_URL` | `postgres://pfm_migrator@…` | Hanya untuk `cmd/migrate` |
+| `DATABASE_URL_CORE` | `postgres://pfm_core_app@…/pfm_core?sslmode=verify-full` | Worker: `pfm_worker` |
+| `DATABASE_URL_SECURITY` | `postgres://pfm_security_app@…/pfm_security?sslmode=verify-full` | Worker: `pfm_worker` |
+| `DATABASE_URL_LOG` | `postgres://pfm_log_reader@…/pfm_log?sslmode=verify-full` | Worker: `pfm_log_writer` |
+| `DATABASE_URL_DOCUMENT` | `postgres://pfm_document_app@…/pfm_document?sslmode=verify-full` | Worker: `pfm_worker` |
+| `DB_MAX_CONNS` | `20` | Per database |
+| `MIGRATION_DATABASE_URL_<CORE\|SECURITY\|LOG\|DOCUMENT>` | `postgres://pfm_migrator@…/pfm_<db>` | Hanya untuk `cmd/migrate` |
 | `JWT_PRIVATE_KEY_FILE` / `JWT_PUBLIC_KEY_FILE` | `/run/secrets/jwt_ed25519` | |
 | `JWT_ACCESS_TTL` / `JWT_REFRESH_TTL` | `15m` / `168h` | |
 | `CORS_ALLOWED_ORIGINS` | `https://pfm.example.com` | |
@@ -1118,7 +1142,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
    - `'0000-00-00'` → `NULL`; latin1 → UTF-8 (deteksi mojibake untuk karakter non-ASCII).
    - `double` → `NUMERIC` dibulatkan ke skala kolom; selisih pembulatan dilaporkan.
    - FK yang menunjuk ke baris yang tidak ada → `NULL` + dicatat di laporan (FK baru di §6.4 #3 bisa menemukan data yatim).
-4. **File.** Setiap path `/usr/local/document/...` di kolom `*_url` diunggah ke S3 (atau ke storage lokal untuk image), lalu dibuatkan baris `file_object` dan FK `*_file_id` diisi. Path yang filenya hilang dicatat di laporan.
+4. **File.** Setiap path `/usr/local/document/...` di kolom `*_url` diunggah ke S3 (atau ke storage lokal untuk image), lalu dibuatkan baris `file_object` (di `pfm_document`) dan kolom `*_file_id` / `*_file_uuid` diisi. Path yang filenya hilang dicatat di laporan.
 5. **Duplikat kode.** Duplikat pada kolom yang memiliki partial unique index (§6.4 #13) dideteksi **sebelum** load, lalu diselesaikan manual atau diberi suffix sesuai keputusan bisnis.
 6. **User.** `password_hash = NULL`; semua user menerima alur aktivasi. Kolom `token` legacy dibuang.
 7. **Sequence.** Setelah load, jalankan `SELECT setval(pg_get_serial_sequence('<t>', 'id'), COALESCE(max(id), 1)) FROM <t>;` untuk setiap tabel.
@@ -1198,142 +1222,148 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 35 | Penerima manfaat | Peserta status pensiun dengan `pension_benefit_value` > 0 dan setiap tanggungan dengan `pension_benefit_value` > 0; pajak (PPh) diisi manual per baris sebelum approve | Aturan ahli waris & perhitungan PPh 21 manfaat pensiun? |
 | 36 | Jurnal M5 | Pembayaran iuran, payout, dan settle unit peserta belum memposting jurnal; unit peserta tidak terhubung ke posisi portofolio | Perlakuan akuntansi dana pensiun? |
 | 37 | Job bulanan | Generate invoice/payout dipanggil lewat API (idempoten); penjadwalan otomatis menyusul di worker (M7) | Tanggal eksekusi job? |
+| 38 | Pemisahan 4 database | Integritas lintas database dijaga aplikasi (tanpa FK/transaksi lintas DB). Backup/restore keempat database harus pada titik waktu yang sama, atau referensi UUID direkonsiliasi setelah restore | Strategi backup & PITR per database? |
+| 39 | Log eventual | `/activity-logs` tertinggal ±5 detik (worker); bila worker mati, event menumpuk di outbox (tidak hilang) | Perlu alert jumlah outbox? |
+| 40 | Integritas event audit | Kredensial aplikasi dapat menambah event ke outbox, tetapi tidak dapat membaca, mengubah, atau menghapus log | Perlu tanda tangan event (HMAC) atau WORM storage? |
+| 41 | Topologi production | 4 database boleh satu cluster di dev; production disarankan `pfm_log` dan `pfm_security` di instance terpisah | Topologi final? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-127 file migrasi: 1 init, 120 tabel legacy, 2 tabel baru, 1 migrasi index bisnis (M2), 1 migrasi pendukung trading & akuntansi (M3, termasuk tabel `number_sequence`), 1 migrasi pendukung obligasi (M4), dan 1 migrasi pendukung dana pensiun (M5). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK, dan semuanya selalu bernomor lebih kecil.
+129 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (1), `core/` (115), `security/` (5), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), dan kolom `source` log (00129). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
-| 00001 | `00001_init_functions.sql` | — (fungsi `set_updated_at`) | — | — |
-| 00002 | `00002_create_file_object.sql` | `file_object` | storage | — |
-| 00003 | `00003_create_action.sql` | `action` | iam | — |
-| 00004 | `00004_create_activity_log.sql` | `activity_log` | iam | — |
-| 00005 | `00005_create_asset_class.sql` | `asset_class` | masterdata | — |
-| 00006 | `00006_create_bank_class.sql` | `bank_class` | masterdata | — |
-| 00007 | `00007_create_benefit_payout_batch.sql` | `benefit_payout_batch` | pension | — |
-| 00008 | `00008_create_bond_periode_option.sql` | `bond_periode_option` | masterdata | — |
-| 00009 | `00009_create_bond_type.sql` | `bond_type` | masterdata | — |
-| 00010 | `00010_create_broker.sql` | `broker` | market | — |
-| 00011 | `00011_create_configuration.sql` | `configuration` | masterdata | file_object |
-| 00012 | `00012_create_country.sql` | `country` | masterdata | — |
-| 00013 | `00013_create_crypto.sql` | `crypto` | market | — |
-| 00014 | `00014_create_crypto_exchange.sql` | `crypto_exchange` | market | — |
-| 00015 | `00015_create_document_category.sql` | `document_category` | masterdata | — |
-| 00016 | `00016_create_finance_account_type.sql` | `finance_account_type` | masterdata | — |
-| 00017 | `00017_create_indices.sql` | `indices` | market | — |
-| 00018 | `00018_create_investment_manager.sql` | `investment_manager` | market | — |
-| 00019 | `00019_create_investor_category.sql` | `investor_category` | masterdata | — |
-| 00020 | `00020_create_marketing_agent.sql` | `marketing_agent` | bond | — |
-| 00021 | `00021_create_mutual_fund_category.sql` | `mutual_fund_category` | masterdata | — |
-| 00022 | `00022_create_newsletter.sql` | `newsletter` | workflow | file_object |
-| 00023 | `00023_create_occupation.sql` | `occupation` | masterdata | — |
-| 00024 | `00024_create_placement_type.sql` | `placement_type` | masterdata | — |
-| 00025 | `00025_create_premium_payment_type.sql` | `premium_payment_type` | masterdata | — |
-| 00026 | `00026_create_property_asset_type.sql` | `property_asset_type` | masterdata | — |
-| 00027 | `00027_create_rating_agency.sql` | `rating_agency` | masterdata | — |
-| 00028 | `00028_create_role.sql` | `role` | iam | — |
-| 00029 | `00029_create_sector.sql` | `sector` | masterdata | — |
-| 00030 | `00030_create_stock_size_classification.sql` | `stock_size_classification` | masterdata | — |
-| 00031 | `00031_create_stock_type.sql` | `stock_type` | masterdata | — |
-| 00032 | `00032_create_synchronization_request.sql` | `synchronization_request` | integration | — |
-| 00033 | `00033_create_synchronized_data.sql` | `synchronized_data` | integration | — |
-| 00034 | `00034_create_task.sql` | `task` | workflow | — |
-| 00035 | `00035_create_tax_rate.sql` | `tax_rate` | masterdata | — |
-| 00036 | `00036_create_trade_type.sql` | `trade_type` | masterdata | — |
-| 00037 | `00037_create_bank.sql` | `bank` | masterdata | bank_class |
-| 00038 | `00038_create_broker_api_setting.sql` | `broker_api_setting` | market | broker |
-| 00039 | `00039_create_client.sql` | `client` | portfolio | sector |
-| 00040 | `00040_create_crypto_listing_exchange.sql` | `crypto_listing_exchange` | market | crypto_exchange |
-| 00041 | `00041_create_crypto_trade_plan.sql` | `crypto_trade_plan` | portfolio | crypto, crypto_exchange |
-| 00042 | `00042_create_document_category_authorization_table.sql` | `document_category_authorization_table` | document | document_category, role |
-| 00043 | `00043_create_indices_history.sql` | `indices_history` | market | indices |
-| 00044 | `00044_create_marketing_agent_data_history.sql` | `marketing_agent_data_history` | bond | marketing_agent |
-| 00045 | `00045_create_mutual_fund.sql` | `mutual_fund` | market | investment_manager, mutual_fund_category |
-| 00046 | `00046_create_notification.sql` | `notification` | workflow | newsletter |
-| 00047 | `00047_create_placement.sql` | `placement` | portfolio | investment_manager |
-| 00048 | `00048_create_property_asset.sql` | `property_asset` | portfolio | property_asset_type |
-| 00049 | `00049_create_province.sql` | `province` | masterdata | country |
-| 00050 | `00050_create_rating.sql` | `rating` | masterdata | rating_agency |
-| 00051 | `00051_create_role_action.sql` | `role_action` | iam | action, role |
-| 00052 | `00052_create_sub_sector.sql` | `sub_sector` | masterdata | sector |
-| 00053 | `00053_create_city.sql` | `city` | masterdata | province |
-| 00054 | `00054_create_crypto_trade.sql` | `crypto_trade` | trading | crypto, crypto_trade_plan, trade_type |
-| 00055 | `00055_create_deposito.sql` | `deposito` | market | bank |
-| 00056 | `00056_create_emitent.sql` | `emitent` | market | sector, sub_sector |
-| 00057 | `00057_create_invoice.sql` | `invoice` | pension | client |
-| 00058 | `00058_create_mutual_fund_history.sql` | `mutual_fund_history` | market | mutual_fund |
-| 00059 | `00059_create_notification_download_counter.sql` | `notification_download_counter` | workflow | notification |
-| 00060 | `00060_create_placement_detail.sql` | `placement_detail` | portfolio | placement |
-| 00061 | `00061_create_portfolio.sql` | `portfolio` | portfolio | client, investment_manager |
-| 00062 | `00062_create_stock.sql` | `stock` | market | sector, stock_type, sub_sector |
-| 00063 | `00063_create_app_user.sql` | `app_user` | iam | client, role |
-| 00064 | `00064_create_bond.sql` | `bond` | bond | bond_periode_option, bond_type, client, emitent, rating, sector |
-| 00065 | `00065_create_crypto_portfolio.sql` | `crypto_portfolio` | portfolio | crypto, portfolio |
-| 00066 | `00066_create_deposito_history.sql` | `deposito_history` | market | deposito |
-| 00067 | `00067_create_deposito_interest_history.sql` | `deposito_interest_history` | market | deposito |
-| 00068 | `00068_create_deposito_portfolio.sql` | `deposito_portfolio` | portfolio | deposito, portfolio |
-| 00069 | `00069_create_finance_account.sql` | `finance_account` | accounting | finance_account_type, portfolio |
-| 00070 | `00070_create_indices_stock.sql` | `indices_stock` | market | indices, stock |
-| 00071 | `00071_create_investor.sql` | `investor` | bond | city, country, investor_category, province |
-| 00072 | `00072_create_member.sql` | `member` | pension | bank, city, country, occupation, province |
-| 00073 | `00073_create_member_group.sql` | `member_group` | pension | city, country, province |
-| 00074 | `00074_create_mutual_fund_portfolio.sql` | `mutual_fund_portfolio` | portfolio | mutual_fund, portfolio |
-| 00075 | `00075_create_mutual_fund_trade.sql` | `mutual_fund_trade` | trading | mutual_fund, portfolio, trade_type |
-| 00076 | `00076_create_portfolio_bank.sql` | `portfolio_bank` | portfolio | bank, portfolio |
-| 00077 | `00077_create_portfolio_budget.sql` | `portfolio_budget` | portfolio | asset_class, portfolio |
-| 00078 | `00078_create_portfolio_note.sql` | `portfolio_note` | portfolio | portfolio |
-| 00079 | `00079_create_stock_beta_history.sql` | `stock_beta_history` | market | rating_agency, stock |
-| 00080 | `00080_create_stock_fundamental_history.sql` | `stock_fundamental_history` | market | stock |
-| 00081 | `00081_create_stock_portfolio.sql` | `stock_portfolio` | portfolio | portfolio, stock |
-| 00082 | `00082_create_stock_size_classification_history.sql` | `stock_size_classification_history` | market | stock, stock_size_classification |
-| 00083 | `00083_create_stock_trade.sql` | `stock_trade` | trading | broker, investment_manager, portfolio, stock, trade_type |
-| 00084 | `00084_create_stock_type_detail.sql` | `stock_type_detail` | market | stock, stock_type |
-| 00085 | `00085_create_task_assignment.sql` | `task_assignment` | workflow | app_user, task |
-| 00086 | `00086_create_agent_fee_transaction.sql` | `agent_fee_transaction` | bond | bond, marketing_agent, file_object |
-| 00087 | `00087_create_asset_class_finance_account.sql` | `asset_class_finance_account` | portfolio | asset_class, finance_account, portfolio |
-| 00088 | `00088_create_bank_account.sql` | `bank_account` | bond | investor, marketing_agent |
-| 00089 | `00089_create_bond_coupon_schedule.sql` | `bond_coupon_schedule` | bond | bond |
-| 00090 | `00090_create_bond_history.sql` | `bond_history` | bond | bond, rating |
-| 00091 | `00091_create_bond_periode_distribution.sql` | `bond_periode_distribution` | bond | bond |
-| 00092 | `00092_create_bond_portfolio.sql` | `bond_portfolio` | portfolio | bond, portfolio, rating |
-| 00093 | `00093_create_bond_rating.sql` | `bond_rating` | bond | bond, rating, rating_agency |
-| 00094 | `00094_create_cash_settlement_category.sql` | `cash_settlement_category` | accounting | finance_account |
-| 00095 | `00095_create_dependant.sql` | `dependant` | pension | member |
-| 00096 | `00096_create_deposito_portfolio_history.sql` | `deposito_portfolio_history` | portfolio | deposito_portfolio |
-| 00097 | `00097_create_investor_data_history.sql` | `investor_data_history` | bond | city, country, investor, investor_category, province |
-| 00098 | `00098_create_member_portfolio.sql` | `member_portfolio` | pension | member, portfolio |
-| 00099 | `00099_create_member_premium_payment.sql` | `member_premium_payment` | pension | invoice, member, premium_payment_type |
-| 00100 | `00100_create_mutual_fund_portfolio_history.sql` | `mutual_fund_portfolio_history` | portfolio | mutual_fund_portfolio |
-| 00101 | `00101_create_portfolio_accounting_structure.sql` | `portfolio_accounting_structure` | portfolio | asset_class, finance_account, finance_account_type, portfolio, trade_type |
-| 00102 | `00102_create_portfolio_budget_history.sql` | `portfolio_budget_history` | portfolio | asset_class, portfolio_budget |
-| 00103 | `00103_create_portfolio_cost_structure.sql` | `portfolio_cost_structure` | portfolio | finance_account, portfolio, trade_type |
-| 00104 | `00104_create_stock_history.sql` | `stock_history` | market | stock, stock_fundamental_history, stock_type |
-| 00105 | `00105_create_stock_portfolio_history.sql` | `stock_portfolio_history` | portfolio | stock_portfolio |
-| 00106 | `00106_create_bond_portfolio_history.sql` | `bond_portfolio_history` | portfolio | bond, bond_portfolio, portfolio |
-| 00107 | `00107_create_bond_trade.sql` | `bond_trade` | bond | bank, bank_account, bond, bond_periode_option, broker, investor, marketing_agent, portfolio, trade_type |
-| 00108 | `00108_create_cash_settlement.sql` | `cash_settlement` | accounting | bond_portfolio, cash_settlement_category, client, deposito_portfolio, member, mutual_fund_portfolio, stock_portfolio, file_object |
-| 00109 | `00109_create_member_portfolio_history.sql` | `member_portfolio_history` | pension | member_portfolio |
-| 00110 | `00110_create_member_portfolio_transaction.sql` | `member_portfolio_transaction` | pension | member_portfolio, trade_type |
-| 00111 | `00111_create_tax_report.sql` | `tax_report` | pension | dependant, member |
-| 00112 | `00112_create_bond_trade_data_history.sql` | `bond_trade_data_history` | bond | bank, bond, bond_trade, broker, investor, marketing_agent, portfolio, trade_type |
-| 00113 | `00113_create_document.sql` | `document` | document | bond, bond_trade, document_category, investor, marketing_agent, mutual_fund_trade, stock_trade, file_object |
-| 00114 | `00114_create_finance_transaction.sql` | `finance_transaction` | accounting | bond_trade, mutual_fund_trade, portfolio, stock_trade |
-| 00115 | `00115_create_investor_coupon_schedule.sql` | `investor_coupon_schedule` | bond | bond_coupon_schedule, bond_trade, file_object |
-| 00116 | `00116_create_member_benefit_payout.sql` | `member_benefit_payout` | pension | benefit_payout_batch, dependant, member, tax_report |
-| 00117 | `00117_create_document_authorization_table.sql` | `document_authorization_table` | document | document, role |
-| 00118 | `00118_create_document_data_history.sql` | `document_data_history` | document | bond_trade, document, document_category, investor, marketing_agent, mutual_fund_trade, stock_trade, file_object |
-| 00119 | `00119_create_finance_transaction_detail.sql` | `finance_transaction_detail` | accounting | finance_account, finance_transaction |
-| 00120 | `00120_create_member_document.sql` | `member_document` | pension | document_category, member, member_benefit_payout, member_premium_payment, file_object |
-| 00121 | `00121_create_payment_document.sql` | `payment_document` | bond | bond_coupon_schedule, document_category, investor_coupon_schedule, file_object |
-| 00122 | `00122_create_task_document.sql` | `task_document` | workflow | document, document_category, task |
-| 00123 | `00123_create_auth_refresh_token.sql` | `auth_refresh_token` | iam | app_user |
-| 00124 | `00124_create_business_unique_indexes.sql` | — (unique index bisnis M2) | market, portfolio | stock_history, indices_history, mutual_fund_history, … |
-| 00125 | `00125_trading_accounting_support.sql` | `number_sequence` + kolom/index pendukung M3 | accounting, trading | crypto_trade, finance_transaction, cash_settlement, … |
-| 00126 | `00126_bond_support.sql` | default status, unique sertifikat & kupon investor, CHECK pemilik rekening (M4) | bond | bond, bond_trade, bond_coupon_schedule, investor_coupon_schedule, bank_account, … |
-| 00127 | `00127_pension_support.sql` | `member.client_id` [USULAN], default status, unique periode invoice/payout & baris per peserta (M5) | pension | member, client, invoice, member_premium_payment, benefit_payout_batch, member_benefit_payout, member_portfolio |
+| 00001 | `shared/00001_init_functions.sql` | — (fungsi `set_updated_at`) | — | — |
+| 00002 | `document/00002_create_file_object.sql` | `file_object` | storage | — |
+| 00003 | `security/00003_create_action.sql` | `action` | iam | — |
+| 00004 | `log/00004_create_activity_log.sql` | `activity_log` | iam | — |
+| 00005 | `core/00005_create_asset_class.sql` | `asset_class` | masterdata | — |
+| 00006 | `core/00006_create_bank_class.sql` | `bank_class` | masterdata | — |
+| 00007 | `core/00007_create_benefit_payout_batch.sql` | `benefit_payout_batch` | pension | — |
+| 00008 | `core/00008_create_bond_periode_option.sql` | `bond_periode_option` | masterdata | — |
+| 00009 | `core/00009_create_bond_type.sql` | `bond_type` | masterdata | — |
+| 00010 | `core/00010_create_broker.sql` | `broker` | market | — |
+| 00011 | `core/00011_create_configuration.sql` | `configuration` | masterdata | file_object *(UUID, pfm_document)* |
+| 00012 | `core/00012_create_country.sql` | `country` | masterdata | — |
+| 00013 | `core/00013_create_crypto.sql` | `crypto` | market | — |
+| 00014 | `core/00014_create_crypto_exchange.sql` | `crypto_exchange` | market | — |
+| 00015 | `core/00015_create_document_category.sql` | `document_category` | masterdata | — |
+| 00016 | `core/00016_create_finance_account_type.sql` | `finance_account_type` | masterdata | — |
+| 00017 | `core/00017_create_indices.sql` | `indices` | market | — |
+| 00018 | `core/00018_create_investment_manager.sql` | `investment_manager` | market | — |
+| 00019 | `core/00019_create_investor_category.sql` | `investor_category` | masterdata | — |
+| 00020 | `core/00020_create_marketing_agent.sql` | `marketing_agent` | bond | — |
+| 00021 | `core/00021_create_mutual_fund_category.sql` | `mutual_fund_category` | masterdata | — |
+| 00022 | `core/00022_create_newsletter.sql` | `newsletter` | workflow | file_object *(UUID, pfm_document)* |
+| 00023 | `core/00023_create_occupation.sql` | `occupation` | masterdata | — |
+| 00024 | `core/00024_create_placement_type.sql` | `placement_type` | masterdata | — |
+| 00025 | `core/00025_create_premium_payment_type.sql` | `premium_payment_type` | masterdata | — |
+| 00026 | `core/00026_create_property_asset_type.sql` | `property_asset_type` | masterdata | — |
+| 00027 | `core/00027_create_rating_agency.sql` | `rating_agency` | masterdata | — |
+| 00028 | `security/00028_create_role.sql` | `role` | iam | — |
+| 00029 | `core/00029_create_sector.sql` | `sector` | masterdata | — |
+| 00030 | `core/00030_create_stock_size_classification.sql` | `stock_size_classification` | masterdata | — |
+| 00031 | `core/00031_create_stock_type.sql` | `stock_type` | masterdata | — |
+| 00032 | `core/00032_create_synchronization_request.sql` | `synchronization_request` | integration | — |
+| 00033 | `core/00033_create_synchronized_data.sql` | `synchronized_data` | integration | — |
+| 00034 | `core/00034_create_task.sql` | `task` | workflow | — |
+| 00035 | `core/00035_create_tax_rate.sql` | `tax_rate` | masterdata | — |
+| 00036 | `core/00036_create_trade_type.sql` | `trade_type` | masterdata | — |
+| 00037 | `core/00037_create_bank.sql` | `bank` | masterdata | bank_class |
+| 00038 | `core/00038_create_broker_api_setting.sql` | `broker_api_setting` | market | broker |
+| 00039 | `core/00039_create_client.sql` | `client` | portfolio | sector |
+| 00040 | `core/00040_create_crypto_listing_exchange.sql` | `crypto_listing_exchange` | market | crypto_exchange |
+| 00041 | `core/00041_create_crypto_trade_plan.sql` | `crypto_trade_plan` | portfolio | crypto, crypto_exchange |
+| 00042 | `document/00042_create_document_category_authorization_table.sql` | `document_category_authorization_table` | document | document_category *(UUID, pfm_core)*, role *(UUID, pfm_security)* |
+| 00043 | `core/00043_create_indices_history.sql` | `indices_history` | market | indices |
+| 00044 | `core/00044_create_marketing_agent_data_history.sql` | `marketing_agent_data_history` | bond | marketing_agent |
+| 00045 | `core/00045_create_mutual_fund.sql` | `mutual_fund` | market | investment_manager, mutual_fund_category |
+| 00046 | `core/00046_create_notification.sql` | `notification` | workflow | newsletter |
+| 00047 | `core/00047_create_placement.sql` | `placement` | portfolio | investment_manager |
+| 00048 | `core/00048_create_property_asset.sql` | `property_asset` | portfolio | property_asset_type |
+| 00049 | `core/00049_create_province.sql` | `province` | masterdata | country |
+| 00050 | `core/00050_create_rating.sql` | `rating` | masterdata | rating_agency |
+| 00051 | `security/00051_create_role_action.sql` | `role_action` | iam | action, role |
+| 00052 | `core/00052_create_sub_sector.sql` | `sub_sector` | masterdata | sector |
+| 00053 | `core/00053_create_city.sql` | `city` | masterdata | province |
+| 00054 | `core/00054_create_crypto_trade.sql` | `crypto_trade` | trading | crypto, crypto_trade_plan, trade_type |
+| 00055 | `core/00055_create_deposito.sql` | `deposito` | market | bank |
+| 00056 | `core/00056_create_emitent.sql` | `emitent` | market | sector, sub_sector |
+| 00057 | `core/00057_create_invoice.sql` | `invoice` | pension | client |
+| 00058 | `core/00058_create_mutual_fund_history.sql` | `mutual_fund_history` | market | mutual_fund |
+| 00059 | `core/00059_create_notification_download_counter.sql` | `notification_download_counter` | workflow | notification |
+| 00060 | `core/00060_create_placement_detail.sql` | `placement_detail` | portfolio | placement |
+| 00061 | `core/00061_create_portfolio.sql` | `portfolio` | portfolio | client, investment_manager |
+| 00062 | `core/00062_create_stock.sql` | `stock` | market | sector, stock_type, sub_sector |
+| 00063 | `security/00063_create_app_user.sql` | `app_user` | iam | client *(UUID, pfm_core)*, role |
+| 00064 | `core/00064_create_bond.sql` | `bond` | bond | bond_periode_option, bond_type, client, emitent, rating, sector |
+| 00065 | `core/00065_create_crypto_portfolio.sql` | `crypto_portfolio` | portfolio | crypto, portfolio |
+| 00066 | `core/00066_create_deposito_history.sql` | `deposito_history` | market | deposito |
+| 00067 | `core/00067_create_deposito_interest_history.sql` | `deposito_interest_history` | market | deposito |
+| 00068 | `core/00068_create_deposito_portfolio.sql` | `deposito_portfolio` | portfolio | deposito, portfolio |
+| 00069 | `core/00069_create_finance_account.sql` | `finance_account` | accounting | finance_account_type, portfolio |
+| 00070 | `core/00070_create_indices_stock.sql` | `indices_stock` | market | indices, stock |
+| 00071 | `core/00071_create_investor.sql` | `investor` | bond | city, country, investor_category, province |
+| 00072 | `core/00072_create_member.sql` | `member` | pension | bank, city, country, occupation, province |
+| 00073 | `core/00073_create_member_group.sql` | `member_group` | pension | city, country, province |
+| 00074 | `core/00074_create_mutual_fund_portfolio.sql` | `mutual_fund_portfolio` | portfolio | mutual_fund, portfolio |
+| 00075 | `core/00075_create_mutual_fund_trade.sql` | `mutual_fund_trade` | trading | mutual_fund, portfolio, trade_type |
+| 00076 | `core/00076_create_portfolio_bank.sql` | `portfolio_bank` | portfolio | bank, portfolio |
+| 00077 | `core/00077_create_portfolio_budget.sql` | `portfolio_budget` | portfolio | asset_class, portfolio |
+| 00078 | `core/00078_create_portfolio_note.sql` | `portfolio_note` | portfolio | portfolio |
+| 00079 | `core/00079_create_stock_beta_history.sql` | `stock_beta_history` | market | rating_agency, stock |
+| 00080 | `core/00080_create_stock_fundamental_history.sql` | `stock_fundamental_history` | market | stock |
+| 00081 | `core/00081_create_stock_portfolio.sql` | `stock_portfolio` | portfolio | portfolio, stock |
+| 00082 | `core/00082_create_stock_size_classification_history.sql` | `stock_size_classification_history` | market | stock, stock_size_classification |
+| 00083 | `core/00083_create_stock_trade.sql` | `stock_trade` | trading | broker, investment_manager, portfolio, stock, trade_type |
+| 00084 | `core/00084_create_stock_type_detail.sql` | `stock_type_detail` | market | stock, stock_type |
+| 00085 | `core/00085_create_task_assignment.sql` | `task_assignment` | workflow | app_user *(UUID, pfm_security)*, task |
+| 00086 | `core/00086_create_agent_fee_transaction.sql` | `agent_fee_transaction` | bond | bond, marketing_agent, file_object *(UUID, pfm_document)* |
+| 00087 | `core/00087_create_asset_class_finance_account.sql` | `asset_class_finance_account` | portfolio | asset_class, finance_account, portfolio |
+| 00088 | `core/00088_create_bank_account.sql` | `bank_account` | bond | investor, marketing_agent |
+| 00089 | `core/00089_create_bond_coupon_schedule.sql` | `bond_coupon_schedule` | bond | bond |
+| 00090 | `core/00090_create_bond_history.sql` | `bond_history` | bond | bond, rating |
+| 00091 | `core/00091_create_bond_periode_distribution.sql` | `bond_periode_distribution` | bond | bond |
+| 00092 | `core/00092_create_bond_portfolio.sql` | `bond_portfolio` | portfolio | bond, portfolio, rating |
+| 00093 | `core/00093_create_bond_rating.sql` | `bond_rating` | bond | bond, rating, rating_agency |
+| 00094 | `core/00094_create_cash_settlement_category.sql` | `cash_settlement_category` | accounting | finance_account |
+| 00095 | `core/00095_create_dependant.sql` | `dependant` | pension | member |
+| 00096 | `core/00096_create_deposito_portfolio_history.sql` | `deposito_portfolio_history` | portfolio | deposito_portfolio |
+| 00097 | `core/00097_create_investor_data_history.sql` | `investor_data_history` | bond | city, country, investor, investor_category, province |
+| 00098 | `core/00098_create_member_portfolio.sql` | `member_portfolio` | pension | member, portfolio |
+| 00099 | `core/00099_create_member_premium_payment.sql` | `member_premium_payment` | pension | invoice, member, premium_payment_type |
+| 00100 | `core/00100_create_mutual_fund_portfolio_history.sql` | `mutual_fund_portfolio_history` | portfolio | mutual_fund_portfolio |
+| 00101 | `core/00101_create_portfolio_accounting_structure.sql` | `portfolio_accounting_structure` | portfolio | asset_class, finance_account, finance_account_type, portfolio, trade_type |
+| 00102 | `core/00102_create_portfolio_budget_history.sql` | `portfolio_budget_history` | portfolio | asset_class, portfolio_budget |
+| 00103 | `core/00103_create_portfolio_cost_structure.sql` | `portfolio_cost_structure` | portfolio | finance_account, portfolio, trade_type |
+| 00104 | `core/00104_create_stock_history.sql` | `stock_history` | market | stock, stock_fundamental_history, stock_type |
+| 00105 | `core/00105_create_stock_portfolio_history.sql` | `stock_portfolio_history` | portfolio | stock_portfolio |
+| 00106 | `core/00106_create_bond_portfolio_history.sql` | `bond_portfolio_history` | portfolio | bond, bond_portfolio, portfolio |
+| 00107 | `core/00107_create_bond_trade.sql` | `bond_trade` | bond | bank, bank_account, bond, bond_periode_option, broker, investor, marketing_agent, portfolio, trade_type |
+| 00108 | `core/00108_create_cash_settlement.sql` | `cash_settlement` | accounting | bond_portfolio, cash_settlement_category, client, deposito_portfolio, member, mutual_fund_portfolio, stock_portfolio, file_object *(UUID, pfm_document)* |
+| 00109 | `core/00109_create_member_portfolio_history.sql` | `member_portfolio_history` | pension | member_portfolio |
+| 00110 | `core/00110_create_member_portfolio_transaction.sql` | `member_portfolio_transaction` | pension | member_portfolio, trade_type |
+| 00111 | `core/00111_create_tax_report.sql` | `tax_report` | pension | dependant, member |
+| 00112 | `core/00112_create_bond_trade_data_history.sql` | `bond_trade_data_history` | bond | bank, bond, bond_trade, broker, investor, marketing_agent, portfolio, trade_type |
+| 00113 | `document/00113_create_document.sql` | `document` | document | bond *(UUID, pfm_core)*, bond_trade *(UUID, pfm_core)*, document_category *(UUID, pfm_core)*, investor *(UUID, pfm_core)*, marketing_agent *(UUID, pfm_core)*, mutual_fund_trade *(UUID, pfm_core)*, stock_trade *(UUID, pfm_core)*, file_object |
+| 00114 | `core/00114_create_finance_transaction.sql` | `finance_transaction` | accounting | bond_trade, mutual_fund_trade, portfolio, stock_trade |
+| 00115 | `core/00115_create_investor_coupon_schedule.sql` | `investor_coupon_schedule` | bond | bond_coupon_schedule, bond_trade, file_object *(UUID, pfm_document)* |
+| 00116 | `core/00116_create_member_benefit_payout.sql` | `member_benefit_payout` | pension | benefit_payout_batch, dependant, member, tax_report |
+| 00117 | `document/00117_create_document_authorization_table.sql` | `document_authorization_table` | document | document, role *(UUID, pfm_security)* |
+| 00118 | `document/00118_create_document_data_history.sql` | `document_data_history` | document | bond_trade *(UUID, pfm_core)*, document, document_category *(UUID, pfm_core)*, investor *(UUID, pfm_core)*, marketing_agent *(UUID, pfm_core)*, mutual_fund_trade *(UUID, pfm_core)*, stock_trade *(UUID, pfm_core)*, file_object |
+| 00119 | `core/00119_create_finance_transaction_detail.sql` | `finance_transaction_detail` | accounting | finance_account, finance_transaction |
+| 00120 | `core/00120_create_member_document.sql` | `member_document` | pension | document_category, member, member_benefit_payout, member_premium_payment, file_object *(UUID, pfm_document)* |
+| 00121 | `core/00121_create_payment_document.sql` | `payment_document` | bond | bond_coupon_schedule, document_category, investor_coupon_schedule, file_object *(UUID, pfm_document)* |
+| 00122 | `core/00122_create_task_document.sql` | `task_document` | workflow | document *(UUID, pfm_document)*, document_category, task |
+| 00123 | `security/00123_create_auth_refresh_token.sql` | `auth_refresh_token` | iam | app_user |
+| 00124 | `core/00124_create_business_unique_indexes.sql` | — (unique index bisnis M2) | market, portfolio | stock_history, indices_history, mutual_fund_history, … |
+| 00125 | `core/00125_trading_accounting_support.sql` | `number_sequence` + kolom/index pendukung M3 | accounting, trading | crypto_trade, finance_transaction, cash_settlement, … |
+| 00126 | `core/00126_bond_support.sql` | default status, unique sertifikat & kupon investor, CHECK pemilik rekening (M4) | bond | bond, bond_trade, bond_coupon_schedule, investor_coupon_schedule, bank_account, … |
+| 00127 | `core/00127_pension_support.sql` | `member.client_id` [USULAN], default status, unique periode invoice/payout & baris per peserta (M5) | pension | member, client, invoice, member_premium_payment, benefit_payout_batch, member_benefit_payout, member_portfolio |
+| 00128 | `outbox/00128_create_audit_outbox.sql` | `audit_outbox` | audit | — |
+| 00129 | `log/00129_activity_log_source.sql` | kolom `activity_log.source` + index | audit | activity_log |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap
