@@ -5,6 +5,7 @@ secrets/
 
 # build & runtime
 bin/
+tmp/
 var/
 coverage.out
 

@@ -20,7 +20,8 @@ make migrate-up               # migrasi ke pfm_core, pfm_security, pfm_log, pfm_
 make db-grants                # hak akses minimum per database
 make seed                     # katalog permission & 7 role (security) + konfigurasi (core)
 make seed-admin               # admin pertama dari ADMIN_USERNAME/EMAIL/PASSWORD
-make run                      # API di :8080
+make run                      # API (HTTP_ADDR di .env, default :8080); `go run ./cmd/api` juga membaca .env
+make dev                      # API dengan live reload (air, .air.toml)
 make worker                   # (terminal lain, user DB worker) kirim audit ke pfm_log + pembersihan
 ```
 

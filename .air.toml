@@ -1,0 +1,30 @@
+# Live reload API untuk development: `make dev` (atau `air`).
+# Konfigurasi dibaca aplikasi dari .env (internal/config), jadi tidak perlu export manual.
+# Ubah query di internal/db/queries? Jalankan `make sqlc`; file Go hasilnya memicu rebuild.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/api ./cmd/api"
+  bin = "./tmp/api"
+  include_ext = ["go"]
+  # Program lain (migrate, worker, scaffold) dan folder non-kode tidak memengaruhi binary API.
+  exclude_dir = ["tmp", "var", "secrets", "deploy", "docs", "vendor", "testdata", "node_modules",
+                 "cmd/migrate", "cmd/worker", "cmd/scaffold"]
+  exclude_regex = ["_test\\.go$"]
+  delay = 500
+  stop_on_error = true
+  # SIGINT dulu agar API berhenti rapi (graceful shutdown), lalu dipaksa setelah kill_delay.
+  send_interrupt = true
+  kill_delay = "5s"
+  log = "build-errors.log"
+
+[log]
+  time = true
+
+[misc]
+  clean_on_exit = true
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true

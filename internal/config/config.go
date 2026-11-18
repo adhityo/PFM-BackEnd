@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"time"
 
@@ -63,8 +64,19 @@ type Config struct {
 func (c Config) IsProduction() bool { return c.AppEnv == "production" }
 
 // Load parses the environment.
+// Outside production, a .env file in the working directory (or ENV_FILE) is
+// read first; real environment variables take precedence over it.
 func Load() (Config, error) {
 	var c Config
+	if os.Getenv("APP_ENV") != "production" {
+		file := os.Getenv("ENV_FILE")
+		if file == "" {
+			file = ".env"
+		}
+		if err := loadDotEnv(file); err != nil {
+			return c, err
+		}
+	}
 	if err := env.Parse(&c); err != nil {
 		return c, fmt.Errorf("parse env: %w", err)
 	}

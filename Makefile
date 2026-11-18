@@ -42,6 +42,11 @@ build: ## Build semua binary ke ./bin
 run: ## Jalankan API (butuh .env)
 	$(GO) run ./cmd/api
 
+.PHONY: dev
+dev: ## Jalankan API dengan live reload (air: go install github.com/air-verse/air@latest)
+	@command -v air >/dev/null || (echo "air belum terpasang: go install github.com/air-verse/air@latest" && exit 1)
+	air -c .air.toml
+
 .PHONY: worker
 worker: ## Jalankan worker: kirim audit outbox ke pfm_log + pembersihan (pakai user DB worker)
 	$(GO) run ./cmd/worker
