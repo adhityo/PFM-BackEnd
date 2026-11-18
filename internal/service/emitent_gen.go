@@ -14,6 +14,7 @@ func EmitentResource(d Deps) crud.Resource[sqlc.GetEmitentByUUIDRow, dto.Emitent
 	return crud.Resource[sqlc.GetEmitentByUUIDRow, dto.EmitentRequest, dto.EmitentResponse]{
 		Table:       "emitent",
 		Label:       "emiten",
+		Module:      "market",
 		Path:        "/emitents",
 		Sorts:       []string{"emitent_name", "created_at"},
 		DefaultSort: "emitent_name",

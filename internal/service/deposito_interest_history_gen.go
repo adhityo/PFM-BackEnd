@@ -16,6 +16,7 @@ func DepositoInterestHistoryResource(d Deps) crud.Resource[sqlc.GetDepositoInter
 	return crud.Resource[sqlc.GetDepositoInterestHistoryByUUIDRow, dto.DepositoInterestHistoryRequest, dto.DepositoInterestHistoryResponse]{
 		Table:       "deposito_interest_history",
 		Label:       "riwayat bunga deposito",
+		Module:      "market",
 		Path:        "/deposito-interest-histories",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

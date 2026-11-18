@@ -14,6 +14,7 @@ func BondPeriodeDistributionResource(d Deps) crud.Resource[sqlc.GetBondPeriodeDi
 	return crud.Resource[sqlc.GetBondPeriodeDistributionByUUIDRow, dto.BondPeriodeDistributionRequest, dto.BondPeriodeDistributionResponse]{
 		Table:       "bond_periode_distribution",
 		Label:       "distribusi periode obligasi",
+		Module:      "bond",
 		Path:        "/bond-periode-distributions",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

@@ -16,6 +16,7 @@ func BondResource(d Deps) crud.Resource[sqlc.GetBondByUUIDRow, dto.BondRequest, 
 	return crud.Resource[sqlc.GetBondByUUIDRow, dto.BondRequest, dto.BondResponse]{
 		Table:       "bond",
 		Label:       "obligasi",
+		Module:      "bond",
 		Path:        "/bonds",
 		Sorts:       []string{"bond_code", "bond_name", "issuance_date", "created_at"},
 		DefaultSort: "-issuance_date",

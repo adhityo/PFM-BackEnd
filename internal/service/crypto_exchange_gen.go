@@ -14,6 +14,7 @@ func CryptoExchangeResource(d Deps) crud.Resource[sqlc.GetCryptoExchangeByUUIDRo
 	return crud.Resource[sqlc.GetCryptoExchangeByUUIDRow, dto.CryptoExchangeRequest, dto.CryptoExchangeResponse]{
 		Table:       "crypto_exchange",
 		Label:       "exchange kripto",
+		Module:      "market",
 		Path:        "/crypto-exchanges",
 		Sorts:       []string{"crypto_exchange_code", "crypto_exchange_name", "created_at"},
 		DefaultSort: "crypto_exchange_code",

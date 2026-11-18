@@ -14,6 +14,7 @@ func PortfolioBudgetResource(d Deps) crud.Resource[sqlc.GetPortfolioBudgetByUUID
 	return crud.Resource[sqlc.GetPortfolioBudgetByUUIDRow, dto.PortfolioBudgetRequest, dto.PortfolioBudgetResponse]{
 		Table:       "portfolio_budget",
 		Label:       "budget portofolio",
+		Module:      "portfolio",
 		Path:        "/portfolio-budgets",
 		Sorts:       []string{"budget_year", "created_at"},
 		DefaultSort: "-budget_year",

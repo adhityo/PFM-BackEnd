@@ -14,6 +14,7 @@ func PortfolioCostStructureResource(d Deps) crud.Resource[sqlc.GetPortfolioCostS
 	return crud.Resource[sqlc.GetPortfolioCostStructureByUUIDRow, dto.PortfolioCostStructureRequest, dto.PortfolioCostStructureResponse]{
 		Table:       "portfolio_cost_structure",
 		Label:       "struktur biaya portofolio",
+		Module:      "portfolio",
 		Path:        "/portfolio-cost-structures",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

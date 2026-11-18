@@ -14,6 +14,7 @@ func CountryResource(d Deps) crud.Resource[sqlc.GetCountryByUUIDRow, dto.Country
 	return crud.Resource[sqlc.GetCountryByUUIDRow, dto.CountryRequest, dto.CountryResponse]{
 		Table:       "country",
 		Label:       "negara",
+		Module:      "masterdata",
 		Path:        "/countries",
 		Sorts:       []string{"country_code", "country_name", "created_at"},
 		DefaultSort: "country_code",

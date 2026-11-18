@@ -16,6 +16,7 @@ func BondCouponScheduleResource(d Deps) crud.Resource[sqlc.GetBondCouponSchedule
 	return crud.Resource[sqlc.GetBondCouponScheduleByUUIDRow, dto.BondCouponScheduleRequest, dto.BondCouponScheduleResponse]{
 		Table:       "bond_coupon_schedule",
 		Label:       "jadwal kupon obligasi",
+		Module:      "bond",
 		Path:        "/bond-coupon-schedules",
 		Sorts:       []string{"coupon_date", "created_at"},
 		DefaultSort: "coupon_date",

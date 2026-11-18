@@ -16,6 +16,7 @@ func MemberPortfolioTransactionResource(d Deps) crud.Resource[sqlc.GetMemberPort
 	return crud.Resource[sqlc.GetMemberPortfolioTransactionByUUIDRow, dto.MemberPortfolioTransactionRequest, dto.MemberPortfolioTransactionResponse]{
 		Table:       "member_portfolio_transaction",
 		Label:       "transaksi unit peserta",
+		Module:      "pension",
 		Path:        "/member-portfolio-transactions",
 		Sorts:       []string{"transaction_date", "created_at"},
 		DefaultSort: "-transaction_date",

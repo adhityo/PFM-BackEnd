@@ -16,6 +16,7 @@ func MutualFundHistoryResource(d Deps) crud.Resource[sqlc.GetMutualFundHistoryBy
 	return crud.Resource[sqlc.GetMutualFundHistoryByUUIDRow, dto.MutualFundHistoryRequest, dto.MutualFundHistoryResponse]{
 		Table:       "mutual_fund_history",
 		Label:       "NAV reksa dana",
+		Module:      "market",
 		Path:        "/mutual-fund-histories",
 		Sorts:       []string{"closing_date", "created_at"},
 		DefaultSort: "-closing_date",

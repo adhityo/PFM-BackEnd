@@ -14,6 +14,7 @@ func MemberPortfolioHistoryResource(d Deps) crud.ReadResource[sqlc.GetMemberPort
 	return crud.ReadResource[sqlc.GetMemberPortfolioHistoryByUUIDRow, dto.MemberPortfolioHistoryResponse]{
 		Table:       "member_portfolio_history",
 		Label:       "riwayat unit peserta",
+		Module:      "pension",
 		Path:        "/member-portfolio-histories",
 		Sorts:       []string{"portfolio_date", "created_at"},
 		DefaultSort: "-portfolio_date",

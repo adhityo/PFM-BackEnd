@@ -14,6 +14,7 @@ func AssetClassFinanceAccountResource(d Deps) crud.Resource[sqlc.GetAssetClassFi
 	return crud.Resource[sqlc.GetAssetClassFinanceAccountByUUIDRow, dto.AssetClassFinanceAccountRequest, dto.AssetClassFinanceAccountResponse]{
 		Table:       "asset_class_finance_account",
 		Label:       "akun per kelas aset",
+		Module:      "portfolio",
 		Path:        "/asset-class-finance-accounts",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

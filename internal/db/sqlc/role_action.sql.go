@@ -50,7 +50,7 @@ func (q *Queries) InsertRoleAction(ctx context.Context, arg InsertRoleActionPara
 }
 
 const listActionsByRole = `-- name: ListActionsByRole :many
-SELECT a.id, a.uuid, a.action_code, a.action_name, a.description, a.created_at, a.created_by, a.updated_at, a.updated_by, a.deleted_at, a.deleted_by
+SELECT a.id, a.uuid, a.action_code, a.action_name, a.description, a.created_at, a.created_by, a.updated_at, a.updated_by, a.deleted_at, a.deleted_by, a.module, a.resource_label, a.is_system
 FROM role_action ra
 JOIN action a ON a.id = ra.action_id AND a.deleted_at IS NULL
 WHERE ra.role_id = $1 AND ra.deleted_at IS NULL
@@ -78,6 +78,9 @@ func (q *Queries) ListActionsByRole(ctx context.Context, roleID *int64) ([]Actio
 			&i.UpdatedBy,
 			&i.DeletedAt,
 			&i.DeletedBy,
+			&i.Module,
+			&i.ResourceLabel,
+			&i.IsSystem,
 		); err != nil {
 			return nil, err
 		}
@@ -92,10 +95,12 @@ func (q *Queries) ListActionsByRole(ctx context.Context, roleID *int64) ([]Actio
 const listPermissionCodesByRole = `-- name: ListPermissionCodesByRole :many
 SELECT a.action_code::text
 FROM role_action ra
+JOIN role r ON r.id = ra.role_id AND r.deleted_at IS NULL AND r.status = 1
 JOIN action a ON a.id = ra.action_id AND a.deleted_at IS NULL
 WHERE ra.role_id = $1 AND ra.deleted_at IS NULL AND a.action_code IS NOT NULL
 `
 
+// An inactive or deleted role grants nothing.
 func (q *Queries) ListPermissionCodesByRole(ctx context.Context, roleID *int64) ([]string, error) {
 	rows, err := q.db.Query(ctx, listPermissionCodesByRole, roleID)
 	if err != nil {

@@ -297,7 +297,8 @@ func (s *AuthService) ChangePassword(ctx context.Context, in dto.ChangePasswordR
 	})
 }
 
-// Me returns the current user and effective permissions.
+// Me returns the current user, role and effective permissions (resolved by
+// the authentication middleware, so they match what the API enforces).
 func (s *AuthService) Me(ctx context.Context) (dto.MeResponse, error) {
 	actor, err := auth.MustActor(ctx)
 	if err != nil {
@@ -307,26 +308,19 @@ func (s *AuthService) Me(ctx context.Context) (dto.MeResponse, error) {
 	if err != nil {
 		return dto.MeResponse{}, err
 	}
-	perms := []string{}
-	switch {
-	case actor.IsAdmin():
-		perms = []string{"*"}
-	case actor.RoleID != nil:
-		codes, err := s.roles.PermissionCodes(ctx, *actor.RoleID)
-		if err != nil {
+	out := dto.MeResponse{User: dto.UserFromModel(u, s.now()), IsAdmin: actor.IsAdmin(),
+		Permissions: actor.Permissions(), PermissionsVersion: actor.PermissionsVersion()}
+	if u.RoleUUID != nil {
+		r, err := s.roles.GetByUUID(ctx, *u.RoleUUID)
+		if err != nil && !errors.Is(err, apperr.ErrNotFound) {
 			return dto.MeResponse{}, err
 		}
-		perms = permSetFrom(codes).list()
+		if err == nil {
+			out.Role = &dto.MeRole{UUID: r.UUID, Code: r.RoleCode, Name: r.RoleName, MenuURL: r.MenuURL,
+				Active: r.Status != nil && *r.Status == model.StatusActive}
+		}
 	}
-	return dto.MeResponse{User: dto.UserFromModel(u, s.now()), Permissions: perms}, nil
-}
-
-func permSetFrom(codes []string) permSet {
-	s := make(permSet, len(codes))
-	for _, c := range codes {
-		s[c] = struct{}{}
-	}
-	return s
+	return out, nil
 }
 
 // checkPasswordPolicy enforces rules beyond length (validated on the DTO).

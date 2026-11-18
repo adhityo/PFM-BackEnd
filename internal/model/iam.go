@@ -150,21 +150,31 @@ type RoleInput struct {
 
 // Action is a permission catalog entry (`action`).
 type Action struct {
-	ID          int64
-	UUID        uuid.UUID
-	ActionCode  string
-	ActionName  string
-	Description *string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID            int64
+	UUID          uuid.UUID
+	ActionCode    string
+	ActionName    string
+	Description   *string
+	Module        string
+	ResourceLabel *string
+	IsSystem      bool // from the code catalog: route guards depend on it
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 }
 
 // ActionInput is used for create and update.
 type ActionInput struct {
-	ActionCode  string
-	ActionName  string
-	Description *string
-	Actor       string
+	ActionCode    string
+	ActionName    string
+	Description   *string
+	ResourceLabel *string
+	Actor         string
+}
+
+// ActionFilter holds list filters for the action catalog.
+type ActionFilter struct {
+	Q      *string
+	Module *string
 }
 
 // RefreshToken is a stored (hashed) refresh token.

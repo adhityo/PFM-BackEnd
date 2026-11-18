@@ -14,6 +14,7 @@ func PropertyAssetResource(d Deps) crud.Resource[sqlc.GetPropertyAssetByUUIDRow,
 	return crud.Resource[sqlc.GetPropertyAssetByUUIDRow, dto.PropertyAssetRequest, dto.PropertyAssetResponse]{
 		Table:       "property_asset",
 		Label:       "aset properti",
+		Module:      "portfolio",
 		Path:        "/property-assets",
 		Sorts:       []string{"property_asset_code", "property_asset_name", "created_at"},
 		DefaultSort: "property_asset_code",

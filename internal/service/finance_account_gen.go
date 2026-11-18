@@ -16,6 +16,7 @@ func FinanceAccountResource(d Deps) crud.Resource[sqlc.GetFinanceAccountByUUIDRo
 	return crud.Resource[sqlc.GetFinanceAccountByUUIDRow, dto.FinanceAccountRequest, dto.FinanceAccountResponse]{
 		Table:       "finance_account",
 		Label:       "akun keuangan",
+		Module:      "accounting",
 		Path:        "/finance-accounts",
 		Sorts:       []string{"finance_account_number", "finance_account_name", "created_at"},
 		DefaultSort: "finance_account_number",

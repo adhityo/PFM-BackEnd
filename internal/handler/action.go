@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 
 	"pfm-backend/internal/dto"
+	"pfm-backend/internal/model"
 	"pfm-backend/internal/permission"
 	"pfm-backend/internal/platform/auth"
 	"pfm-backend/internal/platform/httpx"
@@ -27,14 +28,24 @@ func (h *ActionHandler) Register(r *auth.Router) {
 	g.Get("/:uuid", permission.ActionRead, h.Get)
 	g.Put("/:uuid", permission.ActionUpdate, h.Update)
 	g.Delete("/:uuid", permission.ActionDelete, h.Delete)
+	// Grouped catalog for the role permission editor (module -> resource -> action).
+	r.Get("/permission-catalog", permission.RoleActionRead, h.Catalog)
 }
 
-func (h *ActionHandler) List(c fiber.Ctx) error {
-	q, err := httpx.ParseListQuery(c, service.ActionSorts, "action_code", "q")
+func (h *ActionHandler) Catalog(c fiber.Ctx) error {
+	out, err := h.actions.Catalog(c.Context())
 	if err != nil {
 		return err
 	}
-	items, total, err := h.actions.List(c.Context(), q.Like("q"), paging(q))
+	return httpx.OK(c, out)
+}
+
+func (h *ActionHandler) List(c fiber.Ctx) error {
+	q, err := httpx.ParseListQuery(c, service.ActionSorts, "action_code", "q", "module")
+	if err != nil {
+		return err
+	}
+	items, total, err := h.actions.List(c.Context(), model.ActionFilter{Q: q.Like("q"), Module: q.Text("module")}, paging(q))
 	if err != nil {
 		return err
 	}

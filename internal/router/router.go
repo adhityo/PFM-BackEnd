@@ -34,7 +34,7 @@ import (
 
 // Catalog is the full permission catalog of the application.
 func Catalog() []auth.Permission {
-	return auth.MergeCatalogs(permission.Static(), handler.CRUDPermissions(crudResources(service.Deps{})))
+	return permission.Label(auth.MergeCatalogs(permission.Static(), handler.CRUDPermissions(crudResources(service.Deps{}))))
 }
 
 // crudResources lists every scaffolded resource, module by module.
@@ -109,7 +109,7 @@ func New(d Deps) *fiber.App {
 			AllowOrigins:  cfg.CORSAllowedOrigins,
 			AllowMethods:  []string{fiber.MethodGet, fiber.MethodPost, fiber.MethodPut, fiber.MethodDelete},
 			AllowHeaders:  []string{fiber.HeaderAuthorization, fiber.HeaderContentType, fiber.HeaderIfMatch, "Idempotency-Key", fiber.HeaderXRequestID},
-			ExposeHeaders: []string{fiber.HeaderETag, fiber.HeaderLocation, fiber.HeaderXRequestID},
+			ExposeHeaders: []string{fiber.HeaderETag, fiber.HeaderLocation, fiber.HeaderXRequestID, auth.HeaderPermissionsVersion},
 			MaxAge:        600,
 		}))
 	}
@@ -140,14 +140,14 @@ func New(d Deps) *fiber.App {
 	clients := repository.NewClientLookup(tx)
 
 	// services
-	permCache := service.NewPermissionCache(roles, time.Minute)
+	permCache := service.NewPermissionCache(roles, actions, time.Minute)
 	authSvc := service.NewAuthService(sec, users, tokens, roles, d.Hasher, d.Signer, secRec, service.AuthConfig{
 		RefreshTTL: cfg.JWTRefreshTTL, ActivationTTL: cfg.ActivationKeyTTL,
 		LoginMaxAttempts: cfg.LoginMaxAttempts, LoginLockFor: cfg.LoginLockFor,
 	})
 	userSvc := service.NewUserService(sec, users, roles, tokens, clients, secRec, cfg.ActivationKeyTTL)
 	roleSvc := service.NewRoleService(sec, roles, actions, users, permCache, secRec)
-	actionSvc := service.NewActionService(sec, actions, roles, secRec)
+	actionSvc := service.NewActionService(sec, actions, roles, permCache, secRec)
 	logSvc := service.NewActivityLogService(repository.NewActivityLogRepository(logs))
 	fileSvc := service.NewFileService(docs, repository.NewFileObjectRepository(docs), d.Images, d.Docs, docRec, d.Log, cfg.S3PresignTTL)
 	configSvc := service.NewConfigurationService(tx, repository.NewConfigurationRepository(tx), fileSvc, rec)

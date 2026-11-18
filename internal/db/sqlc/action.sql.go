@@ -18,36 +18,45 @@ WHERE deleted_at IS NULL
   AND ($1::text IS NULL
        OR action_code ILIKE '%' || $1 || '%' ESCAPE '\'
        OR action_name ILIKE '%' || $1 || '%' ESCAPE '\')
+  AND ($2::text IS NULL OR module = $2)
 `
 
-func (q *Queries) CountActions(ctx context.Context, q_ *string) (int64, error) {
-	row := q.db.QueryRow(ctx, countActions, q_)
+type CountActionsParams struct {
+	Q      *string
+	Module *string
+}
+
+func (q *Queries) CountActions(ctx context.Context, arg CountActionsParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countActions, arg.Q, arg.Module)
 	var count int64
 	err := row.Scan(&count)
 	return count, err
 }
 
 const createAction = `-- name: CreateAction :one
-INSERT INTO action (uuid, action_code, action_name, description, created_by, updated_by)
-VALUES ($1, $2, $3, $4,
-        $5, $5)
-RETURNING id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by
+INSERT INTO action (uuid, action_code, action_name, description, module, resource_label, is_system, created_by, updated_by)
+VALUES ($1, $2, $3, $4, 'custom',
+        $5, FALSE, $6, $6)
+RETURNING id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, module, resource_label, is_system
 `
 
 type CreateActionParams struct {
-	Uuid        uuid.UUID
-	ActionCode  *string
-	ActionName  *string
-	Description *string
-	Actor       *string
+	Uuid          uuid.UUID
+	ActionCode    *string
+	ActionName    *string
+	Description   *string
+	ResourceLabel *string
+	Actor         *string
 }
 
+// Custom (non-system) actions only; system actions come from SyncSystemAction.
 func (q *Queries) CreateAction(ctx context.Context, arg CreateActionParams) (Action, error) {
 	row := q.db.QueryRow(ctx, createAction,
 		arg.Uuid,
 		arg.ActionCode,
 		arg.ActionName,
 		arg.Description,
+		arg.ResourceLabel,
 		arg.Actor,
 	)
 	var i Action
@@ -63,12 +72,15 @@ func (q *Queries) CreateAction(ctx context.Context, arg CreateActionParams) (Act
 		&i.UpdatedBy,
 		&i.DeletedAt,
 		&i.DeletedBy,
+		&i.Module,
+		&i.ResourceLabel,
+		&i.IsSystem,
 	)
 	return i, err
 }
 
 const getActionByUUID = `-- name: GetActionByUUID :one
-SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by FROM action WHERE uuid = $1 AND deleted_at IS NULL
+SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, module, resource_label, is_system FROM action WHERE uuid = $1 AND deleted_at IS NULL
 `
 
 func (q *Queries) GetActionByUUID(ctx context.Context, argUuid uuid.UUID) (Action, error) {
@@ -86,12 +98,15 @@ func (q *Queries) GetActionByUUID(ctx context.Context, argUuid uuid.UUID) (Actio
 		&i.UpdatedBy,
 		&i.DeletedAt,
 		&i.DeletedBy,
+		&i.Module,
+		&i.ResourceLabel,
+		&i.IsSystem,
 	)
 	return i, err
 }
 
 const getActionsByUUIDs = `-- name: GetActionsByUUIDs :many
-SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by FROM action WHERE uuid = ANY($1::uuid[]) AND deleted_at IS NULL
+SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, module, resource_label, is_system FROM action WHERE uuid = ANY($1::uuid[]) AND deleted_at IS NULL
 `
 
 func (q *Queries) GetActionsByUUIDs(ctx context.Context, uuids []uuid.UUID) ([]Action, error) {
@@ -115,6 +130,9 @@ func (q *Queries) GetActionsByUUIDs(ctx context.Context, uuids []uuid.UUID) ([]A
 			&i.UpdatedBy,
 			&i.DeletedAt,
 			&i.DeletedBy,
+			&i.Module,
+			&i.ResourceLabel,
+			&i.IsSystem,
 		); err != nil {
 			return nil, err
 		}
@@ -127,21 +145,23 @@ func (q *Queries) GetActionsByUUIDs(ctx context.Context, uuids []uuid.UUID) ([]A
 }
 
 const listActions = `-- name: ListActions :many
-SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by FROM action
+SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, module, resource_label, is_system FROM action
 WHERE deleted_at IS NULL
   AND ($1::text IS NULL
        OR action_code ILIKE '%' || $1 || '%' ESCAPE '\'
        OR action_name ILIKE '%' || $1 || '%' ESCAPE '\')
+  AND ($2::text IS NULL OR module = $2)
 ORDER BY
-  CASE WHEN $2::text = 'action_code'  THEN action_code END ASC,
-  CASE WHEN $2::text = '-action_code' THEN action_code END DESC,
-  CASE WHEN $2::text = '-created_at'  THEN created_at END DESC,
-  id DESC
-LIMIT $4 OFFSET $3
+  CASE WHEN $3::text = 'action_code'  THEN action_code END ASC,
+  CASE WHEN $3::text = '-action_code' THEN action_code END DESC,
+  CASE WHEN $3::text = '-created_at'  THEN created_at END DESC,
+  id
+LIMIT $5 OFFSET $4
 `
 
 type ListActionsParams struct {
 	Q      *string
+	Module *string
 	Sort   string
 	Offset int32
 	Limit  int32
@@ -150,6 +170,7 @@ type ListActionsParams struct {
 func (q *Queries) ListActions(ctx context.Context, arg ListActionsParams) ([]Action, error) {
 	rows, err := q.db.Query(ctx, listActions,
 		arg.Q,
+		arg.Module,
 		arg.Sort,
 		arg.Offset,
 		arg.Limit,
@@ -173,6 +194,49 @@ func (q *Queries) ListActions(ctx context.Context, arg ListActionsParams) ([]Act
 			&i.UpdatedBy,
 			&i.DeletedAt,
 			&i.DeletedBy,
+			&i.Module,
+			&i.ResourceLabel,
+			&i.IsSystem,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCatalogActions = `-- name: ListCatalogActions :many
+SELECT id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, module, resource_label, is_system FROM action WHERE deleted_at IS NULL AND action_code IS NOT NULL ORDER BY action_code
+`
+
+// Whole catalog for role editors and the ADMIN permission set.
+func (q *Queries) ListCatalogActions(ctx context.Context) ([]Action, error) {
+	rows, err := q.db.Query(ctx, listCatalogActions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Action{}
+	for rows.Next() {
+		var i Action
+		if err := rows.Scan(
+			&i.ID,
+			&i.Uuid,
+			&i.ActionCode,
+			&i.ActionName,
+			&i.Description,
+			&i.CreatedAt,
+			&i.CreatedBy,
+			&i.UpdatedAt,
+			&i.UpdatedBy,
+			&i.DeletedAt,
+			&i.DeletedBy,
+			&i.Module,
+			&i.ResourceLabel,
+			&i.IsSystem,
 		); err != nil {
 			return nil, err
 		}
@@ -204,18 +268,52 @@ func (q *Queries) SoftDeleteAction(ctx context.Context, arg SoftDeleteActionPara
 	return id, err
 }
 
+const syncSystemAction = `-- name: SyncSystemAction :exec
+INSERT INTO action (uuid, action_code, action_name, module, resource_label, is_system, created_by, updated_by)
+VALUES ($1, $2, $3, $4,
+        $5, TRUE, $6, $6)
+ON CONFLICT (action_code) WHERE deleted_at IS NULL DO UPDATE
+SET action_name = EXCLUDED.action_name, module = EXCLUDED.module, resource_label = EXCLUDED.resource_label,
+    is_system = TRUE, updated_by = EXCLUDED.updated_by
+WHERE (action.action_name, action.module, action.resource_label, action.is_system)
+      IS DISTINCT FROM (EXCLUDED.action_name, EXCLUDED.module, EXCLUDED.resource_label, TRUE)
+`
+
+type SyncSystemActionParams struct {
+	Uuid          uuid.UUID
+	ActionCode    *string
+	ActionName    *string
+	Module        *string
+	ResourceLabel *string
+	Actor         *string
+}
+
+// Inserts or refreshes a permission of the code catalog (`migrate seed`).
+func (q *Queries) SyncSystemAction(ctx context.Context, arg SyncSystemActionParams) error {
+	_, err := q.db.Exec(ctx, syncSystemAction,
+		arg.Uuid,
+		arg.ActionCode,
+		arg.ActionName,
+		arg.Module,
+		arg.ResourceLabel,
+		arg.Actor,
+	)
+	return err
+}
+
 const updateAction = `-- name: UpdateAction :one
 UPDATE action
 SET action_code = $1, action_name = $2,
-    description = $3, updated_by = $4
-WHERE uuid = $5 AND updated_at = $6 AND deleted_at IS NULL
-RETURNING id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by
+    description = $3, resource_label = $4, updated_by = $5
+WHERE uuid = $6 AND updated_at = $7 AND deleted_at IS NULL
+RETURNING id, uuid, action_code, action_name, description, created_at, created_by, updated_at, updated_by, deleted_at, deleted_by, module, resource_label, is_system
 `
 
 type UpdateActionParams struct {
 	ActionCode        *string
 	ActionName        *string
 	Description       *string
+	ResourceLabel     *string
 	Actor             *string
 	Uuid              uuid.UUID
 	ExpectedUpdatedAt time.Time
@@ -226,6 +324,7 @@ func (q *Queries) UpdateAction(ctx context.Context, arg UpdateActionParams) (Act
 		arg.ActionCode,
 		arg.ActionName,
 		arg.Description,
+		arg.ResourceLabel,
 		arg.Actor,
 		arg.Uuid,
 		arg.ExpectedUpdatedAt,
@@ -243,29 +342,9 @@ func (q *Queries) UpdateAction(ctx context.Context, arg UpdateActionParams) (Act
 		&i.UpdatedBy,
 		&i.DeletedAt,
 		&i.DeletedBy,
+		&i.Module,
+		&i.ResourceLabel,
+		&i.IsSystem,
 	)
 	return i, err
-}
-
-const upsertActionByCode = `-- name: UpsertActionByCode :exec
-INSERT INTO action (uuid, action_code, action_name, created_by, updated_by)
-VALUES ($1, $2, $3, $4, $4)
-ON CONFLICT (action_code) WHERE deleted_at IS NULL DO NOTHING
-`
-
-type UpsertActionByCodeParams struct {
-	Uuid       uuid.UUID
-	ActionCode *string
-	ActionName *string
-	Actor      *string
-}
-
-func (q *Queries) UpsertActionByCode(ctx context.Context, arg UpsertActionByCodeParams) error {
-	_, err := q.db.Exec(ctx, upsertActionByCode,
-		arg.Uuid,
-		arg.ActionCode,
-		arg.ActionName,
-		arg.Actor,
-	)
-	return err
 }

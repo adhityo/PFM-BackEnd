@@ -16,6 +16,7 @@ func IndicesHistoryResource(d Deps) crud.Resource[sqlc.GetIndicesHistoryByUUIDRo
 	return crud.Resource[sqlc.GetIndicesHistoryByUUIDRow, dto.IndicesHistoryRequest, dto.IndicesHistoryResponse]{
 		Table:       "indices_history",
 		Label:       "riwayat indeks",
+		Module:      "market",
 		Path:        "/indices-histories",
 		Sorts:       []string{"closing_date", "created_at"},
 		DefaultSort: "-closing_date",

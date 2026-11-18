@@ -14,6 +14,7 @@ func StockTypeResource(d Deps) crud.Resource[sqlc.GetStockTypeByUUIDRow, dto.Sto
 	return crud.Resource[sqlc.GetStockTypeByUUIDRow, dto.StockTypeRequest, dto.StockTypeResponse]{
 		Table:       "stock_type",
 		Label:       "tipe saham",
+		Module:      "masterdata",
 		Path:        "/stock-types",
 		Sorts:       []string{"stock_type_code", "stock_type_name", "created_at"},
 		DefaultSort: "stock_type_code",

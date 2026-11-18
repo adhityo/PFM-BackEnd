@@ -16,6 +16,7 @@ func DepositoResource(d Deps) crud.Resource[sqlc.GetDepositoByUUIDRow, dto.Depos
 	return crud.Resource[sqlc.GetDepositoByUUIDRow, dto.DepositoRequest, dto.DepositoResponse]{
 		Table:       "deposito",
 		Label:       "deposito",
+		Module:      "market",
 		Path:        "/depositos",
 		Sorts:       []string{"deposito_code", "deposito_name", "created_at"},
 		DefaultSort: "deposito_code",

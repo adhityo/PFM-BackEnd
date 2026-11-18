@@ -14,6 +14,7 @@ func MutualFundPortfolioHistoryResource(d Deps) crud.ReadResource[sqlc.GetMutual
 	return crud.ReadResource[sqlc.GetMutualFundPortfolioHistoryByUUIDRow, dto.MutualFundPortfolioHistoryResponse]{
 		Table:       "mutual_fund_portfolio_history",
 		Label:       "riwayat posisi reksa dana",
+		Module:      "portfolio",
 		Path:        "/mutual-fund-portfolio-histories",
 		Sorts:       []string{"closing_date", "created_at"},
 		DefaultSort: "-closing_date",

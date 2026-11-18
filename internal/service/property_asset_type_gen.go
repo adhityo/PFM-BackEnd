@@ -14,6 +14,7 @@ func PropertyAssetTypeResource(d Deps) crud.Resource[sqlc.GetPropertyAssetTypeBy
 	return crud.Resource[sqlc.GetPropertyAssetTypeByUUIDRow, dto.PropertyAssetTypeRequest, dto.PropertyAssetTypeResponse]{
 		Table:       "property_asset_type",
 		Label:       "tipe aset properti",
+		Module:      "masterdata",
 		Path:        "/property-asset-types",
 		Sorts:       []string{"property_asset_type_code", "property_asset_type_name", "created_at"},
 		DefaultSort: "property_asset_type_code",

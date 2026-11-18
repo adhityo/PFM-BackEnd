@@ -16,6 +16,7 @@ func CashSettlementCategoryResource(d Deps) crud.Resource[sqlc.GetCashSettlement
 	return crud.Resource[sqlc.GetCashSettlementCategoryByUUIDRow, dto.CashSettlementCategoryRequest, dto.CashSettlementCategoryResponse]{
 		Table:       "cash_settlement_category",
 		Label:       "kategori cash settlement",
+		Module:      "accounting",
 		Path:        "/cash-settlement-categories",
 		Sorts:       []string{"cash_settlement_category_code", "cash_settlement_category_name", "created_at"},
 		DefaultSort: "cash_settlement_category_code",

@@ -14,6 +14,7 @@ func IndicesResource(d Deps) crud.Resource[sqlc.GetIndicesByUUIDRow, dto.Indices
 	return crud.Resource[sqlc.GetIndicesByUUIDRow, dto.IndicesRequest, dto.IndicesResponse]{
 		Table:       "indices",
 		Label:       "indeks",
+		Module:      "market",
 		Path:        "/indices",
 		Sorts:       []string{"indices_code", "indices_name", "created_at"},
 		DefaultSort: "indices_code",

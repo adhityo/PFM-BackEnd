@@ -16,6 +16,7 @@ func AssetClassResource(d Deps) crud.Resource[sqlc.GetAssetClassByUUIDRow, dto.A
 	return crud.Resource[sqlc.GetAssetClassByUUIDRow, dto.AssetClassRequest, dto.AssetClassResponse]{
 		Table:       "asset_class",
 		Label:       "kelas aset",
+		Module:      "masterdata",
 		Path:        "/asset-classes",
 		Sorts:       []string{"asset_class_code", "asset_class_name", "created_at"},
 		DefaultSort: "asset_class_code",

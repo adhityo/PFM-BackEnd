@@ -14,6 +14,7 @@ func PortfolioBudgetHistoryResource(d Deps) crud.ReadResource[sqlc.GetPortfolioB
 	return crud.ReadResource[sqlc.GetPortfolioBudgetHistoryByUUIDRow, dto.PortfolioBudgetHistoryResponse]{
 		Table:       "portfolio_budget_history",
 		Label:       "riwayat realisasi budget",
+		Module:      "portfolio",
 		Path:        "/portfolio-budget-histories",
 		Sorts:       []string{"budget_year", "month", "created_at"},
 		DefaultSort: "-budget_year",

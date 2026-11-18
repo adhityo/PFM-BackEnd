@@ -14,6 +14,7 @@ func PortfolioAccountingStructureResource(d Deps) crud.Resource[sqlc.GetPortfoli
 	return crud.Resource[sqlc.GetPortfolioAccountingStructureByUUIDRow, dto.PortfolioAccountingStructureRequest, dto.PortfolioAccountingStructureResponse]{
 		Table:       "portfolio_accounting_structure",
 		Label:       "struktur akuntansi portofolio",
+		Module:      "portfolio",
 		Path:        "/portfolio-accounting-structures",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

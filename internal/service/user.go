@@ -85,6 +85,10 @@ func (s *UserService) resolveRole(ctx context.Context, actor auth.Actor, roleUUI
 	if role.RoleCode == auth.RoleAdmin && !actor.IsAdmin() {
 		return model.Role{}, apperr.Forbidden("hanya ADMIN yang dapat memberikan role ADMIN")
 	}
+	if err := requireCovers(ctx, s.roles, actor, role.ID,
+		"tidak dapat memberikan role yang memiliki permission di luar milik Anda"); err != nil {
+		return model.Role{}, err
+	}
 	return role, nil
 }
 
@@ -157,6 +161,12 @@ func (s *UserService) loadManaged(ctx context.Context, actor auth.Actor, id uuid
 	}
 	if u.RoleCode != nil && *u.RoleCode == auth.RoleAdmin && !actor.IsAdmin() {
 		return model.User{}, apperr.Forbidden("hanya ADMIN yang dapat mengubah pengguna ADMIN")
+	}
+	if u.RoleID != nil {
+		if err := requireCovers(ctx, s.roles, actor, *u.RoleID,
+			"tidak dapat mengelola pengguna yang memiliki permission di luar milik Anda"); err != nil {
+			return model.User{}, err
+		}
 	}
 	return u, nil
 }

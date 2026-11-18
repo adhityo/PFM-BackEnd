@@ -14,6 +14,7 @@ func RatingResource(d Deps) crud.Resource[sqlc.GetRatingByUUIDRow, dto.RatingReq
 	return crud.Resource[sqlc.GetRatingByUUIDRow, dto.RatingRequest, dto.RatingResponse]{
 		Table:       "rating",
 		Label:       "rating",
+		Module:      "masterdata",
 		Path:        "/ratings",
 		Sorts:       []string{"rating_code", "rating_name", "created_at"},
 		DefaultSort: "rating_code",

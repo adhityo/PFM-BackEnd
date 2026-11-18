@@ -19,10 +19,17 @@ type ActorLoader interface {
 	LoadActor(ctx context.Context, userUUID uuid.UUID) (Actor, error)
 }
 
-// PermissionResolver returns the permission set of a role.
+// PermissionResolver returns the permission set of a role; ADMIN holds the
+// whole catalog.
 type PermissionResolver interface {
 	PermissionsForRole(ctx context.Context, roleID int64) (PermissionSet, error)
+	AllPermissions(ctx context.Context) (PermissionSet, error)
 }
+
+// HeaderPermissionsVersion is sent on every authenticated response. A client
+// that caches GET /me reloads it when the value changes (role edited, user
+// moved to another role, catalog changed).
+const HeaderPermissionsVersion = "X-Permissions-Version"
 
 // Authenticator verifies bearer tokens and attaches the Actor to the request.
 type Authenticator struct {
@@ -55,12 +62,19 @@ func (a *Authenticator) Middleware() fiber.Handler {
 			}
 			return err
 		}
-		if actor.RoleID != nil && !actor.IsAdmin() {
-			set, err := a.perms.PermissionsForRole(c.Context(), *actor.RoleID)
-			if err != nil {
-				return err
-			}
+		var set PermissionSet
+		switch {
+		case actor.IsAdmin():
+			set, err = a.perms.AllPermissions(c.Context())
+		case actor.RoleID != nil:
+			set, err = a.perms.PermissionsForRole(c.Context(), *actor.RoleID)
+		}
+		if err != nil {
+			return err
+		}
+		if set != nil {
 			actor = actor.WithPermissions(set)
+			c.Set(HeaderPermissionsVersion, set.Version())
 		}
 		if ip, err := netip.ParseAddr(c.IP()); err == nil {
 			actor.IP = &ip
@@ -81,7 +95,7 @@ func RequirePermission(code string) fiber.Handler {
 			return apperr.ErrUnauthenticated
 		}
 		if !actor.Can(code) {
-			return apperr.Forbidden("izin " + code + " diperlukan")
+			return apperr.MissingPermission(code)
 		}
 		return c.Next()
 	}

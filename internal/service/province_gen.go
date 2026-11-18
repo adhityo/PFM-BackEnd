@@ -14,6 +14,7 @@ func ProvinceResource(d Deps) crud.Resource[sqlc.GetProvinceByUUIDRow, dto.Provi
 	return crud.Resource[sqlc.GetProvinceByUUIDRow, dto.ProvinceRequest, dto.ProvinceResponse]{
 		Table:       "province",
 		Label:       "provinsi",
+		Module:      "masterdata",
 		Path:        "/provinces",
 		Sorts:       []string{"province_code", "province_name", "created_at"},
 		DefaultSort: "province_code",

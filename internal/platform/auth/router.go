@@ -3,14 +3,31 @@ package auth
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 )
 
-// Permission is an entry of the action catalog (table `action`).
+// Permission is an entry of the action catalog (table `action`). Codes are
+// `<resource>:<verb>`; Module and ResourceLabel group them for role editors
+// and frontend menus.
 type Permission struct {
-	Code string
-	Name string
+	Code          string
+	Name          string
+	Module        string // e.g. "bond" (labels: permission.ModuleLabels)
+	ResourceLabel string // e.g. "obligasi"
+}
+
+// Resource is the part of the code before ':' (usually a table).
+func (p Permission) Resource() string {
+	r, _, _ := strings.Cut(p.Code, ":")
+	return r
+}
+
+// Verb is the part of the code after ':' (read, create, approve, ...).
+func (p Permission) Verb() string {
+	_, v, _ := strings.Cut(p.Code, ":")
+	return v
 }
 
 // Router registers routes fail-closed: every protected route must declare a
@@ -89,9 +106,17 @@ func MergeCatalogs(lists ...[]Permission) []Permission {
 // CRUD returns the standard permission set for a table (PRD §10.3).
 func CRUD(table, label string) []Permission {
 	return []Permission{
-		{Code: table + ":read", Name: "Lihat " + label},
-		{Code: table + ":create", Name: "Tambah " + label},
-		{Code: table + ":update", Name: "Ubah " + label},
-		{Code: table + ":delete", Name: "Hapus " + label},
+		{Code: table + ":read", Name: "Lihat " + label, ResourceLabel: label},
+		{Code: table + ":create", Name: "Tambah " + label, ResourceLabel: label},
+		{Code: table + ":update", Name: "Ubah " + label, ResourceLabel: label},
+		{Code: table + ":delete", Name: "Hapus " + label, ResourceLabel: label},
 	}
+}
+
+// InModule sets the module of every permission.
+func InModule(module string, ps ...Permission) []Permission {
+	for i := range ps {
+		ps[i].Module = module
+	}
+	return ps
 }

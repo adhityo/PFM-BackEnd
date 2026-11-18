@@ -16,6 +16,7 @@ func MutualFundTradeResource(d Deps) crud.Resource[sqlc.GetMutualFundTradeByUUID
 	return crud.Resource[sqlc.GetMutualFundTradeByUUIDRow, dto.MutualFundTradeRequest, dto.MutualFundTradeResponse]{
 		Table:       "mutual_fund_trade",
 		Label:       "transaksi reksa dana",
+		Module:      "trading",
 		Path:        "/mutual-fund-trades",
 		Sorts:       []string{"transaction_date", "created_at"},
 		DefaultSort: "-transaction_date",

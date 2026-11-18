@@ -17,6 +17,7 @@ func MarketingAgentResource(d Deps) crud.Resource[sqlc.GetMarketingAgentByUUIDRo
 	return crud.Resource[sqlc.GetMarketingAgentByUUIDRow, dto.MarketingAgentRequest, dto.MarketingAgentResponse]{
 		Table:       "marketing_agent",
 		Label:       "agen pemasaran",
+		Module:      "bond",
 		Path:        "/marketing-agents",
 		Sorts:       []string{"marketing_agent_number", "marketing_agent_name", "created_at"},
 		DefaultSort: "-created_at",

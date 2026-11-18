@@ -711,10 +711,10 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 
 | Mig | Tabel | Base path `/api/v1/…` | Kelas | Operasi | Aturan khusus |
 |---|---|---|---|---|---|
-| 00003 | `action` | `actions` | MASTER | L G C U D | Katalog permission (kode `modul:aksi`), di-seed via migrasi data; hanya ADMIN. |
+| 00003 | `action` | `actions` | MASTER | L G C U D | Katalog permission (`<resource>:<verb>`, `module`, `resource_label`, `is_system`); permission sistem di-seed dari kode dan read-only, permission kustom bebas. `GET /permission-catalog` = katalog terkelompok untuk editor role. |
 | 00004 | `activity_log` | `activity-logs` | LOG | L G | Ditulis oleh middleware audit; tidak ada C/U/D lewat API. |
 | 00028 | `role` | `roles` | MASTER | L G C U D | Hapus ditolak jika masih dipakai `app_user`. |
-| 00051 | `role_action` | `role-actions` | CHILD | L G C U D | Nested `GET/PUT /roles/{uuid}/actions` — PUT mengganti seluruh set permission dalam 1 transaksi (delete+insert). |
+| 00051 | `role_action` | `role-actions` | CHILD | L G C U D | Nested `GET/PUT /roles/{uuid}/actions` — PUT mengganti seluruh set permission dalam 1 transaksi (delete+insert), dengan aturan anti-eskalasi §12.2. |
 | 00063 | `app_user` | `users` | MASTER | L G C U D | `password_hash` tidak pernah dikembalikan. Aksi: `POST /{uuid}/reset-password`, `/lock`, `/unlock`. Soft delete + revoke semua refresh token dalam 1 transaksi. |
 | 00123 | `auth_refresh_token` | — | AUTH | — | Tidak ada CRUD. Dikelola `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/logout-all`. |
 
@@ -1028,10 +1028,32 @@ Pesan error validasi dikembalikan per field dalam Bahasa Indonesia (lewat transl
 
 ### 12.2 Otorisasi (RBAC)
 
-- Permission berupa `action.action_code` dengan format `<tabel>:<aksi>` (mis. `bond_trade:approve`). Role ↔ permission diatur lewat `role_action`.
-- Middleware `RequirePermission("bond_trade:approve")` dipasang di **setiap** route. Route tanpa deklarasi permission gagal saat startup (fail closed).
-- Cache permission per role di memori (TTL 60 detik) dan langsung di-invalidate saat `role_action` berubah.
-- PII penuh (NIK, NPWP, nomor rekening, tanggal lahir) hanya dapat dibaca dengan permission `pii:read`. Tanpa permission ini, nilai dimasking (mis. `3271********0001`), dan akses PII penuh dicatat di `activity_log`.
+- **Format permission.** Permission berupa `action.action_code` dengan format `<resource>:<verb>`, mis. `bond_trade:approve`. Role ↔ permission diatur lewat `role_action`. ADMIN memegang seluruh katalog secara implisit.
+- **Katalog bawaan dari kode.** Katalog bawaan (`is_system`) berasal dari kode dan disinkronkan oleh `migrate seed`, beserta modul dan label resource-nya. Permission sistem tidak dapat diubah atau dihapus lewat API. Permission kustom (modul `custom`, mis. `dashboard_widget:view`) boleh dibuat untuk tombol atau widget khusus frontend; backend tidak pernah mewajibkannya.
+- **Setiap route wajib permission.** `RequirePermission("bond_trade:approve")` dipasang di **setiap** route. Route tanpa permission, atau dengan permission yang tidak ada di katalog, gagal saat startup (fail closed). Respons 403 menyebut permission yang kurang di `error.details[].rule` dengan `field = "permission"`.
+- **Role nonaktif tidak memberi izin.** Role berstatus nonaktif (atau terhapus) tidak memberi permission apa pun.
+- **Cache dan versi.** Permission per role di-cache di memori (TTL 60 detik) dan langsung di-invalidate saat `role_action`, status role, atau katalog berubah. Setiap set punya versi (hash daftar kode) yang dikirim di header `X-Permissions-Version` pada setiap respons terautentikasi.
+- **Anti-eskalasi.** Pengguna non-ADMIN hanya dapat:
+  - memberi atau mencabut permission yang ia miliki;
+  - mengubah, menghapus, atau mengatur permission role yang seluruh permission-nya ia miliki;
+  - membuat, mengubah, me-reset, mengunci, atau menghapus user yang role-nya tidak melebihi dirinya;
+  - menetapkan role seperti itu.
+
+  Pengecekan memakai `role_action` mentah, termasuk milik role nonaktif. Role dan user ADMIN hanya dapat dikelola ADMIN.
+- **PII.** PII penuh (NIK, NPWP, nomor rekening, tanggal lahir) hanya dapat dibaca dengan permission `pii:read`. Tanpa permission ini, nilai dimasking (mis. `3271********0001`), dan akses PII penuh dicatat di `activity_log`.
+
+**Kontrak untuk frontend:**
+
+| Kebutuhan | Endpoint / aturan |
+|---|---|
+| Bootstrap sesi | `GET /api/v1/me` → `user`, `role {uuid, code, name, menu_url, active}`, `is_admin`, `permissions[]` (ADMIN: seluruh katalog), `permissions_version` |
+| Halaman / menu | Tampilkan bila user memegang `<resource>:read` (mis. `bond:read` untuk halaman Obligasi) |
+| Tombol | Tampilkan bila user memegang kodenya: `bond:create`, `bond_trade:approve`, `invoice:generate`, … |
+| Sinkronisasi | Bila `X-Permissions-Version` pada respons mana pun berbeda dari `permissions_version` yang disimpan, muat ulang `/me` |
+| Editor role | `GET /api/v1/permission-catalog` (modul → resource → aksi; CRUD lebih dulu), `GET/PUT /api/v1/roles/{uuid}/actions` (`If-Match`) |
+| Penolakan | 403 dengan `details[{field: "permission", rule: "<kode>"}]` |
+
+Backend tetap sumber kebenaran: menyembunyikan tombol di frontend hanya soal UX, karena setiap request diperiksa ulang di server.
 
 ### 12.3 Isolasi Data (anti-IDOR)
 
@@ -1226,12 +1248,14 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 39 | Log eventual | `/activity-logs` tertinggal ±5 detik (worker); bila worker mati, event menumpuk di outbox (tidak hilang) | Perlu alert jumlah outbox? |
 | 40 | Integritas event audit | Kredensial aplikasi dapat menambah event ke outbox, tetapi tidak dapat membaca, mengubah, atau menghapus log | Perlu tanda tangan event (HMAC) atau WORM storage? |
 | 41 | Topologi production | 4 database boleh satu cluster di dev; production disarankan `pfm_log` dan `pfm_security` di instance terpisah | Topologi final? |
+| 42 | Peta UI ↔ permission | Halaman memakai `<resource>:read`, tombol memakai kode aksinya; peta rute frontend → permission didefinisikan di frontend (`dashboard-nav`) | Perlu menu dinamis dari backend (`role.menu_url`)? |
+| 43 | Anti-eskalasi | Non-ADMIN tidak dapat mengelola role/user yang permission-nya melebihi dirinya, termasuk mencabut permission yang tidak ia miliki | Setuju, atau perlu peran "security officer" khusus? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-129 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (1), `core/` (115), `security/` (5), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), dan kolom `source` log (00129). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
+130 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (1), `core/` (115), `security/` (6), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), kolom `source` log (00129), dan metadata katalog permission (00130). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1364,6 +1388,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00127 | `core/00127_pension_support.sql` | `member.client_id` [USULAN], default status, unique periode invoice/payout & baris per peserta (M5) | pension | member, client, invoice, member_premium_payment, benefit_payout_batch, member_benefit_payout, member_portfolio |
 | 00128 | `outbox/00128_create_audit_outbox.sql` | `audit_outbox` | audit | — |
 | 00129 | `log/00129_activity_log_source.sql` | kolom `activity_log.source` + index | audit | activity_log |
+| 00130 | `security/00130_action_catalog_metadata.sql` | kolom `action.module`, `resource_label`, `is_system` | iam | action |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap

@@ -16,6 +16,7 @@ func PlacementResource(d Deps) crud.Resource[sqlc.GetPlacementByUUIDRow, dto.Pla
 	return crud.Resource[sqlc.GetPlacementByUUIDRow, dto.PlacementRequest, dto.PlacementResponse]{
 		Table:       "placement",
 		Label:       "placement",
+		Module:      "portfolio",
 		Path:        "/placements",
 		Sorts:       []string{"start_date", "placement_number", "created_at"},
 		DefaultSort: "-start_date",

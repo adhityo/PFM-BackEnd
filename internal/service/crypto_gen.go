@@ -14,6 +14,7 @@ func CryptoResource(d Deps) crud.Resource[sqlc.GetCryptoByUUIDRow, dto.CryptoReq
 	return crud.Resource[sqlc.GetCryptoByUUIDRow, dto.CryptoRequest, dto.CryptoResponse]{
 		Table:       "crypto",
 		Label:       "kripto",
+		Module:      "market",
 		Path:        "/cryptos",
 		Sorts:       []string{"crypto_code", "crypto_name", "created_at"},
 		DefaultSort: "crypto_code",

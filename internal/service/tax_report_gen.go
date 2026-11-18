@@ -16,6 +16,7 @@ func TaxReportResource(d Deps) crud.Resource[sqlc.GetTaxReportByUUIDRow, dto.Tax
 	return crud.Resource[sqlc.GetTaxReportByUUIDRow, dto.TaxReportRequest, dto.TaxReportResponse]{
 		Table:       "tax_report",
 		Label:       "bukti potong pajak",
+		Module:      "pension",
 		Path:        "/tax-reports",
 		Sorts:       []string{"tax_report_number", "created_at"},
 		DefaultSort: "-created_at",

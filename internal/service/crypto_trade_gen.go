@@ -16,6 +16,7 @@ func CryptoTradeResource(d Deps) crud.Resource[sqlc.GetCryptoTradeByUUIDRow, dto
 	return crud.Resource[sqlc.GetCryptoTradeByUUIDRow, dto.CryptoTradeRequest, dto.CryptoTradeResponse]{
 		Table:       "crypto_trade",
 		Label:       "transaksi kripto",
+		Module:      "trading",
 		Path:        "/crypto-trades",
 		Sorts:       []string{"trade_date", "created_at"},
 		DefaultSort: "-trade_date",

@@ -16,6 +16,7 @@ func StockBetaHistoryResource(d Deps) crud.Resource[sqlc.GetStockBetaHistoryByUU
 	return crud.Resource[sqlc.GetStockBetaHistoryByUUIDRow, dto.StockBetaHistoryRequest, dto.StockBetaHistoryResponse]{
 		Table:       "stock_beta_history",
 		Label:       "beta saham",
+		Module:      "market",
 		Path:        "/stock-beta-histories",
 		Sorts:       []string{"register_date", "created_at"},
 		DefaultSort: "-register_date",

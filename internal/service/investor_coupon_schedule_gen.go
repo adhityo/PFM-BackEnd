@@ -14,6 +14,7 @@ func InvestorCouponScheduleResource(d Deps) crud.ReadResource[sqlc.GetInvestorCo
 	return crud.ReadResource[sqlc.GetInvestorCouponScheduleByUUIDRow, dto.InvestorCouponScheduleResponse]{
 		Table:       "investor_coupon_schedule",
 		Label:       "kupon investor",
+		Module:      "bond",
 		Path:        "/investor-coupon-schedules",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

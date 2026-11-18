@@ -14,6 +14,7 @@ func PortfolioNoteResource(d Deps) crud.Resource[sqlc.GetPortfolioNoteByUUIDRow,
 	return crud.Resource[sqlc.GetPortfolioNoteByUUIDRow, dto.PortfolioNoteRequest, dto.PortfolioNoteResponse]{
 		Table:       "portfolio_note",
 		Label:       "catatan portofolio",
+		Module:      "portfolio",
 		Path:        "/portfolio-notes",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

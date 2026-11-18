@@ -14,6 +14,7 @@ func CryptoPortfolioResource(d Deps) crud.ReadResource[sqlc.GetCryptoPortfolioBy
 	return crud.ReadResource[sqlc.GetCryptoPortfolioByUUIDRow, dto.CryptoPortfolioResponse]{
 		Table:       "crypto_portfolio",
 		Label:       "posisi kripto",
+		Module:      "portfolio",
 		Path:        "/crypto-portfolios",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

@@ -17,6 +17,7 @@ func BondTradeResource(d Deps) crud.Resource[sqlc.GetBondTradeByUUIDRow, dto.Bon
 	return crud.Resource[sqlc.GetBondTradeByUUIDRow, dto.BondTradeRequest, dto.BondTradeResponse]{
 		Table:       "bond_trade",
 		Label:       "subscription obligasi",
+		Module:      "bond",
 		Path:        "/bond-trades",
 		Sorts:       []string{"trade_date", "certificate_number", "created_at"},
 		DefaultSort: "-trade_date",

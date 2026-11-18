@@ -16,6 +16,7 @@ func StockResource(d Deps) crud.Resource[sqlc.GetStockByUUIDRow, dto.StockReques
 	return crud.Resource[sqlc.GetStockByUUIDRow, dto.StockRequest, dto.StockResponse]{
 		Table:       "stock",
 		Label:       "saham",
+		Module:      "market",
 		Path:        "/stocks",
 		Sorts:       []string{"stock_code", "stock_name", "created_at"},
 		DefaultSort: "stock_code",

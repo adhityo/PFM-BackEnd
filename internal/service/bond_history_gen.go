@@ -14,6 +14,7 @@ func BondHistoryResource(d Deps) crud.ReadResource[sqlc.GetBondHistoryByUUIDRow,
 	return crud.ReadResource[sqlc.GetBondHistoryByUUIDRow, dto.BondHistoryResponse]{
 		Table:       "bond_history",
 		Label:       "riwayat obligasi",
+		Module:      "bond",
 		Path:        "/bond-histories",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

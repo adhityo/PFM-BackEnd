@@ -16,6 +16,7 @@ func MemberPremiumPaymentResource(d Deps) crud.Resource[sqlc.GetMemberPremiumPay
 	return crud.Resource[sqlc.GetMemberPremiumPaymentByUUIDRow, dto.MemberPremiumPaymentRequest, dto.MemberPremiumPaymentResponse]{
 		Table:       "member_premium_payment",
 		Label:       "iuran peserta",
+		Module:      "pension",
 		Path:        "/member-premium-payments",
 		Sorts:       []string{"year", "month", "created_at"},
 		DefaultSort: "-created_at",

@@ -16,6 +16,7 @@ func StockFundamentalHistoryResource(d Deps) crud.Resource[sqlc.GetStockFundamen
 	return crud.Resource[sqlc.GetStockFundamentalHistoryByUUIDRow, dto.StockFundamentalHistoryRequest, dto.StockFundamentalHistoryResponse]{
 		Table:       "stock_fundamental_history",
 		Label:       "fundamental saham",
+		Module:      "market",
 		Path:        "/stock-fundamental-histories",
 		Sorts:       []string{"register_date", "created_at"},
 		DefaultSort: "-register_date",

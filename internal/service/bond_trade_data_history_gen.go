@@ -14,6 +14,7 @@ func BondTradeDataHistoryResource(d Deps) crud.ReadResource[sqlc.GetBondTradeDat
 	return crud.ReadResource[sqlc.GetBondTradeDataHistoryByUUIDRow, dto.BondTradeDataHistoryResponse]{
 		Table:       "bond_trade_data_history",
 		Label:       "riwayat perubahan subscription",
+		Module:      "bond",
 		Path:        "/bond-trade-data-histories",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

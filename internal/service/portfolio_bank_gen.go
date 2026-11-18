@@ -14,6 +14,7 @@ func PortfolioBankResource(d Deps) crud.Resource[sqlc.GetPortfolioBankByUUIDRow,
 	return crud.Resource[sqlc.GetPortfolioBankByUUIDRow, dto.PortfolioBankRequest, dto.PortfolioBankResponse]{
 		Table:       "portfolio_bank",
 		Label:       "rekening portofolio",
+		Module:      "portfolio",
 		Path:        "/portfolio-banks",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

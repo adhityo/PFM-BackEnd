@@ -14,6 +14,7 @@ func BondPortfolioResource(d Deps) crud.ReadResource[sqlc.GetBondPortfolioByUUID
 	return crud.ReadResource[sqlc.GetBondPortfolioByUUIDRow, dto.BondPortfolioResponse]{
 		Table:       "bond_portfolio",
 		Label:       "posisi obligasi",
+		Module:      "portfolio",
 		Path:        "/bond-portfolios",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

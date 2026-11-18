@@ -14,6 +14,7 @@ func RatingAgencyResource(d Deps) crud.Resource[sqlc.GetRatingAgencyByUUIDRow, d
 	return crud.Resource[sqlc.GetRatingAgencyByUUIDRow, dto.RatingAgencyRequest, dto.RatingAgencyResponse]{
 		Table:       "rating_agency",
 		Label:       "lembaga pemeringkat",
+		Module:      "masterdata",
 		Path:        "/rating-agencies",
 		Sorts:       []string{"rating_agency_code", "rating_agency_name", "created_at"},
 		DefaultSort: "rating_agency_code",

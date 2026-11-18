@@ -14,6 +14,7 @@ func BankResource(d Deps) crud.Resource[sqlc.GetBankByUUIDRow, dto.BankRequest, 
 	return crud.Resource[sqlc.GetBankByUUIDRow, dto.BankRequest, dto.BankResponse]{
 		Table:       "bank",
 		Label:       "bank",
+		Module:      "masterdata",
 		Path:        "/banks",
 		Sorts:       []string{"bank_name", "created_at"},
 		DefaultSort: "bank_name",

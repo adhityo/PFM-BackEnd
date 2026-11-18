@@ -14,6 +14,7 @@ func FinanceAccountTypeResource(d Deps) crud.Resource[sqlc.GetFinanceAccountType
 	return crud.Resource[sqlc.GetFinanceAccountTypeByUUIDRow, dto.FinanceAccountTypeRequest, dto.FinanceAccountTypeResponse]{
 		Table:       "finance_account_type",
 		Label:       "tipe akun keuangan",
+		Module:      "masterdata",
 		Path:        "/finance-account-types",
 		Sorts:       []string{"finance_account_type_name", "created_at"},
 		DefaultSort: "finance_account_type_name",

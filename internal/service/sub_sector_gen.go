@@ -14,6 +14,7 @@ func SubSectorResource(d Deps) crud.Resource[sqlc.GetSubSectorByUUIDRow, dto.Sub
 	return crud.Resource[sqlc.GetSubSectorByUUIDRow, dto.SubSectorRequest, dto.SubSectorResponse]{
 		Table:       "sub_sector",
 		Label:       "sub sektor",
+		Module:      "masterdata",
 		Path:        "/sub-sectors",
 		Sorts:       []string{"sub_sector_code", "sub_sector_name", "created_at"},
 		DefaultSort: "sub_sector_code",

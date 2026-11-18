@@ -18,6 +18,7 @@ func MemberDocumentResource(d Deps) crud.Resource[sqlc.GetMemberDocumentByUUIDRo
 	return crud.Resource[sqlc.GetMemberDocumentByUUIDRow, dto.MemberDocumentRequest, dto.MemberDocumentResponse]{
 		Table:       "member_document",
 		Label:       "dokumen peserta",
+		Module:      "pension",
 		Path:        "/member-documents",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

@@ -4,6 +4,8 @@ package dto
 import (
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type LoginRequest struct {
@@ -35,7 +37,23 @@ type TokenResponse struct {
 	RefreshExpiresAt time.Time `json:"refresh_expires_at"`
 }
 
+// MeResponse bootstraps a frontend session: who the user is and what they
+// may do. Pages and buttons are rendered from Permissions (ADMIN receives the
+// whole catalog). Cache it and reload when the X-Permissions-Version header
+// of any API response differs from PermissionsVersion.
 type MeResponse struct {
-	User        UserResponse `json:"user"`
-	Permissions []string     `json:"permissions"`
+	User               UserResponse `json:"user"`
+	Role               *MeRole      `json:"role"`
+	IsAdmin            bool         `json:"is_admin"`
+	Permissions        []string     `json:"permissions"`
+	PermissionsVersion string       `json:"permissions_version"`
+}
+
+// MeRole is the user's role; an inactive role grants no permission.
+type MeRole struct {
+	UUID    uuid.UUID `json:"uuid"`
+	Code    string    `json:"code"`
+	Name    string    `json:"name"`
+	MenuURL *string   `json:"menu_url"`
+	Active  bool      `json:"active"`
 }

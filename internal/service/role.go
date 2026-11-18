@@ -87,6 +87,9 @@ func (s *RoleService) Update(ctx context.Context, id uuid.UUID, in dto.RoleReque
 		if cur.RoleCode == auth.RoleAdmin && (in.RoleCode != auth.RoleAdmin || in.Status != "active") {
 			return apperr.Conflict("kode dan status role ADMIN tidak dapat diubah")
 		}
+		if err := s.guardRole(ctx, actor, cur); err != nil {
+			return err
+		}
 		out, err = s.roles.Update(ctx, id, roleInput(in, actor), expected)
 		if err != nil {
 			return err
@@ -94,6 +97,9 @@ func (s *RoleService) Update(ctx context.Context, id uuid.UUID, in dto.RoleReque
 		return s.audit.Record(ctx, audit.Entry{Action: "role.update", Entity: "role", EntityUUID: id,
 			Description: "code=" + out.RoleCode, Route: "PUT /roles/{uuid}"})
 	})
+	if err == nil {
+		s.cache.Invalidate(out.ID) // the status decides whether the role grants anything
+	}
 	return out, err
 }
 
@@ -110,6 +116,9 @@ func (s *RoleService) Delete(ctx context.Context, id uuid.UUID, expected time.Ti
 		if cur.RoleCode == auth.RoleAdmin {
 			return apperr.Conflict("role ADMIN tidak dapat dihapus")
 		}
+		if err := s.guardRole(ctx, actor, cur); err != nil {
+			return err
+		}
 		n, err := s.users.CountByRole(ctx, cur.ID)
 		if err != nil {
 			return err
@@ -124,6 +133,12 @@ func (s *RoleService) Delete(ctx context.Context, id uuid.UUID, expected time.Ti
 		return s.audit.Record(ctx, audit.Entry{Action: "role.delete", Entity: "role", EntityUUID: id,
 			Route: "DELETE /roles/{uuid}"})
 	})
+}
+
+// guardRole: ADMIN is protected elsewhere; other roles may only be managed by
+// actors holding every permission of the role (anti-escalation).
+func (s *RoleService) guardRole(ctx context.Context, actor auth.Actor, role model.Role) error {
+	return requireCovers(ctx, s.roles, actor, role.ID, "tidak dapat mengelola role yang memiliki permission di luar milik Anda")
 }
 
 func (s *RoleService) Actions(ctx context.Context, id uuid.UUID) (model.Role, []model.Action, error) {
@@ -167,6 +182,16 @@ func (s *RoleService) ReplaceActions(ctx context.Context, id uuid.UUID, in dto.R
 		}
 		if len(found) != len(ids) {
 			return apperr.Invalid("action_uuids", "exists", "sebagian action tidak ditemukan")
+		}
+		if err := s.guardRole(ctx, actor, role); err != nil {
+			return err
+		}
+		granted := make([]string, 0, len(found))
+		for _, a := range found {
+			granted = append(granted, a.ActionCode)
+		}
+		if missing := lacking(actor, granted); len(missing) > 0 {
+			return beyondActor("hanya dapat memberikan permission yang Anda miliki", missing)
 		}
 		if err := s.roles.ReplaceActions(ctx, role, found, actor.AuditName()); err != nil {
 			return err

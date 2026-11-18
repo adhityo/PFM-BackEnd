@@ -16,6 +16,7 @@ func InvoiceResource(d Deps) crud.Resource[sqlc.GetInvoiceByUUIDRow, dto.Invoice
 	return crud.Resource[sqlc.GetInvoiceByUUIDRow, dto.InvoiceRequest, dto.InvoiceResponse]{
 		Table:       "invoice",
 		Label:       "tagihan iuran",
+		Module:      "pension",
 		Path:        "/invoices",
 		Sorts:       []string{"invoice_number", "invoice_date", "created_at"},
 		DefaultSort: "-invoice_date",

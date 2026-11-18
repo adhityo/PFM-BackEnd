@@ -16,6 +16,7 @@ func MemberBenefitPayoutResource(d Deps) crud.Resource[sqlc.GetMemberBenefitPayo
 	return crud.Resource[sqlc.GetMemberBenefitPayoutByUUIDRow, dto.MemberBenefitPayoutRequest, dto.MemberBenefitPayoutResponse]{
 		Table:       "member_benefit_payout",
 		Label:       "pembayaran manfaat peserta",
+		Module:      "pension",
 		Path:        "/member-benefit-payouts",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

@@ -14,6 +14,7 @@ func MutualFundPortfolioResource(d Deps) crud.ReadResource[sqlc.GetMutualFundPor
 	return crud.ReadResource[sqlc.GetMutualFundPortfolioByUUIDRow, dto.MutualFundPortfolioResponse]{
 		Table:       "mutual_fund_portfolio",
 		Label:       "posisi reksa dana",
+		Module:      "portfolio",
 		Path:        "/mutual-fund-portfolios",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

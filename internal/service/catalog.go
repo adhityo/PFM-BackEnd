@@ -24,7 +24,7 @@ var DefaultRoles = []struct{ Code, Name string }{
 func SyncCatalog(ctx context.Context, tx *database.TxManager, actions repository.ActionRepository, roles repository.RoleRepository, catalog []auth.Permission) error {
 	return tx.WithinTx(ctx, func(ctx context.Context) error {
 		for _, p := range catalog {
-			if err := actions.EnsureCode(ctx, p.Code, p.Name, "system"); err != nil {
+			if err := actions.SyncSystem(ctx, p, "system"); err != nil {
 				return err
 			}
 		}

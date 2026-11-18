@@ -14,6 +14,7 @@ func StockSizeClassificationHistoryResource(d Deps) crud.Resource[sqlc.GetStockS
 	return crud.Resource[sqlc.GetStockSizeClassificationHistoryByUUIDRow, dto.StockSizeClassificationHistoryRequest, dto.StockSizeClassificationHistoryResponse]{
 		Table:       "stock_size_classification_history",
 		Label:       "riwayat ukuran saham",
+		Module:      "market",
 		Path:        "/stock-size-classification-histories",
 		Sorts:       []string{"size_change_date", "created_at"},
 		DefaultSort: "-size_change_date",

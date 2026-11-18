@@ -17,6 +17,7 @@ func BankAccountResource(d Deps) crud.Resource[sqlc.GetBankAccountByUUIDRow, dto
 	return crud.Resource[sqlc.GetBankAccountByUUIDRow, dto.BankAccountRequest, dto.BankAccountResponse]{
 		Table:       "bank_account",
 		Label:       "rekening bank",
+		Module:      "bond",
 		Path:        "/bank-accounts",
 		Sorts:       []string{"bank_account_name", "created_at"},
 		DefaultSort: "bank_account_name",

@@ -16,6 +16,7 @@ func DepositoPortfolioResource(d Deps) crud.Resource[sqlc.GetDepositoPortfolioBy
 	return crud.Resource[sqlc.GetDepositoPortfolioByUUIDRow, dto.DepositoPortfolioRequest, dto.DepositoPortfolioResponse]{
 		Table:       "deposito_portfolio",
 		Label:       "penempatan deposito",
+		Module:      "portfolio",
 		Path:        "/deposito-portfolios",
 		Sorts:       []string{"portfolio_start_date", "created_at"},
 		DefaultSort: "-portfolio_start_date",

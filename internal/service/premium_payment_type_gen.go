@@ -14,6 +14,7 @@ func PremiumPaymentTypeResource(d Deps) crud.Resource[sqlc.GetPremiumPaymentType
 	return crud.Resource[sqlc.GetPremiumPaymentTypeByUUIDRow, dto.PremiumPaymentTypeRequest, dto.PremiumPaymentTypeResponse]{
 		Table:       "premium_payment_type",
 		Label:       "tipe pembayaran iuran",
+		Module:      "masterdata",
 		Path:        "/premium-payment-types",
 		Sorts:       []string{"premium_payment_type_code", "premium_payment_type_name", "created_at"},
 		DefaultSort: "premium_payment_type_code",

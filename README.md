@@ -179,6 +179,19 @@ Data dipisah agar kebocoran satu kredensial, dump, atau celah SQL injection tida
   efektif), lalu `/settle` (saldo unit, biaya perolehan rata-rata, riwayat `/member-portfolio-histories`; urut tanggal)
   dan `/cancel`.
 
+## Otorisasi (RBAC) untuk frontend
+
+Permission berformat `<resource>:<verb>` (mis. `bond:read`, `bond_trade:approve`). Backend memeriksa setiap request; frontend memakai daftar yang sama untuk menampilkan halaman dan tombol (PRD §12.2).
+
+1. Setelah login, panggil `GET /api/v1/me`. Hasilnya: `user`, `role` (`uuid`, `code`, `name`, `menu_url`, `active`), `is_admin`, `permissions[]` (ADMIN: seluruh katalog), dan `permissions_version`.
+2. **Halaman/menu** tampil bila user memegang `<resource>:read`. **Tombol** tampil bila user memegang kodenya, mis. `bond:create` atau `invoice:generate`.
+3. Setiap respons terautentikasi membawa header `X-Permissions-Version`. Bila nilainya berbeda dari `permissions_version` yang disimpan (role diubah, user dipindah role, katalog berubah), muat ulang `/me`.
+4. 403 menyebut permission yang kurang: `error.details[{field: "permission", rule: "bond:create"}]`.
+5. **Editor role**: `GET /api/v1/permission-catalog` (modul → resource → aksi, untuk matriks checkbox), `GET`/`PUT /api/v1/roles/{uuid}/actions` (ganti seluruh set, `If-Match`). Role nonaktif tidak memberi permission apa pun.
+6. **Permission kustom** untuk UI saja (mis. `dashboard_widget:view`): `POST /api/v1/actions`, masuk modul `custom`. Permission sistem (`is_system`) read-only; nama dan labelnya diatur kode dan disinkronkan `make seed`.
+
+**Anti-eskalasi.** Pengguna non-ADMIN hanya dapat memberi atau mencabut permission yang ia miliki, dan hanya dapat mengelola role/user yang tidak melebihi dirinya. Role dan user ADMIN hanya dapat dikelola ADMIN.
+
 ## Menambah resource CRUD
 
 1. Tambah spec di `cmd/scaffold/specs_*.go`: kolom wajib/read-only, snapshot, `Check`/`AfterWrite` hook, nested,

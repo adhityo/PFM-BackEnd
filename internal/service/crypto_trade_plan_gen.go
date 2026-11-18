@@ -14,6 +14,7 @@ func CryptoTradePlanResource(d Deps) crud.Resource[sqlc.GetCryptoTradePlanByUUID
 	return crud.Resource[sqlc.GetCryptoTradePlanByUUIDRow, dto.CryptoTradePlanRequest, dto.CryptoTradePlanResponse]{
 		Table:       "crypto_trade_plan",
 		Label:       "rencana trading kripto",
+		Module:      "portfolio",
 		Path:        "/crypto-trade-plans",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

@@ -31,9 +31,12 @@ type Actor struct {
 	perms PermissionSet
 }
 
-// PermissionSet answers permission questions for an actor.
+// PermissionSet is the effective permission list of a role. Version changes
+// whenever the list changes, so clients know when to reload it.
 type PermissionSet interface {
 	Has(code string) bool
+	Codes() []string // sorted
+	Version() string
 }
 
 // AuditName is stored in created_by/updated_by/deleted_by columns.
@@ -65,6 +68,22 @@ func (a Actor) ScopeClientID() *int64 {
 		return nil
 	}
 	return a.ClientID
+}
+
+// Permissions returns the effective permission codes (every catalog code for ADMIN).
+func (a Actor) Permissions() []string {
+	if a.perms == nil {
+		return []string{}
+	}
+	return a.perms.Codes()
+}
+
+// PermissionsVersion identifies the current permission list (empty if none).
+func (a Actor) PermissionsVersion() string {
+	if a.perms == nil {
+		return ""
+	}
+	return a.perms.Version()
 }
 
 // WithPermissions returns a copy of the actor bound to a permission set.

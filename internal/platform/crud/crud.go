@@ -52,6 +52,7 @@ type Nested struct {
 type Resource[Row, Req, Resp any] struct {
 	Table       string // permission prefix and audit entity
 	Label       string
+	Module      string // permission catalog group (cmd/scaffold module)
 	Path        string
 	Sorts       []string // sortable fields; "-" variants are added automatically
 	DefaultSort string
@@ -93,6 +94,7 @@ type FileAttacher interface {
 type ReadResource[Row, Resp any] struct {
 	Table       string
 	Label       string
+	Module      string
 	Path        string
 	Sorts       []string
 	DefaultSort string
@@ -152,7 +154,7 @@ func ScopeClientID(ctx context.Context) *int64 {
 
 // Permissions returns <table>:read|create|update|delete.
 func (r Resource[Row, Req, Resp]) Permissions() []auth.Permission {
-	return auth.CRUD(r.Table, r.Label)
+	return auth.InModule(r.Module, auth.CRUD(r.Table, r.Label)...)
 }
 
 // Register mounts the standard routes of PRD §10.3.
@@ -177,7 +179,7 @@ func (r Resource[Row, Req, Resp]) Register(env Env) {
 
 // Permissions returns only <table>:read.
 func (r ReadResource[Row, Resp]) Permissions() []auth.Permission {
-	return []auth.Permission{{Code: r.Table + ":read", Name: "Lihat " + r.Label}}
+	return []auth.Permission{{Code: r.Table + ":read", Name: "Lihat " + r.Label, Module: r.Module, ResourceLabel: r.Label}}
 }
 
 // Register mounts list, detail and nested list routes.

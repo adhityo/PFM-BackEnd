@@ -14,17 +14,20 @@ import (
 )
 
 type Action struct {
-	ID          int64
-	Uuid        uuid.UUID
-	ActionCode  *string
-	ActionName  *string
-	Description *string
-	CreatedAt   time.Time
-	CreatedBy   *string
-	UpdatedAt   time.Time
-	UpdatedBy   *string
-	DeletedAt   *time.Time
-	DeletedBy   *string
+	ID            int64
+	Uuid          uuid.UUID
+	ActionCode    *string
+	ActionName    *string
+	Description   *string
+	CreatedAt     time.Time
+	CreatedBy     *string
+	UpdatedAt     time.Time
+	UpdatedBy     *string
+	DeletedAt     *time.Time
+	DeletedBy     *string
+	Module        *string
+	ResourceLabel *string
+	IsSystem      bool
 }
 
 type ActivityLog struct {

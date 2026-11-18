@@ -416,7 +416,7 @@ func genService(p *plan) (string, error) {
 		filters = append(filters, fmt.Sprintf("%q", fkBase(c.Name)+"_uuid"))
 	}
 	w("// %sResource is the CRUD resource of %s.\nfunc %sResource(d Deps) %s {\n\treturn %s{\n", p.gn, p.sp.Table, p.gn, typ, typ)
-	w("\t\tTable: %q,\n\t\tLabel: %q,\n\t\tPath: %q,\n", p.sp.Table, p.sp.Label, p.sp.Path)
+	w("\t\tTable: %q,\n\t\tLabel: %q,\n\t\tModule: %q,\n\t\tPath: %q,\n", p.sp.Table, p.sp.Label, p.sp.Module, p.sp.Path)
 	w("\t\tSorts: []string{%s},\n\t\tDefaultSort: %q,\n\t\tFilters: []string{%s},\n", strings.Join(sorts, ", "), p.sp.DefaultSort, strings.Join(filters, ", "))
 	w("\t\tStore: repository.New%sRepository(d.TX),\n\t\tResponse: dto.%sFromRow,\n", p.gn, p.gn)
 	if len(p.sp.NestedUnder) > 0 {

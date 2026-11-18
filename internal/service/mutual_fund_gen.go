@@ -14,6 +14,7 @@ func MutualFundResource(d Deps) crud.Resource[sqlc.GetMutualFundByUUIDRow, dto.M
 	return crud.Resource[sqlc.GetMutualFundByUUIDRow, dto.MutualFundRequest, dto.MutualFundResponse]{
 		Table:       "mutual_fund",
 		Label:       "reksa dana",
+		Module:      "market",
 		Path:        "/mutual-funds",
 		Sorts:       []string{"mutual_fund_code", "mutual_fund_name", "created_at"},
 		DefaultSort: "mutual_fund_code",

@@ -6,8 +6,10 @@ WHERE ra.role_id = $1 AND ra.deleted_at IS NULL
 ORDER BY a.action_code;
 
 -- name: ListPermissionCodesByRole :many
+-- An inactive or deleted role grants nothing.
 SELECT a.action_code::text
 FROM role_action ra
+JOIN role r ON r.id = ra.role_id AND r.deleted_at IS NULL AND r.status = 1
 JOIN action a ON a.id = ra.action_id AND a.deleted_at IS NULL
 WHERE ra.role_id = $1 AND ra.deleted_at IS NULL AND a.action_code IS NOT NULL;
 

@@ -16,6 +16,7 @@ func BondRatingResource(d Deps) crud.Resource[sqlc.GetBondRatingByUUIDRow, dto.B
 	return crud.Resource[sqlc.GetBondRatingByUUIDRow, dto.BondRatingRequest, dto.BondRatingResponse]{
 		Table:       "bond_rating",
 		Label:       "rating obligasi",
+		Module:      "bond",
 		Path:        "/bond-ratings",
 		Sorts:       []string{"rating_date", "created_at"},
 		DefaultSort: "-rating_date",

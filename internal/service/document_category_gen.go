@@ -14,6 +14,7 @@ func DocumentCategoryResource(d Deps) crud.Resource[sqlc.GetDocumentCategoryByUU
 	return crud.Resource[sqlc.GetDocumentCategoryByUUIDRow, dto.DocumentCategoryRequest, dto.DocumentCategoryResponse]{
 		Table:       "document_category",
 		Label:       "kategori dokumen",
+		Module:      "masterdata",
 		Path:        "/document-categories",
 		Sorts:       []string{"document_category_code", "document_category_name", "created_at"},
 		DefaultSort: "document_category_code",

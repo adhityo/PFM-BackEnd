@@ -9,6 +9,7 @@
 --   awk '/^-- #####/{f=""; next} /^-- ===================== [a-z]+\/[0-9]+_.*\.sql =====================$/{f="internal/db/migrations/"$3; next} f{print > f}' prd-schema-postgres.sql
 -- Diuji: PostgreSQL 14, up -> down (semua) -> up tanpa error untuk tiap database.
 
+
 -- ######################## shared/ — Semua database: fungsi bersama ########################
 
 -- ===================== shared/00001_init_functions.sql =====================
@@ -4658,6 +4659,28 @@ CREATE INDEX idx_auth_refresh_token_replaced_by ON auth_refresh_token (replaced_
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE IF EXISTS auth_refresh_token;
+-- +goose StatementEnd
+
+-- ===================== security/00130_action_catalog_metadata.sql =====================
+-- Metadata katalog permission untuk editor role dan menu frontend:
+--  * module: kelompok (system, masterdata, market, ..., custom);
+--  * resource_label: label resource, mis. "obligasi";
+--  * is_system: permission bawaan kode, disinkronkan oleh `migrate seed`. Tidak dapat diubah atau
+--    dihapus lewat API, karena route backend memerlukannya.
+-- +goose Up
+-- +goose StatementBegin
+ALTER TABLE action ADD COLUMN module VARCHAR(50);
+ALTER TABLE action ADD COLUMN resource_label VARCHAR(255);
+ALTER TABLE action ADD COLUMN is_system BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX idx_action_module ON action (module);
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP INDEX IF EXISTS idx_action_module;
+ALTER TABLE action DROP COLUMN IF EXISTS is_system;
+ALTER TABLE action DROP COLUMN IF EXISTS resource_label;
+ALTER TABLE action DROP COLUMN IF EXISTS module;
 -- +goose StatementEnd
 
 -- ######################## log/ — pfm_log: jejak audit (append-only) ########################

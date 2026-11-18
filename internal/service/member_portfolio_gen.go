@@ -16,6 +16,7 @@ func MemberPortfolioResource(d Deps) crud.Resource[sqlc.GetMemberPortfolioByUUID
 	return crud.Resource[sqlc.GetMemberPortfolioByUUIDRow, dto.MemberPortfolioRequest, dto.MemberPortfolioResponse]{
 		Table:       "member_portfolio",
 		Label:       "rekening unit peserta",
+		Module:      "pension",
 		Path:        "/member-portfolios",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

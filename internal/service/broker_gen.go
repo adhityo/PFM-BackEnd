@@ -14,6 +14,7 @@ func BrokerResource(d Deps) crud.Resource[sqlc.GetBrokerByUUIDRow, dto.BrokerReq
 	return crud.Resource[sqlc.GetBrokerByUUIDRow, dto.BrokerRequest, dto.BrokerResponse]{
 		Table:       "broker",
 		Label:       "broker",
+		Module:      "market",
 		Path:        "/brokers",
 		Sorts:       []string{"broker_code", "broker_name", "created_at"},
 		DefaultSort: "broker_code",

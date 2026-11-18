@@ -14,6 +14,7 @@ func TaxRateResource(d Deps) crud.Resource[sqlc.GetTaxRateByUUIDRow, dto.TaxRate
 	return crud.Resource[sqlc.GetTaxRateByUUIDRow, dto.TaxRateRequest, dto.TaxRateResponse]{
 		Table:       "tax_rate",
 		Label:       "tarif pajak",
+		Module:      "masterdata",
 		Path:        "/tax-rates",
 		Sorts:       []string{"tax_rate_code", "tax_rate_name", "created_at"},
 		DefaultSort: "tax_rate_code",

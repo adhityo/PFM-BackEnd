@@ -14,6 +14,7 @@ func PlacementTypeResource(d Deps) crud.Resource[sqlc.GetPlacementTypeByUUIDRow,
 	return crud.Resource[sqlc.GetPlacementTypeByUUIDRow, dto.PlacementTypeRequest, dto.PlacementTypeResponse]{
 		Table:       "placement_type",
 		Label:       "tipe penempatan",
+		Module:      "masterdata",
 		Path:        "/placement-types",
 		Sorts:       []string{"placement_type_code", "placement_type_name", "created_at"},
 		DefaultSort: "placement_type_code",

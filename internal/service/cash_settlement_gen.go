@@ -18,6 +18,7 @@ func CashSettlementResource(d Deps) crud.Resource[sqlc.GetCashSettlementByUUIDRo
 	return crud.Resource[sqlc.GetCashSettlementByUUIDRow, dto.CashSettlementRequest, dto.CashSettlementResponse]{
 		Table:       "cash_settlement",
 		Label:       "cash settlement",
+		Module:      "accounting",
 		Path:        "/cash-settlements",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

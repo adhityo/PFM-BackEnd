@@ -14,6 +14,7 @@ func InvestorCategoryResource(d Deps) crud.Resource[sqlc.GetInvestorCategoryByUU
 	return crud.Resource[sqlc.GetInvestorCategoryByUUIDRow, dto.InvestorCategoryRequest, dto.InvestorCategoryResponse]{
 		Table:       "investor_category",
 		Label:       "kategori investor",
+		Module:      "masterdata",
 		Path:        "/investor-categories",
 		Sorts:       []string{"investor_category_code", "investor_category_name", "created_at"},
 		DefaultSort: "investor_category_code",

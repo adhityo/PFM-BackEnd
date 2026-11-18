@@ -14,6 +14,7 @@ func CityResource(d Deps) crud.Resource[sqlc.GetCityByUUIDRow, dto.CityRequest, 
 	return crud.Resource[sqlc.GetCityByUUIDRow, dto.CityRequest, dto.CityResponse]{
 		Table:       "city",
 		Label:       "kota",
+		Module:      "masterdata",
 		Path:        "/cities",
 		Sorts:       []string{"city_code", "city_name", "created_at"},
 		DefaultSort: "city_code",

@@ -14,6 +14,7 @@ func BondTypeResource(d Deps) crud.Resource[sqlc.GetBondTypeByUUIDRow, dto.BondT
 	return crud.Resource[sqlc.GetBondTypeByUUIDRow, dto.BondTypeRequest, dto.BondTypeResponse]{
 		Table:       "bond_type",
 		Label:       "tipe obligasi",
+		Module:      "masterdata",
 		Path:        "/bond-types",
 		Sorts:       []string{"bond_type_code", "bond_type_name", "created_at"},
 		DefaultSort: "bond_type_code",

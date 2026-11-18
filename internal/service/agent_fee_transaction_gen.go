@@ -19,6 +19,7 @@ func AgentFeeTransactionResource(d Deps) crud.Resource[sqlc.GetAgentFeeTransacti
 	return crud.Resource[sqlc.GetAgentFeeTransactionByUUIDRow, dto.AgentFeeTransactionRequest, dto.AgentFeeTransactionResponse]{
 		Table:       "agent_fee_transaction",
 		Label:       "fee agen",
+		Module:      "bond",
 		Path:        "/agent-fee-transactions",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

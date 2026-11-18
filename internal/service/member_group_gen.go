@@ -14,6 +14,7 @@ func MemberGroupResource(d Deps) crud.Resource[sqlc.GetMemberGroupByUUIDRow, dto
 	return crud.Resource[sqlc.GetMemberGroupByUUIDRow, dto.MemberGroupRequest, dto.MemberGroupResponse]{
 		Table:       "member_group",
 		Label:       "kelompok peserta",
+		Module:      "pension",
 		Path:        "/member-groups",
 		Sorts:       []string{"member_group_number", "member_group_name", "created_at"},
 		DefaultSort: "member_group_number",

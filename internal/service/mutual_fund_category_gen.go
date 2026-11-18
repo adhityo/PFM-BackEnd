@@ -14,6 +14,7 @@ func MutualFundCategoryResource(d Deps) crud.Resource[sqlc.GetMutualFundCategory
 	return crud.Resource[sqlc.GetMutualFundCategoryByUUIDRow, dto.MutualFundCategoryRequest, dto.MutualFundCategoryResponse]{
 		Table:       "mutual_fund_category",
 		Label:       "kategori reksa dana",
+		Module:      "masterdata",
 		Path:        "/mutual-fund-categories",
 		Sorts:       []string{"mutual_fund_category_code", "mutual_fund_category_name", "created_at"},
 		DefaultSort: "mutual_fund_category_code",

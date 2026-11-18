@@ -16,6 +16,7 @@ func StockHistoryResource(d Deps) crud.Resource[sqlc.GetStockHistoryByUUIDRow, d
 	return crud.Resource[sqlc.GetStockHistoryByUUIDRow, dto.StockHistoryRequest, dto.StockHistoryResponse]{
 		Table:       "stock_history",
 		Label:       "harga saham",
+		Module:      "market",
 		Path:        "/stock-histories",
 		Sorts:       []string{"closing_date", "created_at"},
 		DefaultSort: "-closing_date",

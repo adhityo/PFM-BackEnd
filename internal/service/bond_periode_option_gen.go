@@ -14,6 +14,7 @@ func BondPeriodeOptionResource(d Deps) crud.Resource[sqlc.GetBondPeriodeOptionBy
 	return crud.Resource[sqlc.GetBondPeriodeOptionByUUIDRow, dto.BondPeriodeOptionRequest, dto.BondPeriodeOptionResponse]{
 		Table:       "bond_periode_option",
 		Label:       "opsi periode obligasi",
+		Module:      "masterdata",
 		Path:        "/bond-periode-options",
 		Sorts:       []string{"bond_periode_option_code", "bond_periode_option_name", "created_at"},
 		DefaultSort: "bond_periode_option_code",

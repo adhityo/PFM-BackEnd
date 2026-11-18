@@ -16,6 +16,7 @@ func StockTradeResource(d Deps) crud.Resource[sqlc.GetStockTradeByUUIDRow, dto.S
 	return crud.Resource[sqlc.GetStockTradeByUUIDRow, dto.StockTradeRequest, dto.StockTradeResponse]{
 		Table:       "stock_trade",
 		Label:       "transaksi saham",
+		Module:      "trading",
 		Path:        "/stock-trades",
 		Sorts:       []string{"stock_trade_date", "created_at"},
 		DefaultSort: "-stock_trade_date",

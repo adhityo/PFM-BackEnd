@@ -16,6 +16,7 @@ func SectorResource(d Deps) crud.Resource[sqlc.GetSectorByUUIDRow, dto.SectorReq
 	return crud.Resource[sqlc.GetSectorByUUIDRow, dto.SectorRequest, dto.SectorResponse]{
 		Table:       "sector",
 		Label:       "sektor",
+		Module:      "masterdata",
 		Path:        "/sectors",
 		Sorts:       []string{"sector_code", "sector_name", "created_at"},
 		DefaultSort: "sector_code",

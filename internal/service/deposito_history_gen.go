@@ -14,6 +14,7 @@ func DepositoHistoryResource(d Deps) crud.ReadResource[sqlc.GetDepositoHistoryBy
 	return crud.ReadResource[sqlc.GetDepositoHistoryByUUIDRow, dto.DepositoHistoryResponse]{
 		Table:       "deposito_history",
 		Label:       "riwayat deposito",
+		Module:      "market",
 		Path:        "/deposito-histories",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

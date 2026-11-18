@@ -17,6 +17,7 @@ func DependantResource(d Deps) crud.Resource[sqlc.GetDependantByUUIDRow, dto.Dep
 	return crud.Resource[sqlc.GetDependantByUUIDRow, dto.DependantRequest, dto.DependantResponse]{
 		Table:       "dependant",
 		Label:       "tanggungan peserta",
+		Module:      "pension",
 		Path:        "/dependants",
 		Sorts:       []string{"dependant_name", "created_at"},
 		DefaultSort: "dependant_name",

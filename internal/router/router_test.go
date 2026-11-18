@@ -251,8 +251,8 @@ func TestRefreshRotationAndReuseDetection(t *testing.T) {
 	e := setup(t)
 	access, refresh := e.login("admin", adminPassword)
 	me := e.expect(e.do("GET", "/api/v1/me", access, nil), 200, "me")
-	if perms := me.data()["permissions"].([]any); len(perms) != 1 || perms[0] != "*" {
-		t.Fatalf("admin permissions: %v", perms)
+	if perms := me.data()["permissions"].([]any); me.data()["is_admin"] != true || len(perms) != len(Catalog()) {
+		t.Fatalf("admin must receive the whole catalog: is_admin=%v, %d of %d", me.data()["is_admin"], len(perms), len(Catalog()))
 	}
 
 	r := e.expect(e.do("POST", "/api/v1/auth/refresh", "", map[string]string{"refresh_token": refresh}), 200, "refresh")

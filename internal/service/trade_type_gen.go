@@ -14,6 +14,7 @@ func TradeTypeResource(d Deps) crud.Resource[sqlc.GetTradeTypeByUUIDRow, dto.Tra
 	return crud.Resource[sqlc.GetTradeTypeByUUIDRow, dto.TradeTypeRequest, dto.TradeTypeResponse]{
 		Table:       "trade_type",
 		Label:       "tipe transaksi",
+		Module:      "masterdata",
 		Path:        "/trade-types",
 		Sorts:       []string{"trade_type_code", "trade_type_name", "created_at"},
 		DefaultSort: "trade_type_code",

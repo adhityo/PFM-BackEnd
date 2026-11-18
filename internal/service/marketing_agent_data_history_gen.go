@@ -17,6 +17,7 @@ func MarketingAgentDataHistoryResource(d Deps) crud.ReadResource[sqlc.GetMarketi
 	return crud.ReadResource[sqlc.GetMarketingAgentDataHistoryByUUIDRow, dto.MarketingAgentDataHistoryResponse]{
 		Table:       "marketing_agent_data_history",
 		Label:       "perubahan data agen",
+		Module:      "bond",
 		Path:        "/marketing-agent-data-histories",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

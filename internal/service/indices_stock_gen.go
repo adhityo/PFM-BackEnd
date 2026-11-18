@@ -14,6 +14,7 @@ func IndicesStockResource(d Deps) crud.Resource[sqlc.GetIndicesStockByUUIDRow, d
 	return crud.Resource[sqlc.GetIndicesStockByUUIDRow, dto.IndicesStockRequest, dto.IndicesStockResponse]{
 		Table:       "indices_stock",
 		Label:       "konstituen indeks",
+		Module:      "market",
 		Path:        "/indices-stocks",
 		Sorts:       []string{"weight", "registration_date", "created_at"},
 		DefaultSort: "-weight",

@@ -14,6 +14,7 @@ func StockPortfolioHistoryResource(d Deps) crud.ReadResource[sqlc.GetStockPortfo
 	return crud.ReadResource[sqlc.GetStockPortfolioHistoryByUUIDRow, dto.StockPortfolioHistoryResponse]{
 		Table:       "stock_portfolio_history",
 		Label:       "riwayat posisi saham",
+		Module:      "portfolio",
 		Path:        "/stock-portfolio-histories",
 		Sorts:       []string{"closing_date", "created_at"},
 		DefaultSort: "-closing_date",

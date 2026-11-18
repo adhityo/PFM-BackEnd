@@ -4,6 +4,7 @@ package apperr
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // Kind classifies an error so the HTTP layer can map it to a status code.
@@ -83,6 +84,20 @@ func Unauthenticated(msg string) *Error {
 
 func Forbidden(msg string) *Error {
 	return newErr(KindForbidden, "FORBIDDEN", msg, nil)
+}
+
+// MissingPermission is a 403 whose details name the permission(s) the actor
+// lacks (field "permission", rule = code), so clients can explain or hide the action.
+func MissingPermission(codes ...string) *Error {
+	msg := "izin " + codes[0] + " diperlukan"
+	if len(codes) > 1 {
+		msg = "izin berikut diperlukan: " + strings.Join(codes, ", ")
+	}
+	e := newErr(KindForbidden, "FORBIDDEN", msg, nil)
+	for _, c := range codes {
+		e.Fields = append(e.Fields, FieldError{Field: "permission", Rule: c, Message: "izin " + c + " diperlukan"})
+	}
+	return e
 }
 
 func NotFound(msg string) *Error {

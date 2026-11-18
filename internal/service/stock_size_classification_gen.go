@@ -14,6 +14,7 @@ func StockSizeClassificationResource(d Deps) crud.Resource[sqlc.GetStockSizeClas
 	return crud.Resource[sqlc.GetStockSizeClassificationByUUIDRow, dto.StockSizeClassificationRequest, dto.StockSizeClassificationResponse]{
 		Table:       "stock_size_classification",
 		Label:       "klasifikasi ukuran saham",
+		Module:      "masterdata",
 		Path:        "/stock-size-classifications",
 		Sorts:       []string{"stock_size_classification_code", "stock_size_classification_name", "created_at"},
 		DefaultSort: "stock_size_classification_code",

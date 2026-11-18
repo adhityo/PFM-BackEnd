@@ -2,7 +2,11 @@
 // guard routes and the static part of the catalog.
 package permission
 
-import "pfm-backend/internal/platform/auth"
+import (
+	"strings"
+
+	"pfm-backend/internal/platform/auth"
+)
 
 const (
 	UserRead          = "app_user:read"
@@ -75,20 +79,52 @@ const (
 // TradeActions are the action permissions of every trade table.
 var TradeActions = []string{"settle", "cancel", "reverse"}
 
+// Permission catalog modules (auth.Permission.Module), in display order.
+const (
+	ModuleSystem     = "system"
+	ModuleMasterdata = "masterdata"
+	ModuleMarket     = "market"
+	ModulePortfolio  = "portfolio"
+	ModuleAccounting = "accounting"
+	ModuleTrading    = "trading"
+	ModuleBond       = "bond"
+	ModulePension    = "pension"
+	// ModuleCustom holds actions created through the API, e.g. frontend-only
+	// switches such as "dashboard_widget:view". The backend never requires them.
+	ModuleCustom = "custom"
+)
+
+// Modules lists the modules in display order with their labels.
+var Modules = []struct{ Code, Label string }{
+	{ModuleSystem, "Sistem & Keamanan"}, {ModuleMasterdata, "Master Data"}, {ModuleMarket, "Instrumen Pasar"},
+	{ModulePortfolio, "Portofolio"}, {ModuleAccounting, "Akuntansi"}, {ModuleTrading, "Trading"},
+	{ModuleBond, "Obligasi"}, {ModulePension, "Dana Pensiun"}, {ModuleCustom, "Kustom"},
+}
+
+// ResourceLabels labels resources without a CRUD resource of their own
+// (CRUD resources carry their label).
+var ResourceLabels = map[string]string{
+	"app_user": "pengguna", "role": "role", "role_action": "permission role", "action": "katalog permission",
+	"activity_log": "log aktivitas", "pii": "data pribadi", "file_object": "file", "configuration": "konfigurasi",
+	"finance_transaction": "jurnal",
+}
+
+var tradeVerbs = map[string]string{"settle": "Settle", "cancel": "Batalkan", "reverse": "Balik"}
+
 // Static returns the hand-defined permissions. CRUD resources add their own
 // <table>:read|create|update|delete entries (see router.Catalog).
 func Static() []auth.Permission {
-	p := append(auth.CRUD("app_user", "pengguna"),
+	sys := append(auth.CRUD("app_user", "pengguna"),
 		auth.Permission{Code: UserResetPassword, Name: "Reset kredensial pengguna"},
 		auth.Permission{Code: UserLock, Name: "Kunci/buka kunci pengguna"},
 	)
-	p = append(p, auth.CRUD("role", "role")...)
-	p = append(p,
+	sys = append(sys, auth.CRUD("role", "role")...)
+	sys = append(sys,
 		auth.Permission{Code: RoleActionRead, Name: "Lihat permission role"},
 		auth.Permission{Code: RoleActionUpdate, Name: "Ubah permission role"},
 	)
-	p = append(p, auth.CRUD("action", "katalog permission")...)
-	p = append(p,
+	sys = append(sys, auth.CRUD("action", "katalog permission")...)
+	sys = append(sys,
 		auth.Permission{Code: ActivityLogRead, Name: "Lihat log aktivitas"},
 		auth.Permission{Code: auth.PermPIIRead, Name: "Lihat data pribadi tanpa masking"},
 		auth.Permission{Code: FileRead, Name: "Lihat/unduh file milik pengguna lain"},
@@ -96,14 +132,28 @@ func Static() []auth.Permission {
 		auth.Permission{Code: FileDelete, Name: "Hapus file pending milik pengguna lain"},
 		auth.Permission{Code: ConfigurationRead, Name: "Lihat konfigurasi sistem"},
 		auth.Permission{Code: ConfigurationUpdate, Name: "Ubah konfigurasi sistem"},
+	)
+	p := auth.InModule(ModuleSystem, sys...)
+	p = append(p, auth.InModule(ModulePortfolio,
 		auth.Permission{Code: DepositoRollover, Name: "Rollover penempatan deposito"},
 		auth.Permission{Code: DepositoWithdraw, Name: "Cairkan penempatan deposito"},
+	)...)
+	p = append(p, auth.InModule(ModuleAccounting,
 		auth.Permission{Code: FinanceTransactionRead, Name: "Lihat jurnal"},
 		auth.Permission{Code: FinanceTransactionCreate, Name: "Posting jurnal manual"},
 		auth.Permission{Code: FinanceTransactionReverse, Name: "Balik jurnal manual"},
 		auth.Permission{Code: CashSettlementApprove, Name: "Setujui cash settlement"},
 		auth.Permission{Code: CashSettlementCancel, Name: "Batalkan cash settlement"},
 		auth.Permission{Code: CashSettlementReverse, Name: "Balik cash settlement"},
+	)...)
+	var trades []auth.Permission
+	for _, table := range []string{"stock_trade", "mutual_fund_trade", "crypto_trade"} {
+		for _, a := range TradeActions {
+			trades = append(trades, auth.Permission{Code: table + ":" + a, Name: tradeVerbs[a] + " " + table})
+		}
+	}
+	p = append(p, auth.InModule(ModuleTrading, trades...)...)
+	p = append(p, auth.InModule(ModuleBond,
 		auth.Permission{Code: BondOffer, Name: "Buka masa offering obligasi"},
 		auth.Permission{Code: BondActivate, Name: "Aktifkan obligasi"},
 		auth.Permission{Code: BondGenerateCouponSchedule, Name: "Buat jadwal kupon obligasi"},
@@ -118,6 +168,8 @@ func Static() []auth.Permission {
 		auth.Permission{Code: MarketingAgentChangeCreate, Name: "Ajukan perubahan data agen"},
 		auth.Permission{Code: MarketingAgentChangeApprove, Name: "Setujui perubahan data agen"},
 		auth.Permission{Code: MarketingAgentChangeReject, Name: "Tolak perubahan data agen"},
+	)...)
+	p = append(p, auth.InModule(ModulePension,
 		auth.Permission{Code: InvoiceGenerate, Name: "Generate tagihan iuran bulanan"},
 		auth.Permission{Code: InvoiceIssue, Name: "Terbitkan tagihan iuran"},
 		auth.Permission{Code: InvoiceCancel, Name: "Batalkan tagihan iuran"},
@@ -128,11 +180,30 @@ func Static() []auth.Permission {
 		auth.Permission{Code: PayoutCancel, Name: "Batalkan batch pembayaran manfaat"},
 		auth.Permission{Code: UnitTransactionSettle, Name: "Settle transaksi unit peserta"},
 		auth.Permission{Code: UnitTransactionCancel, Name: "Batalkan transaksi unit peserta"},
-	)
-	for _, table := range []string{"stock_trade", "mutual_fund_trade", "crypto_trade"} {
-		for _, a := range TradeActions {
-			p = append(p, auth.Permission{Code: table + ":" + a, Name: a + " " + table})
+	)...)
+	return p
+}
+
+// Label fills missing resource labels: CRUD resources label their own
+// table, the action permissions of the same table reuse it.
+func Label(catalog []auth.Permission) []auth.Permission {
+	labels := map[string]string{}
+	for k, v := range ResourceLabels {
+		labels[k] = v
+	}
+	for _, p := range catalog {
+		if p.ResourceLabel != "" {
+			labels[p.Resource()] = p.ResourceLabel
 		}
 	}
-	return p
+	for i := range catalog {
+		if catalog[i].ResourceLabel == "" {
+			if l, ok := labels[catalog[i].Resource()]; ok {
+				catalog[i].ResourceLabel = l
+			} else {
+				catalog[i].ResourceLabel = strings.ReplaceAll(catalog[i].Resource(), "_", " ")
+			}
+		}
+	}
+	return catalog
 }

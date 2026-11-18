@@ -14,6 +14,7 @@ func OccupationResource(d Deps) crud.Resource[sqlc.GetOccupationByUUIDRow, dto.O
 	return crud.Resource[sqlc.GetOccupationByUUIDRow, dto.OccupationRequest, dto.OccupationResponse]{
 		Table:       "occupation",
 		Label:       "pekerjaan",
+		Module:      "masterdata",
 		Path:        "/occupations",
 		Sorts:       []string{"occupation_code", "occupation_name", "created_at"},
 		DefaultSort: "occupation_code",

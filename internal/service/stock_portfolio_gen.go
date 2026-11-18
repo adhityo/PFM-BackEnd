@@ -14,6 +14,7 @@ func StockPortfolioResource(d Deps) crud.ReadResource[sqlc.GetStockPortfolioByUU
 	return crud.ReadResource[sqlc.GetStockPortfolioByUUIDRow, dto.StockPortfolioResponse]{
 		Table:       "stock_portfolio",
 		Label:       "posisi saham",
+		Module:      "portfolio",
 		Path:        "/stock-portfolios",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

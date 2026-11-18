@@ -14,6 +14,7 @@ func BrokerAPISettingResource(d Deps) crud.Resource[sqlc.GetBrokerApiSettingByUU
 	return crud.Resource[sqlc.GetBrokerApiSettingByUUIDRow, dto.BrokerAPISettingRequest, dto.BrokerAPISettingResponse]{
 		Table:       "broker_api_setting",
 		Label:       "setting API broker",
+		Module:      "market",
 		Path:        "/broker-api-settings",
 		Sorts:       []string{"broker_api_setting_name", "created_at"},
 		DefaultSort: "broker_api_setting_name",

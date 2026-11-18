@@ -14,6 +14,7 @@ func StockTypeDetailResource(d Deps) crud.Resource[sqlc.GetStockTypeDetailByUUID
 	return crud.Resource[sqlc.GetStockTypeDetailByUUIDRow, dto.StockTypeDetailRequest, dto.StockTypeDetailResponse]{
 		Table:       "stock_type_detail",
 		Label:       "tipe per saham",
+		Module:      "market",
 		Path:        "/stock-type-details",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

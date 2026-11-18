@@ -17,6 +17,7 @@ func InvestorResource(d Deps) crud.Resource[sqlc.GetInvestorByUUIDRow, dto.Inves
 	return crud.Resource[sqlc.GetInvestorByUUIDRow, dto.InvestorRequest, dto.InvestorResponse]{
 		Table:       "investor",
 		Label:       "investor",
+		Module:      "bond",
 		Path:        "/investors",
 		Sorts:       []string{"investor_number", "investor_name", "created_at"},
 		DefaultSort: "-created_at",

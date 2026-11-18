@@ -14,6 +14,7 @@ func DepositoPortfolioHistoryResource(d Deps) crud.ReadResource[sqlc.GetDeposito
 	return crud.ReadResource[sqlc.GetDepositoPortfolioHistoryByUUIDRow, dto.DepositoPortfolioHistoryResponse]{
 		Table:       "deposito_portfolio_history",
 		Label:       "riwayat penempatan deposito",
+		Module:      "portfolio",
 		Path:        "/deposito-portfolio-histories",
 		Sorts:       []string{"portfolio_update_date", "created_at"},
 		DefaultSort: "-created_at",

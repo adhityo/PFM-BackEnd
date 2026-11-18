@@ -17,6 +17,7 @@ func MemberResource(d Deps) crud.Resource[sqlc.GetMemberByUUIDRow, dto.MemberReq
 	return crud.Resource[sqlc.GetMemberByUUIDRow, dto.MemberRequest, dto.MemberResponse]{
 		Table:       "member",
 		Label:       "peserta",
+		Module:      "pension",
 		Path:        "/members",
 		Sorts:       []string{"member_number", "member_name", "created_at"},
 		DefaultSort: "-created_at",

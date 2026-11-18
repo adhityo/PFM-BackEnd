@@ -16,6 +16,7 @@ func BenefitPayoutBatchResource(d Deps) crud.Resource[sqlc.GetBenefitPayoutBatch
 	return crud.Resource[sqlc.GetBenefitPayoutBatchByUUIDRow, dto.BenefitPayoutBatchRequest, dto.BenefitPayoutBatchResponse]{
 		Table:       "benefit_payout_batch",
 		Label:       "batch pembayaran manfaat",
+		Module:      "pension",
 		Path:        "/benefit-payout-batches",
 		Sorts:       []string{"batch_number", "created_at"},
 		DefaultSort: "-created_at",

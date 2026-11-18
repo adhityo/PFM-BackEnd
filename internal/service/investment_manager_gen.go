@@ -14,6 +14,7 @@ func InvestmentManagerResource(d Deps) crud.Resource[sqlc.GetInvestmentManagerBy
 	return crud.Resource[sqlc.GetInvestmentManagerByUUIDRow, dto.InvestmentManagerRequest, dto.InvestmentManagerResponse]{
 		Table:       "investment_manager",
 		Label:       "manajer investasi",
+		Module:      "market",
 		Path:        "/investment-managers",
 		Sorts:       []string{"investment_manager_code", "investment_manager_name", "created_at"},
 		DefaultSort: "investment_manager_code",

@@ -14,6 +14,7 @@ func BankClassResource(d Deps) crud.Resource[sqlc.GetBankClassByUUIDRow, dto.Ban
 	return crud.Resource[sqlc.GetBankClassByUUIDRow, dto.BankClassRequest, dto.BankClassResponse]{
 		Table:       "bank_class",
 		Label:       "kelas bank",
+		Module:      "masterdata",
 		Path:        "/bank-classes",
 		Sorts:       []string{"bank_class_code", "bank_class_name", "created_at"},
 		DefaultSort: "bank_class_code",

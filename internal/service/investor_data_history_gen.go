@@ -17,6 +17,7 @@ func InvestorDataHistoryResource(d Deps) crud.ReadResource[sqlc.GetInvestorDataH
 	return crud.ReadResource[sqlc.GetInvestorDataHistoryByUUIDRow, dto.InvestorDataHistoryResponse]{
 		Table:       "investor_data_history",
 		Label:       "perubahan data investor",
+		Module:      "bond",
 		Path:        "/investor-data-histories",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

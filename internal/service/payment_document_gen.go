@@ -16,6 +16,7 @@ func PaymentDocumentResource(d Deps) crud.Resource[sqlc.GetPaymentDocumentByUUID
 	return crud.Resource[sqlc.GetPaymentDocumentByUUIDRow, dto.PaymentDocumentRequest, dto.PaymentDocumentResponse]{
 		Table:       "payment_document",
 		Label:       "dokumen pembayaran",
+		Module:      "bond",
 		Path:        "/payment-documents",
 		Sorts:       []string{"created_at"},
 		DefaultSort: "-created_at",

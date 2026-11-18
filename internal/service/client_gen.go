@@ -16,6 +16,7 @@ func ClientResource(d Deps) crud.Resource[sqlc.GetClientByUUIDRow, dto.ClientReq
 	return crud.Resource[sqlc.GetClientByUUIDRow, dto.ClientRequest, dto.ClientResponse]{
 		Table:       "client",
 		Label:       "client",
+		Module:      "portfolio",
 		Path:        "/clients",
 		Sorts:       []string{"client_code", "client_name", "created_at"},
 		DefaultSort: "client_code",

@@ -16,6 +16,7 @@ func PortfolioResource(d Deps) crud.Resource[sqlc.GetPortfolioByUUIDRow, dto.Por
 	return crud.Resource[sqlc.GetPortfolioByUUIDRow, dto.PortfolioRequest, dto.PortfolioResponse]{
 		Table:       "portfolio",
 		Label:       "portofolio",
+		Module:      "portfolio",
 		Path:        "/portfolios",
 		Sorts:       []string{"portfolio_code", "portfolio_name", "created_at"},
 		DefaultSort: "portfolio_code",
