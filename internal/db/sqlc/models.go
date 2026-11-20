@@ -107,6 +107,7 @@ type AppUser struct {
 	UpdatedBy              *string
 	DeletedAt              *time.Time
 	DeletedBy              *string
+	ActivationKeyIssuedAt  *time.Time
 }
 
 type AssetClass struct {
@@ -1457,6 +1458,19 @@ type Invoice struct {
 	UpdatedBy          *string
 	DeletedAt          *time.Time
 	DeletedBy          *string
+}
+
+type MailOutbox struct {
+	ID            int64
+	Uuid          uuid.UUID
+	Recipient     string
+	Subject       string
+	BodyText      string
+	BodyHtml      *string
+	Attempts      int16
+	NextAttemptAt time.Time
+	LastError     *string
+	CreatedAt     time.Time
 }
 
 type MarketingAgent struct {

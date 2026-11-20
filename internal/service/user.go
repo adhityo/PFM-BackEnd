@@ -29,14 +29,33 @@ type UserService struct {
 	tokens        repository.RefreshTokenRepository
 	clients       repository.ClientLookup
 	audit         *audit.Recorder
+	mailer        *AccountMailer
 	activationTTL time.Duration
+	exposeKey     bool // return activation keys in responses (outside production only)
 	now           func() time.Time
 }
 
+// UserConfig holds the account-link settings of UserService.
+type UserConfig struct {
+	ActivationTTL time.Duration
+	// ExposeActivationKey also returns the key in API responses (development
+	// and tests); in production the user only receives it by email.
+	ExposeActivationKey bool
+}
+
 func NewUserService(tx *database.TxManager, users repository.UserRepository, roles repository.RoleRepository, tokens repository.RefreshTokenRepository,
-	clients repository.ClientLookup, rec *audit.Recorder, activationTTL time.Duration) *UserService {
-	return &UserService{tx: tx, users: users, roles: roles, tokens: tokens, clients: clients, audit: rec,
-		activationTTL: activationTTL, now: time.Now}
+	clients repository.ClientLookup, rec *audit.Recorder, mailer *AccountMailer, cfg UserConfig) *UserService {
+	return &UserService{tx: tx, users: users, roles: roles, tokens: tokens, clients: clients, audit: rec, mailer: mailer,
+		activationTTL: cfg.ActivationTTL, exposeKey: cfg.ExposeActivationKey, now: time.Now}
+}
+
+// credential builds the create/reset response; the key itself goes out by email.
+func (s *UserService) credential(u model.User, raw string, exp time.Time) dto.UserCredentialResponse {
+	out := dto.UserCredentialResponse{User: s.Response(u), ActivationExpiresAt: exp}
+	if s.exposeKey {
+		out.ActivationKey = raw
+	}
+	return out
 }
 
 // UserSorts is the sort whitelist for user lists.
@@ -146,7 +165,10 @@ func (s *UserService) Create(ctx context.Context, in dto.CreateUserRequest) (dto
 		if err != nil {
 			return err
 		}
-		out = dto.UserCredentialResponse{User: s.Response(u), ActivationKey: raw, ActivationExpiresAt: exp}
+		out = s.credential(u, raw, exp)
+		if err := s.mailer.Activation(ctx, u.Email, deref2(u.FirstName), u.Username, raw, s.activationTTL); err != nil {
+			return err
+		}
 		return s.audit.Record(ctx, audit.Entry{Action: "app_user.create", Entity: "app_user", EntityUUID: id,
 			Description: "role=" + role.RoleCode, Route: "POST /users"})
 	})
@@ -264,7 +286,10 @@ func (s *UserService) ResetCredential(ctx context.Context, id uuid.UUID, expecte
 		if err != nil {
 			return err
 		}
-		out = dto.UserCredentialResponse{User: s.Response(u), ActivationKey: raw, ActivationExpiresAt: exp}
+		out = s.credential(u, raw, exp)
+		if err := s.mailer.AdminReset(ctx, u.Email, deref2(u.FirstName), u.Username, raw, s.activationTTL); err != nil {
+			return err
+		}
 		return s.audit.Record(ctx, audit.Entry{Action: "app_user.reset_password", Entity: "app_user", EntityUUID: id,
 			Route: "POST /users/{uuid}/reset-password"})
 	})

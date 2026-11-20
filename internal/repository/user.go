@@ -20,6 +20,8 @@ type UserRepository interface {
 	RecordLoginSuccess(ctx context.Context, id int64) error
 	SetPassword(ctx context.Context, id int64, hash, actor string) error
 	ActivationTargetForUpdate(ctx context.Context, keyHash string) (model.ActivationTarget, error)
+	ResetTargetByEmail(ctx context.Context, email string) (model.ResetTarget, error)
+	SetResetKey(ctx context.Context, id int64, keyHash string, expires time.Time) error
 
 	GetByUUID(ctx context.Context, id uuid.UUID, scopeClientUUID *uuid.UUID) (model.User, error)
 	List(ctx context.Context, f model.UserFilter, p model.Paging) ([]model.User, int64, error)
@@ -87,6 +89,20 @@ func (r *userRepository) RecordLoginSuccess(ctx context.Context, id int64) error
 func (r *userRepository) SetPassword(ctx context.Context, id int64, hash, actor string) error {
 	err := r.tx.Queries(ctx).SetUserPassword(ctx, sqlc.SetUserPasswordParams{ID: id, PasswordHash: &hash, Actor: &actor})
 	return database.MapError("set password", err)
+}
+
+func (r *userRepository) ResetTargetByEmail(ctx context.Context, email string) (model.ResetTarget, error) {
+	row, err := r.tx.Queries(ctx).GetUserForPasswordReset(ctx, email)
+	if err != nil {
+		return model.ResetTarget{}, database.MapError("reset target", err)
+	}
+	return model.ResetTarget{ID: row.ID, UUID: row.Uuid, Username: deref(row.Username), Email: deref(row.Email),
+		FirstName: row.FirstName, IssuedAt: row.ActivationKeyIssuedAt}, nil
+}
+
+func (r *userRepository) SetResetKey(ctx context.Context, id int64, keyHash string, expires time.Time) error {
+	err := r.tx.Queries(ctx).SetPasswordResetKey(ctx, sqlc.SetPasswordResetKeyParams{KeyHash: &keyHash, ExpiresAt: &expires, ID: id})
+	return database.MapError("set reset key", err)
 }
 
 func (r *userRepository) ActivationTargetForUpdate(ctx context.Context, keyHash string) (model.ActivationTarget, error) {

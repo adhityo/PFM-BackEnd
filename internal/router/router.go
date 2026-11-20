@@ -25,6 +25,7 @@ import (
 	"pfm-backend/internal/platform/crud"
 	"pfm-backend/internal/platform/database"
 	"pfm-backend/internal/platform/httpx"
+	"pfm-backend/internal/platform/mail"
 	"pfm-backend/internal/platform/security"
 	"pfm-backend/internal/platform/storage"
 	"pfm-backend/internal/platform/validatorx"
@@ -158,11 +159,14 @@ func build(d Deps) (*fiber.App, *auth.Router) {
 
 	// services
 	permCache := service.NewPermissionCache(roles, actions, time.Minute)
-	authSvc := service.NewAuthService(sec, users, tokens, roles, d.Hasher, d.Signer, secRec, service.AuthConfig{
-		RefreshTTL: cfg.JWTRefreshTTL, ActivationTTL: cfg.ActivationKeyTTL,
+	// Account emails are queued in pfm_security and sent by the worker.
+	accountMail := service.NewAccountMailer(mail.NewQueue(sec), cfg.FrontendBaseURL)
+	authSvc := service.NewAuthService(sec, users, tokens, roles, d.Hasher, d.Signer, secRec, accountMail, service.AuthConfig{
+		RefreshTTL: cfg.JWTRefreshTTL, ActivationTTL: cfg.ActivationKeyTTL, PasswordResetTTL: cfg.PasswordResetTTL,
 		LoginMaxAttempts: cfg.LoginMaxAttempts, LoginLockFor: cfg.LoginLockFor,
 	})
-	userSvc := service.NewUserService(sec, users, roles, tokens, clients, secRec, cfg.ActivationKeyTTL)
+	userSvc := service.NewUserService(sec, users, roles, tokens, clients, secRec, accountMail, service.UserConfig{
+		ActivationTTL: cfg.ActivationKeyTTL, ExposeActivationKey: !cfg.IsProduction()})
 	roleSvc := service.NewRoleService(sec, roles, actions, users, permCache, secRec)
 	actionSvc := service.NewActionService(sec, actions, roles, permCache, secRec)
 	logSvc := service.NewActivityLogService(repository.NewActivityLogRepository(logs))

@@ -120,7 +120,8 @@ func setup(t *testing.T) *env {
 	docs := &fakeDocs{objs: map[string][]byte{}}
 	cfg := config.Config{AppEnv: "test", JWTAccessTTL: 15 * time.Minute, JWTRefreshTTL: time.Hour,
 		ActivationKeyTTL: time.Hour, LoginMaxAttempts: 5, LoginLockFor: 15 * time.Minute,
-		RequestTimeout: 10 * time.Second, RateLimitPerMinute: 10000, S3PresignTTL: 5 * time.Minute}
+		RequestTimeout: 10 * time.Second, RateLimitPerMinute: 10000, S3PresignTTL: 5 * time.Minute,
+		FrontendBaseURL: "https://pfm.test", PasswordResetTTL: 30 * time.Minute}
 	app := New(Deps{Cfg: cfg, Log: slog.New(slog.NewTextHandler(io.Discard, nil)), Pools: pools, Images: images, Docs: docs,
 		Signer: security.NewJWTSigner(priv, "pfm", "pfm-api", cfg.JWTAccessTTL), Hasher: hasher})
 	return &env{t: t, app: app, pool: pools.Core, secPool: pools.Security, logPool: pools.Log, docPool: pools.Document, docs: docs}

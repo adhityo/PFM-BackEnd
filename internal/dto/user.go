@@ -73,7 +73,9 @@ func UserFromModel(u model.User, now time.Time) UserResponse {
 
 // UserCredentialResponse returns a one-time activation key (create / reset).
 type UserCredentialResponse struct {
-	User                UserResponse `json:"user"`
-	ActivationKey       string       `json:"activation_key"`
-	ActivationExpiresAt time.Time    `json:"activation_expires_at"`
+	User UserResponse `json:"user"`
+	// ActivationKey is returned outside production only; the user receives
+	// the activation/reset link by email.
+	ActivationKey       string    `json:"activation_key,omitempty"`
+	ActivationExpiresAt time.Time `json:"activation_expires_at"`
 }

@@ -69,10 +69,10 @@ func (q *Queries) CountUsers(ctx context.Context, arg CountUsersParams) (int64, 
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO app_user (uuid, username, email, first_name, description, status, role_id, client_uuid,
-                      is_supervisor, activation_key_hash, activation_key_expires_at, created_by, updated_by)
+                      is_supervisor, activation_key_hash, activation_key_expires_at, activation_key_issued_at, created_by, updated_by)
 VALUES ($1, $2, $3, $4, $5,
         $6, $7, $8, $9,
-        $10, $11, $12, $12)
+        $10, $11, now(), $12, $12)
 RETURNING id, uuid, created_at, updated_at
 `
 
@@ -276,7 +276,7 @@ func (q *Queries) GetUserByActivationKeyHashForUpdate(ctx context.Context, activ
 }
 
 const getUserByUUID = `-- name: GetUserByUUID :one
-SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_uuid, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, r.uuid AS role_uuid, r.role_code
+SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_uuid, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, u.activation_key_issued_at, r.uuid AS role_uuid, r.role_code
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id
 WHERE u.uuid = $1 AND u.deleted_at IS NULL
@@ -313,6 +313,7 @@ type GetUserByUUIDRow struct {
 	UpdatedBy              *string
 	DeletedAt              *time.Time
 	DeletedBy              *string
+	ActivationKeyIssuedAt  *time.Time
 	RoleUuid               *uuid.UUID
 	RoleCode               *string
 }
@@ -345,14 +346,47 @@ func (q *Queries) GetUserByUUID(ctx context.Context, arg GetUserByUUIDParams) (G
 		&i.UpdatedBy,
 		&i.DeletedAt,
 		&i.DeletedBy,
+		&i.ActivationKeyIssuedAt,
 		&i.RoleUuid,
 		&i.RoleCode,
 	)
 	return i, err
 }
 
+const getUserForPasswordReset = `-- name: GetUserForPasswordReset :one
+SELECT id, uuid, username, email, first_name, activation_key_issued_at
+FROM app_user
+WHERE lower(email) = lower($1::text) AND deleted_at IS NULL AND status = 1
+ORDER BY id
+LIMIT 1
+`
+
+type GetUserForPasswordResetRow struct {
+	ID                    int64
+	Uuid                  uuid.UUID
+	Username              *string
+	Email                 *string
+	FirstName             *string
+	ActivationKeyIssuedAt *time.Time
+}
+
+// Self-service reset (forgot password): active, non-deleted accounts only.
+func (q *Queries) GetUserForPasswordReset(ctx context.Context, email string) (GetUserForPasswordResetRow, error) {
+	row := q.db.QueryRow(ctx, getUserForPasswordReset, email)
+	var i GetUserForPasswordResetRow
+	err := row.Scan(
+		&i.ID,
+		&i.Uuid,
+		&i.Username,
+		&i.Email,
+		&i.FirstName,
+		&i.ActivationKeyIssuedAt,
+	)
+	return i, err
+}
+
 const listUsers = `-- name: ListUsers :many
-SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_uuid, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, r.uuid AS role_uuid, r.role_code
+SELECT u.id, u.uuid, u.description, u.email, u.first_name, u.last_password_change, u.password_changed, u.status, u.username, u.role_id, u.client_uuid, u.is_supervisor, u.password_hash, u.activation_key_hash, u.activation_key_expires_at, u.failed_login_count, u.locked_until, u.last_login_at, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted_at, u.deleted_by, u.activation_key_issued_at, r.uuid AS role_uuid, r.role_code
 FROM app_user u
 LEFT JOIN role r ON r.id = u.role_id
 WHERE u.deleted_at IS NULL
@@ -407,6 +441,7 @@ type ListUsersRow struct {
 	UpdatedBy              *string
 	DeletedAt              *time.Time
 	DeletedBy              *string
+	ActivationKeyIssuedAt  *time.Time
 	RoleUuid               *uuid.UUID
 	RoleCode               *string
 }
@@ -453,6 +488,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]ListUse
 			&i.UpdatedBy,
 			&i.DeletedAt,
 			&i.DeletedBy,
+			&i.ActivationKeyIssuedAt,
 			&i.RoleUuid,
 			&i.RoleCode,
 		); err != nil {
@@ -509,7 +545,7 @@ func (q *Queries) RecordLoginSuccess(ctx context.Context, id int64) error {
 const resetUserCredential = `-- name: ResetUserCredential :one
 UPDATE app_user
 SET password_hash = NULL, activation_key_hash = $1,
-    activation_key_expires_at = $2, password_changed = FALSE,
+    activation_key_expires_at = $2, activation_key_issued_at = now(), password_changed = FALSE,
     failed_login_count = 0, locked_until = NULL, updated_by = $3
 WHERE uuid = $4 AND updated_at = $5 AND deleted_at IS NULL
 RETURNING id, updated_at
@@ -539,6 +575,25 @@ func (q *Queries) ResetUserCredential(ctx context.Context, arg ResetUserCredenti
 	var i ResetUserCredentialRow
 	err := row.Scan(&i.ID, &i.UpdatedAt)
 	return i, err
+}
+
+const setPasswordResetKey = `-- name: SetPasswordResetKey :exec
+UPDATE app_user
+SET activation_key_hash = $1, activation_key_expires_at = $2,
+    activation_key_issued_at = now()
+WHERE id = $3 AND deleted_at IS NULL
+`
+
+type SetPasswordResetKeyParams struct {
+	KeyHash   *string
+	ExpiresAt *time.Time
+	ID        int64
+}
+
+// Keeps the current password valid until the reset link is used.
+func (q *Queries) SetPasswordResetKey(ctx context.Context, arg SetPasswordResetKeyParams) error {
+	_, err := q.db.Exec(ctx, setPasswordResetKey, arg.KeyHash, arg.ExpiresAt, arg.ID)
+	return err
 }
 
 const setUserLockedUntil = `-- name: SetUserLockedUntil :one
@@ -575,6 +630,7 @@ func (q *Queries) SetUserLockedUntil(ctx context.Context, arg SetUserLockedUntil
 const setUserPassword = `-- name: SetUserPassword :exec
 UPDATE app_user
 SET password_hash = $1, activation_key_hash = NULL, activation_key_expires_at = NULL,
+    activation_key_issued_at = NULL,
     password_changed = TRUE, last_password_change = now(), failed_login_count = 0, locked_until = NULL,
     updated_by = $2
 WHERE id = $3 AND deleted_at IS NULL

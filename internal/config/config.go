@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -51,6 +52,18 @@ type Config struct {
 	RateLimitPerMinute int           `env:"RATE_LIMIT_PER_MINUTE" envDefault:"300"`
 
 	StorageImageRoot string `env:"STORAGE_IMAGE_ROOT"`
+
+	// Email: the API only queues messages (mail_outbox); the worker sends them
+	// with these SMTP settings. Links in emails point to the frontend.
+	SMTPHost         string        `env:"SMTP_HOST"`
+	SMTPPort         int           `env:"SMTP_PORT" envDefault:"587"`
+	SMTPUsername     string        `env:"SMTP_USERNAME"`
+	SMTPPassword     string        `env:"SMTP_PASSWORD"`
+	SMTPTLS          string        `env:"SMTP_TLS" envDefault:"starttls"`
+	SMTPFrom         string        `env:"SMTP_FROM" envDefault:"PFM <no-reply@pfm.local>"`
+	SMTPTimeout      time.Duration `env:"SMTP_TIMEOUT" envDefault:"15s"`
+	FrontendBaseURL  string        `env:"FRONTEND_BASE_URL" envDefault:"http://localhost:3000"`
+	PasswordResetTTL time.Duration `env:"PASSWORD_RESET_TTL" envDefault:"1h"`
 
 	S3Bucket       string        `env:"S3_BUCKET"`
 	S3Region       string        `env:"S3_REGION" envDefault:"ap-southeast-3"`
@@ -117,10 +130,36 @@ func (c Config) ValidateAPI() error {
 			}
 		}
 	}
+	if u, err := url.Parse(c.FrontendBaseURL); err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		errs = append(errs, errors.New("FRONTEND_BASE_URL harus URL http(s) lengkap, mis. https://pfm.example.com"))
+	} else if c.IsProduction() && u.Scheme != "https" {
+		errs = append(errs, errors.New("FRONTEND_BASE_URL wajib https di production"))
+	}
+	if c.PasswordResetTTL < 5*time.Minute || c.PasswordResetTTL > 24*time.Hour {
+		errs = append(errs, errors.New("PASSWORD_RESET_TTL harus antara 5m dan 24h"))
+	}
 	if c.IsProduction() && c.S3Endpoint != "" && strings.HasPrefix(c.S3Endpoint, "http://") {
 		errs = append(errs, errors.New("S3_ENDPOINT wajib https di production"))
 	}
 	return errors.Join(errs...)
+}
+
+// MailEnabled reports whether SMTP is configured (worker sends queued email).
+func (c Config) MailEnabled() bool { return c.SMTPHost != "" }
+
+// ValidateMail checks the SMTP settings of the worker. Without SMTP_HOST,
+// email stays queued; production requires an encrypted SMTP server.
+func (c Config) ValidateMail() error {
+	if !c.MailEnabled() {
+		if c.IsProduction() {
+			return errors.New("SMTP_HOST wajib diisi di production (link aktivasi/reset dikirim lewat email)")
+		}
+		return nil
+	}
+	if c.IsProduction() && c.SMTPTLS == "none" {
+		return errors.New("SMTP_TLS=none tidak diizinkan di production")
+	}
+	return nil
 }
 
 // DatabaseURLs returns the runtime DSNs by database name.

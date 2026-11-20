@@ -12,6 +12,13 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/roles.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
 
+  # Penangkap email development: SMTP di :1025, kotak masuk di http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"

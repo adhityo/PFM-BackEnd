@@ -125,6 +125,16 @@ type ActivationTarget struct {
 	ExpiresAt *time.Time
 }
 
+// ResetTarget is an active user found by email for a self-service password reset.
+type ResetTarget struct {
+	ID        int64
+	UUID      uuid.UUID
+	Username  string
+	Email     string
+	FirstName *string
+	IssuedAt  *time.Time // last activation/reset key
+}
+
 // Role is a row of `role`.
 type Role struct {
 	ID          int64

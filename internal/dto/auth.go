@@ -57,3 +57,10 @@ type MeRole struct {
 	MenuURL *string   `json:"menu_url"`
 	Active  bool      `json:"active"`
 }
+
+// ForgotPasswordRequest asks for a password reset link by email.
+type ForgotPasswordRequest struct {
+	Email string `json:"email" validate:"required,email,max=254"`
+}
+
+func (r *ForgotPasswordRequest) Normalize() { r.Email = strings.ToLower(strings.TrimSpace(r.Email)) }

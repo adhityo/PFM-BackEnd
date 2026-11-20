@@ -1,6 +1,6 @@
 // Command worker runs background jobs:
 //   - every few seconds: ship the audit outboxes (pfm_core, pfm_security,
-//     pfm_document) into pfm_log;
+//     pfm_document) into pfm_log, and send queued email (mail_outbox) over SMTP;
 //   - every 15 minutes: remove stale pending uploads (pfm_document) and expired
 //     refresh tokens (pfm_security).
 //
@@ -23,6 +23,7 @@ import (
 	"pfm-backend/internal/platform/audit"
 	"pfm-backend/internal/platform/database"
 	"pfm-backend/internal/platform/logger"
+	"pfm-backend/internal/platform/mail"
 	"pfm-backend/internal/platform/storage"
 	"pfm-backend/internal/repository"
 	"pfm-backend/internal/service"
@@ -49,6 +50,9 @@ func run() error {
 	if errs := cfg.ValidateDatabases(); len(errs) > 0 {
 		return fmt.Errorf("konfigurasi tidak valid: %v", errs)
 	}
+	if err := cfg.ValidateMail(); err != nil {
+		return err
+	}
 	log := logger.New(os.Stdout, cfg.LogLevel)
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -73,7 +77,20 @@ func run() error {
 
 	core, sec := database.NewTxManager(pools.Core), database.NewTxManager(pools.Security)
 	docTx, logTx := database.NewTxManager(pools.Document), database.NewTxManager(pools.Log)
-	shipper := audit.NewShipper(logTx, map[string]*database.TxManager{db.Core: core, db.Security: sec, db.Document: docTx})
+	sources := map[string]*database.TxManager{db.Core: core, db.Security: sec, db.Document: docTx}
+	shipper := audit.NewShipper(logTx, sources)
+	var mailer *mail.Deliverer
+	if cfg.MailEnabled() {
+		sender, err := mail.NewSMTPSender(mail.SMTPConfig{Host: cfg.SMTPHost, Port: cfg.SMTPPort, Username: cfg.SMTPUsername,
+			Password: cfg.SMTPPassword, TLS: cfg.SMTPTLS, From: cfg.SMTPFrom, Timeout: cfg.SMTPTimeout})
+		if err != nil {
+			return err
+		}
+		mailer = mail.NewDeliverer(sources, sender, log)
+		log.Info("pengiriman email aktif", "smtp", cfg.SMTPHost, "port", cfg.SMTPPort, "tls", cfg.SMTPTLS)
+	} else {
+		log.Warn("SMTP_HOST kosong: email tetap di antrean mail_outbox sampai SMTP dikonfigurasi")
+	}
 	files := service.NewFileService(docTx, repository.NewFileObjectRepository(docTx), images, docs,
 		audit.NewRecorder(docTx, db.Document), log, cfg.S3PresignTTL)
 
@@ -87,6 +104,13 @@ func run() error {
 			log.Error("ship audit outbox", "err", err)
 		} else if n > 0 {
 			log.Debug("ship audit outbox", "events", n)
+		}
+		if mailer != nil {
+			if n, err := mailer.DeliverDue(ctx); err != nil {
+				log.Error("kirim email", "err", err)
+			} else if n > 0 {
+				log.Info("email terkirim", "jumlah", n)
+			}
 		}
 		select {
 		case <-ctx.Done():

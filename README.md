@@ -15,7 +15,7 @@ Status: **M0–M5 selesai** (fondasi, master data, instrumen & portofolio, tradi
 ```bash
 cp .env.example .env          # isi ADMIN_PASSWORD (min 12 karakter)
 make keys                     # kunci JWT Ed25519 -> secrets/jwt_ed25519.pem
-make dev-up                   # PostgreSQL 17 (4 database + role, deploy/postgres/roles.sql) + MinIO
+make dev-up                   # PostgreSQL 17 (4 database + role, deploy/postgres/roles.sql) + MinIO + Mailpit
 make migrate-up               # migrasi ke pfm_core, pfm_security, pfm_log, pfm_document (pfm_migrator)
 make db-grants                # hak akses minimum per database
 make seed                     # katalog permission & 7 role (security) + konfigurasi (core)
@@ -39,7 +39,7 @@ curl -s localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
 | `make lint` / `make vuln` | golangci-lint (+gosec) / govulncheck |
 | `make sqlc` | Generate ulang `internal/db/sqlc` setelah mengubah `internal/db/queries/<database>/*.sql` |
 | `make migration db=core name=alter_x` | Migrasi baru di folder database-nya; nomor global berurutan (jangan edit migrasi yang sudah ter-apply) |
-| `make worker` | Kirim audit outbox ke `pfm_log` (±5 detik), bersihkan upload pending > 24 jam dan refresh token kedaluwarsa |
+| `make worker` | Kirim audit outbox ke `pfm_log` dan email antrean lewat SMTP (±5 detik), bersihkan upload pending > 24 jam dan refresh token kedaluwarsa |
 | `make schema-db` | Siapkan database gabungan (`migrate -db all`) untuk generator |
 | `make bruno` | Generate koleksi Bruno (dokumentasi + contoh request semua endpoint) ke `../bruno-pfm` |
 | `make scaffold module=<nama>` | Generate query sqlc + adapter CRUD dari spec di `cmd/scaffold/specs_*.go` |
@@ -180,6 +180,21 @@ Data dipisah agar kebocoran satu kredensial, dump, atau celah SQL injection tida
   `/member-portfolio-transactions` (draft BUY = subscribe berdasarkan nilai, SELL = redeem berdasarkan unit, pada NAV
   efektif), lalu `/settle` (saldo unit, biaya perolehan rata-rata, riwayat `/member-portfolio-histories`; urut tanggal)
   dan `/cancel`.
+
+## Email akun (aktivasi & reset password)
+
+| Kejadian | Email ke user | Tautan frontend |
+|---|---|---|
+| Admin membuat user (`POST /users`) | Aktivasi akun | `<FRONTEND_BASE_URL>/activate?key=…` (berlaku `ACTIVATION_KEY_TTL`) |
+| Admin mereset (`POST /users/{uuid}/reset-password`) | Password direset; password lama dihapus dan sesi diakhiri | `<FRONTEND_BASE_URL>/reset-password?key=…` |
+| User lupa password (`POST /auth/forgot-password` `{email}`) | Atur ulang password; password lama tetap berlaku sampai tautan dipakai | `<FRONTEND_BASE_URL>/reset-password?key=…` (berlaku `PASSWORD_RESET_TTL`) |
+
+- Kedua halaman frontend mengirim `key` dari URL ke `POST /api/v1/auth/activate` `{activation_key, new_password}`. Tautan sekali pakai, dan semua sesi lama dicabut.
+- `forgot-password` selalu menjawab 204, sehingga email terdaftar tidak bisa ditebak. Maksimal 1 email per menit per akun selama tautan belum dipakai.
+- `activation_key` **tidak** dikembalikan API di production; di development tetap ada di respons untuk mempermudah uji.
+- API hanya mengantrekan email ke `mail_outbox` dalam transaksi yang sama. **Worker** yang mengirim lewat SMTP, dengan percobaan ulang bertahap hingga 8 kali; setelah gagal terakhir, isi email (berisi tautan rahasia) dihapus. Kredensial SMTP hanya dibutuhkan worker.
+- **Mailtrap:** isi `SMTP_HOST=sandbox.smtp.mailtrap.io`, `SMTP_PORT=2525`, `SMTP_TLS=starttls`, serta username dan password dari *Email Testing → Inbox → SMTP Settings*, lalu jalankan `make worker`.
+- **Mailpit (lokal):** `make dev-up`, lalu `SMTP_HOST=localhost`, `SMTP_PORT=1025`, `SMTP_TLS=none`. Kotak masuk ada di http://localhost:8025.
 
 ## Otorisasi (RBAC) untuk frontend
 

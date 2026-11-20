@@ -26,6 +26,7 @@ func (h *AuthHandler) Register(r *auth.Router, limiter fiber.Handler) {
 	a.Public(fiber.MethodPost, "/refresh", limiter, h.Refresh)
 	a.Public(fiber.MethodPost, "/logout", limiter, h.Logout)
 	a.Public(fiber.MethodPost, "/activate", limiter, h.Activate)
+	a.Public(fiber.MethodPost, "/forgot-password", limiter, h.ForgotPassword)
 	a.Authenticated(fiber.MethodPost, "/logout-all", h.LogoutAll)
 	a.Authenticated(fiber.MethodPost, "/change-password", h.ChangePassword)
 	r.Authenticated(fiber.MethodGet, "/me", h.Me)
@@ -68,6 +69,18 @@ func (h *AuthHandler) Logout(c fiber.Ctx) error {
 
 func (h *AuthHandler) LogoutAll(c fiber.Ctx) error {
 	if err := h.svc.LogoutAll(c.Context()); err != nil {
+		return err
+	}
+	return httpx.NoContent(c)
+}
+
+// ForgotPassword always answers 204, whether the email is registered or not.
+func (h *AuthHandler) ForgotPassword(c fiber.Ctx) error {
+	var req dto.ForgotPasswordRequest
+	if err := httpx.BindJSON(c, h.v, &req); err != nil {
+		return err
+	}
+	if err := h.svc.ForgotPassword(c.Context(), req, clientInfo(c)); err != nil {
 		return err
 	}
 	return httpx.NoContent(c)

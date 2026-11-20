@@ -27,11 +27,11 @@ func countTables(t *testing.T, pool *pgxpool.Pool) int {
 // to a table of another database.
 func TestMigrationsRoundTrip(t *testing.T) {
 	want := map[string]struct{ migrations, tables int }{
-		db.Core:     {117, 113},
-		db.Security: {8, 6},
+		db.Core:     {118, 114},
+		db.Security: {10, 7},
 		db.Log:      {3, 1},
-		db.Document: {7, 6},
-		db.All:      {130, 124},
+		db.Document: {8, 7},
+		db.All:      {132, 125},
 	}
 	for _, name := range append(append([]string{}, db.Databases...), db.All) {
 		t.Run(name, func(t *testing.T) {

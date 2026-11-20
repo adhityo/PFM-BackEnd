@@ -1106,6 +1106,14 @@ Setiap mutasi dan aksi sensitif (login, akses PII, download dokumen) ditulis ke 
 
 Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 
+### 12.6a Email Akun
+
+- **Aktivasi user baru** (dibuat admin), **reset oleh admin**, dan **lupa password** (`POST /auth/forgot-password`, publik, rate limit auth) mengirim tautan ke email user: `<FRONTEND_BASE_URL>/activate?key=…` atau `/reset-password?key=…`. Halaman frontend menukar `key` lewat `POST /auth/activate`.
+- **Kunci tautan.** Kuncinya acak 256-bit dan hanya hash-nya yang disimpan. Kunci sekali pakai, kedaluwarsa (aktivasi `ACTIVATION_KEY_TTL`, lupa password `PASSWORD_RESET_TTL`), dan semua sesi dicabut saat password diatur.
+- **Lupa password.** Respons selalu sama (anti-enumerasi), password lama tetap berlaku sampai tautan dipakai, dan maksimal 1 email per menit per akun selama tautan belum dipakai.
+- **`activation_key` hanya di luar production.** Kunci tidak dikembalikan API di production, sehingga admin tidak memegang kunci aktivasi milik user.
+- **Pengiriman.** Email ditulis ke `mail_outbox` (migrasi 00131; ada di core, security, document) dalam transaksi bisnis yang sama. Worker mengirimnya lewat SMTP di luar transaksi (STARTTLS/TLS; `none` dilarang di production), dengan percobaan ulang bertahap maksimal 8 kali. Baris dihapus setelah terkirim; setelah gagal terakhir, isi email dikosongkan. Role aplikasi hanya boleh INSERT `mail_outbox`.
+
 ### 12.7 Supply Chain & Operasional
 
 - CI menjalankan `golangci-lint` (termasuk `gosec`), `govulncheck`, `go test -race`, dan scan image container.
@@ -1148,6 +1156,9 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | `REDIS_URL` | `redis://…` | |
 | `STORAGE_IMAGE_ROOT` | `/var/lib/pfm/images` | |
 | `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`, `S3_USE_PATH_STYLE`, `S3_KMS_KEY_ID` | | `S3_ENDPOINT` hanya untuk MinIO/dev |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `SMTP_TIMEOUT` | `sandbox.smtp.mailtrap.io`, `2525`, `starttls` | Hanya worker; wajib di production |
+| `FRONTEND_BASE_URL` | `https://pfm.example.com` | Basis tautan email; https di production |
+| `PASSWORD_RESET_TTL` | `1h` | Masa berlaku tautan lupa password (5m–24h) |
 | `S3_PRESIGN_TTL` | `5m` | |
 | `PROXY_API_URL`, `PROXY_API_USERNAME`, `PROXY_API_PASSWORD` | | Pindahan dari tabel `configuration` |
 | `LOG_LEVEL` | `info` | |
@@ -1250,12 +1261,13 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 41 | Topologi production | 4 database boleh satu cluster di dev; production disarankan `pfm_log` dan `pfm_security` di instance terpisah | Topologi final? |
 | 42 | Peta UI ↔ permission | Halaman memakai `<resource>:read`, tombol memakai kode aksinya; peta rute frontend → permission didefinisikan di frontend (`dashboard-nav`) | Perlu menu dinamis dari backend (`role.menu_url`)? |
 | 43 | Anti-eskalasi | Non-ADMIN tidak dapat mengelola role/user yang permission-nya melebihi dirinya, termasuk mencabut permission yang tidak ia miliki | Setuju, atau perlu peran "security officer" khusus? |
+| 44 | Email akun | Aktivasi, reset admin dan lupa password lewat email; tidak ada pendaftaran mandiri (user dibuat admin). Notifikasi "password diubah" belum dikirim | Perlu pendaftaran mandiri atau notifikasi perubahan password? |
 
 ---
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-130 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (1), `core/` (115), `security/` (6), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), kolom `source` log (00129), dan metadata katalog permission (00130). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
+132 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (2), `core/` (115), `security/` (7), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), kolom `source` log (00129), metadata katalog permission (00130), antrean email (00131) dan waktu terbit kunci aktivasi (00132). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1389,6 +1401,8 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00128 | `outbox/00128_create_audit_outbox.sql` | `audit_outbox` | audit | — |
 | 00129 | `log/00129_activity_log_source.sql` | kolom `activity_log.source` + index | audit | activity_log |
 | 00130 | `security/00130_action_catalog_metadata.sql` | kolom `action.module`, `resource_label`, `is_system` | iam | action |
+| 00131 | `outbox/00131_create_mail_outbox.sql` | `mail_outbox` | mail | — |
+| 00132 | `security/00132_app_user_activation_issued_at.sql` | kolom `app_user.activation_key_issued_at` | iam | app_user |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap

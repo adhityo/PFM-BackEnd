@@ -74,6 +74,7 @@ var SoftDelete = map[string]bool{
 	"investor_coupon_schedule":              true,
 	"investor_data_history":                 true,
 	"invoice":                               true,
+	"mail_outbox":                           false,
 	"marketing_agent":                       true,
 	"marketing_agent_data_history":          true,
 	"member":                                true,

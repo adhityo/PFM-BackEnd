@@ -2,8 +2,11 @@ package service
 
 import (
 	"testing"
+	"time"
 
 	"github.com/shopspring/decimal"
+
+	"pfm-backend/internal/model"
 )
 
 func TestTerbilang(t *testing.T) {
@@ -32,5 +35,17 @@ func TestTerbilang(t *testing.T) {
 		if got := Terbilang(decimal.RequireFromString(in)); got != want {
 			t.Errorf("Terbilang(%s) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// Outside development the activation key is never part of an API response.
+func TestActivationKeyNotExposedInProduction(t *testing.T) {
+	s := &UserService{exposeKey: false, now: time.Now}
+	if out := s.credential(model.User{}, "rahasia", time.Now()); out.ActivationKey != "" {
+		t.Fatal("activation_key tidak boleh dikembalikan di production")
+	}
+	s.exposeKey = true
+	if out := s.credential(model.User{}, "rahasia", time.Now()); out.ActivationKey != "rahasia" {
+		t.Fatal("activation_key dikembalikan di development")
 	}
 }

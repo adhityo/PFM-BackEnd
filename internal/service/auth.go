@@ -23,6 +23,7 @@ import (
 type AuthConfig struct {
 	RefreshTTL       time.Duration
 	ActivationTTL    time.Duration
+	PasswordResetTTL time.Duration // validity of a forgot-password link
 	LoginMaxAttempts int
 	LoginLockFor     time.Duration
 }
@@ -43,14 +44,15 @@ type AuthService struct {
 	hasher *security.PasswordHasher
 	signer *security.JWTSigner
 	audit  *audit.Recorder
+	mailer *AccountMailer
 	cfg    AuthConfig
 	now    func() time.Time
 }
 
 func NewAuthService(tx *database.TxManager, users repository.UserRepository, tokens repository.RefreshTokenRepository, roles repository.RoleRepository,
-	hasher *security.PasswordHasher, signer *security.JWTSigner, rec *audit.Recorder, cfg AuthConfig) *AuthService {
+	hasher *security.PasswordHasher, signer *security.JWTSigner, rec *audit.Recorder, mailer *AccountMailer, cfg AuthConfig) *AuthService {
 	return &AuthService{tx: tx, users: users, tokens: tokens, roles: roles, hasher: hasher, signer: signer,
-		audit: rec, cfg: cfg, now: time.Now}
+		audit: rec, mailer: mailer, cfg: cfg, now: time.Now}
 }
 
 var errInvalidCredentials = apperr.Unauthenticated("username atau password salah")
@@ -294,6 +296,41 @@ func (s *AuthService) ChangePassword(ctx context.Context, in dto.ChangePasswordR
 		}
 		return s.audit.Record(ctx, audit.Entry{Action: "auth.change_password", Entity: "app_user", EntityUUID: cred.UUID,
 			Route: "POST /auth/change-password"})
+	})
+}
+
+// resetThrottle is the minimum time between two reset emails while a link is
+// still unused (setting a password clears the issue time).
+const resetThrottle = time.Minute
+
+// ForgotPassword emails a reset link to an active account. The caller always
+// gets the same answer, whether the email exists or not (no enumeration); the
+// current password stays valid until the link is used (POST /auth/activate).
+func (s *AuthService) ForgotPassword(ctx context.Context, in dto.ForgotPasswordRequest, ci ClientInfo) error {
+	return s.tx.WithinTx(ctx, func(ctx context.Context) error {
+		u, err := s.users.ResetTargetByEmail(ctx, in.Email)
+		if errors.Is(err, apperr.ErrNotFound) {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		if u.IssuedAt != nil && s.now().Sub(*u.IssuedAt) < resetThrottle {
+			return nil
+		}
+		raw, hash, err := security.NewOpaqueToken()
+		if err != nil {
+			return err
+		}
+		if err := s.users.SetResetKey(ctx, u.ID, hash, s.now().Add(s.cfg.PasswordResetTTL)); err != nil {
+			return err
+		}
+		if err := s.mailer.ForgotPassword(ctx, u.Email, deref2(u.FirstName), u.Username, raw, s.cfg.PasswordResetTTL); err != nil {
+			return err
+		}
+		a := s.clientActor(ci, &model.Credential{ID: u.ID, UUID: u.UUID, Username: u.Username})
+		return s.audit.RecordAs(ctx, a, audit.Entry{Action: "auth.forgot_password", Entity: "app_user", EntityUUID: u.UUID,
+			Route: "POST /auth/forgot-password"})
 	})
 }
 

@@ -71,10 +71,10 @@ WHERE u.deleted_at IS NULL
 
 -- name: CreateUser :one
 INSERT INTO app_user (uuid, username, email, first_name, description, status, role_id, client_uuid,
-                      is_supervisor, activation_key_hash, activation_key_expires_at, created_by, updated_by)
+                      is_supervisor, activation_key_hash, activation_key_expires_at, activation_key_issued_at, created_by, updated_by)
 VALUES (sqlc.arg('uuid'), sqlc.arg('username'), sqlc.arg('email'), sqlc.narg('first_name'), sqlc.narg('description'),
         sqlc.arg('status'), sqlc.arg('role_id'), sqlc.narg('client_uuid'), sqlc.arg('is_supervisor'),
-        sqlc.arg('activation_key_hash'), sqlc.arg('activation_key_expires_at'), sqlc.arg('actor'), sqlc.arg('actor'))
+        sqlc.arg('activation_key_hash'), sqlc.arg('activation_key_expires_at'), now(), sqlc.arg('actor'), sqlc.arg('actor'))
 RETURNING id, uuid, created_at, updated_at;
 
 -- name: UpdateUser :one
@@ -94,7 +94,7 @@ RETURNING id;
 -- name: ResetUserCredential :one
 UPDATE app_user
 SET password_hash = NULL, activation_key_hash = sqlc.arg('activation_key_hash'),
-    activation_key_expires_at = sqlc.arg('activation_key_expires_at'), password_changed = FALSE,
+    activation_key_expires_at = sqlc.arg('activation_key_expires_at'), activation_key_issued_at = now(), password_changed = FALSE,
     failed_login_count = 0, locked_until = NULL, updated_by = sqlc.arg('actor')
 WHERE uuid = sqlc.arg('uuid') AND updated_at = sqlc.arg('expected_updated_at') AND deleted_at IS NULL
 RETURNING id, updated_at;
@@ -114,6 +114,7 @@ FOR UPDATE;
 -- name: SetUserPassword :exec
 UPDATE app_user
 SET password_hash = sqlc.arg('password_hash'), activation_key_hash = NULL, activation_key_expires_at = NULL,
+    activation_key_issued_at = NULL,
     password_changed = TRUE, last_password_change = now(), failed_login_count = 0, locked_until = NULL,
     updated_by = sqlc.arg('actor')
 WHERE id = sqlc.arg('id') AND deleted_at IS NULL;
@@ -131,3 +132,18 @@ WHERE u.uuid = $1 AND u.deleted_at IS NULL;
 -- name: CountActiveUsersByClient :one
 -- Cross-database guard: a client (pfm_core) may not be deleted while users reference it.
 SELECT count(*) FROM app_user WHERE client_uuid = $1 AND deleted_at IS NULL;
+
+-- name: GetUserForPasswordReset :one
+-- Self-service reset (forgot password): active, non-deleted accounts only.
+SELECT id, uuid, username, email, first_name, activation_key_issued_at
+FROM app_user
+WHERE lower(email) = lower(sqlc.arg('email')::text) AND deleted_at IS NULL AND status = 1
+ORDER BY id
+LIMIT 1;
+
+-- name: SetPasswordResetKey :exec
+-- Keeps the current password valid until the reset link is used.
+UPDATE app_user
+SET activation_key_hash = sqlc.arg('key_hash'), activation_key_expires_at = sqlc.arg('expires_at'),
+    activation_key_issued_at = now()
+WHERE id = sqlc.arg('id') AND deleted_at IS NULL;
