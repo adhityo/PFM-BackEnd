@@ -41,6 +41,7 @@ curl -s localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
 | `make migration db=core name=alter_x` | Migrasi baru di folder database-nya; nomor global berurutan (jangan edit migrasi yang sudah ter-apply) |
 | `make worker` | Kirim audit outbox ke `pfm_log` (±5 detik), bersihkan upload pending > 24 jam dan refresh token kedaluwarsa |
 | `make schema-db` | Siapkan database gabungan (`migrate -db all`) untuk generator |
+| `make bruno` | Generate koleksi Bruno (dokumentasi + contoh request semua endpoint) ke `../bruno-pfm` |
 | `make scaffold module=<nama>` | Generate query sqlc + adapter CRUD dari spec di `cmd/scaffold/specs_*.go` |
 
 ## Struktur
@@ -48,7 +49,7 @@ curl -s localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
 Layer datar: satu package per layer, satu file per entitas.
 
 ```
-cmd/api | cmd/migrate | cmd/worker | cmd/scaffold (generator, dev)
+cmd/api | cmd/migrate | cmd/worker | cmd/scaffold & cmd/apidoc (generator, dev)
 internal/
   model/        struct domain (User, Role, Credential, …)
   dto/          request/response + mapper           (<tabel>_gen.go = hasil generator)

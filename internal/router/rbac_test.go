@@ -210,3 +210,41 @@ func TestNoPrivilegeEscalationThroughRolesAndUsers(t *testing.T) {
 	uPath := "/users/" + strong
 	e.expect(e.do("POST", "/api/v1"+uPath+"/reset-password", mgr, nil, "If-Match", e.etag(mgr, uPath)), 403, "reset stronger user")
 }
+
+// GET /users: the route permission decides whether the list is reachable at
+// all, the tenant scope decides which rows a non-ADMIN sees.
+func TestUserListVisibility(t *testing.T) {
+	e := setup(t)
+	admin, _ := e.login("admin", adminPassword)
+	ca := e.create(admin, "/clients", map[string]any{"client_name": "Client A", "client_code": "CA"})["uuid"].(string)
+	cb := e.create(admin, "/clients", map[string]any{"client_name": "Client B", "client_code": "CB"})["uuid"].(string)
+
+	plain := e.userWith(admin, "PLAIN", "staf.biasa", "Biasa-Saja-Pass-9", "", "bond:read")
+	viewerA := e.userWith(admin, "USER-VIEWER-A", "viewer.a", "Lihat-Klien-Pass-9", ca, "app_user:read")
+	e.userWith(admin, "USER-VIEWER-B", "viewer.b", "Lihat-Klien-Pass-9", cb, "app_user:read")
+	var userB string
+	_ = e.secPool.QueryRow(context.Background(), "SELECT uuid::text FROM app_user WHERE username = 'viewer.b'").Scan(&userB)
+
+	usernames := func(token string) []string {
+		var out []string
+		for _, u := range items(e.expect(e.do("GET", "/api/v1/users?per_page=100", token, nil), 200, "list users")) {
+			out = append(out, u["username"].(string))
+		}
+		slices.Sort(out)
+		return out
+	}
+
+	// 1. Without app_user:read the route itself is closed.
+	if r := e.expect(e.do("GET", "/api/v1/users", plain, nil), 403, "list without permission"); deniedPermission(r) != "app_user:read" {
+		t.Fatalf("403 must name app_user:read: %s", r.raw)
+	}
+	// 2. With app_user:read, a client user sees only users of its own client.
+	if got := usernames(viewerA); !slices.Equal(got, []string{"viewer.a"}) {
+		t.Fatalf("client A sees %v", got)
+	}
+	e.expect(e.do("GET", "/api/v1/users/"+userB, viewerA, nil), 404, "user of another client")
+	// 3. ADMIN holds every permission and has no tenant filter.
+	if got := usernames(admin); !slices.Equal(got, []string{"admin", "staf.biasa", "viewer.a", "viewer.b"}) {
+		t.Fatalf("admin sees %v", got)
+	}
+}

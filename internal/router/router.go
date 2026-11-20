@@ -68,6 +68,23 @@ type Deps struct {
 
 // New builds the Fiber application.
 func New(d Deps) *fiber.App {
+	app, _ := build(d)
+	return app
+}
+
+// Describe lists every API route (paths relative to /api/v1) with its access
+// rule, plus the CRUD resource descriptions, for API documentation
+// (cmd/apidoc). No connection is opened: dependencies are only wired.
+func Describe() ([]auth.RouteInfo, []crud.ResourceDoc) {
+	_, api := build(Deps{Log: slog.New(slog.DiscardHandler)})
+	var docs []crud.ResourceDoc
+	for _, r := range crudResources(service.Deps{}) {
+		docs = append(docs, r.Doc())
+	}
+	return api.Routes(), docs
+}
+
+func build(d Deps) (*fiber.App, *auth.Router) {
 	cfg := d.Cfg
 	app := fiber.New(fiber.Config{
 		AppName:      "pfm-backend",
@@ -181,7 +198,7 @@ func New(d Deps) *fiber.App {
 	handler.RegisterCRUD(crud.Env{Router: api, Validator: v, TX: tx, Audit: rec, Files: fileSvc}, crudResources(deps))
 
 	app.Use(func(fiber.Ctx) error { return apperr.NotFound("endpoint tidak ditemukan") })
-	return app
+	return app, api
 }
 
 func proxyHeader(cfg config.Config) string {

@@ -32,10 +32,25 @@ func (p Permission) Verb() string {
 
 // Router registers routes fail-closed: every protected route must declare a
 // permission, and every declared permission must exist in the catalog.
+// It also records each route with its access rule (API documentation).
 type Router struct {
 	r       fiber.Router
 	authn   fiber.Handler
 	catalog map[string]Permission
+	prefix  string
+	routes  *[]RouteInfo
+}
+
+// Access rules of a route.
+const (
+	AccessPublic        = "public"        // no token (login, refresh, ...)
+	AccessAuthenticated = "authenticated" // any valid session (/me, ...)
+	AccessPermission    = "permission"    // session + Permission
+)
+
+// RouteInfo describes a registered route; Path is relative to the API root.
+type RouteInfo struct {
+	Method, Path, Access, Permission string
 }
 
 // NewRouter wraps r. catalog is the union of all module permission lists.
@@ -44,12 +59,21 @@ func NewRouter(r fiber.Router, authn fiber.Handler, catalog []Permission) *Route
 	for _, p := range catalog {
 		m[p.Code] = p
 	}
-	return &Router{r: r, authn: authn, catalog: m}
+	return &Router{r: r, authn: authn, catalog: m, routes: &[]RouteInfo{}}
 }
 
 // Group returns a router for a path prefix.
 func (rt *Router) Group(prefix string) *Router {
-	return &Router{r: rt.r.Group(prefix), authn: rt.authn, catalog: rt.catalog}
+	return &Router{r: rt.r.Group(prefix), authn: rt.authn, catalog: rt.catalog, prefix: rt.prefix + prefix, routes: rt.routes}
+}
+
+// Routes returns every route registered through this router tree, in order.
+func (rt *Router) Routes() []RouteInfo {
+	return append([]RouteInfo(nil), *rt.routes...)
+}
+
+func (rt *Router) record(method, path, access, perm string) {
+	*rt.routes = append(*rt.routes, RouteInfo{Method: method, Path: rt.prefix + path, Access: access, Permission: perm})
 }
 
 // Handle registers an authenticated route guarded by perm.
@@ -57,6 +81,7 @@ func (rt *Router) Handle(method, path, perm string, h fiber.Handler) {
 	if _, ok := rt.catalog[perm]; !ok {
 		panic(fmt.Sprintf("route %s %s: permission %q tidak terdaftar di katalog", method, path, perm))
 	}
+	rt.record(method, path, AccessPermission, perm)
 	rt.r.Add([]string{method}, path, rt.authn, RequirePermission(perm), h)
 }
 
@@ -71,6 +96,7 @@ func (rt *Router) Delete(path, perm string, h fiber.Handler) {
 
 // Authenticated registers a route that only needs a valid session (e.g. /me).
 func (rt *Router) Authenticated(method, path string, h fiber.Handler) {
+	rt.record(method, path, AccessAuthenticated, "")
 	rt.r.Add([]string{method}, path, rt.authn, h)
 }
 
@@ -79,6 +105,7 @@ func (rt *Router) Public(method, path string, handlers ...fiber.Handler) {
 	if len(handlers) == 0 {
 		panic("public route tanpa handler")
 	}
+	rt.record(method, path, AccessPublic, "")
 	rest := make([]any, 0, len(handlers)-1)
 	for _, h := range handlers[1:] {
 		rest = append(rest, h)

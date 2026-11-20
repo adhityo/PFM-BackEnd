@@ -118,6 +118,7 @@ type Env struct {
 type Registrar interface {
 	Permissions() []auth.Permission
 	Register(env Env)
+	Doc() ResourceDoc
 }
 
 // CanReadPII reports whether the actor in ctx may see unmasked PII.

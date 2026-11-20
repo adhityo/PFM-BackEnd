@@ -71,6 +71,12 @@ db-grants: ## Terapkan hak akses minimum ke 4 database setelah migrasi (PRD §7.
 	psql "$(MIGRATION_DATABASE_URL_LOG)"      -v ON_ERROR_STOP=1 -f deploy/postgres/grants-log.sql
 	psql "$(MIGRATION_DATABASE_URL_DOCUMENT)" -v ON_ERROR_STOP=1 -f deploy/postgres/grants-document.sql
 
+BRUNO_DIR ?= ../bruno-pfm
+
+.PHONY: bruno
+bruno: ## Generate koleksi Bruno (dokumentasi API) dari router ke BRUNO_DIR
+	$(GO) run ./cmd/apidoc bruno $(BRUNO_DIR)
+
 .PHONY: migration
 migration: ## Buat migrasi baru: make migration db=core name=alter_bond_add_isin (nomor global berurutan)
 	@test -n "$(name)" -a -n "$(db)" || (echo "pakai: make migration db=<core|security|log|document> name=<nama>" && exit 1)
