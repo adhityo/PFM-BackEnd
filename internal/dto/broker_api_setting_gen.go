@@ -38,6 +38,7 @@ type BrokerAPISettingResponse struct {
 	UUID                 uuid.UUID      `json:"uuid"`
 	BrokerName           *string        `json:"broker_name"`
 	BrokerUUID           *uuid.UUID     `json:"broker_uuid"`
+	BrokerCode           *string        `json:"broker_code"`
 	BrokerAPISettingName *string        `json:"broker_api_setting_name"`
 	Description          *string        `json:"description"`
 	Status               *string        `json:"status"`
@@ -54,6 +55,7 @@ func BrokerAPISettingFromRow(r sqlc.GetBrokerApiSettingByUUIDRow) BrokerAPISetti
 		UUID:                 r.Uuid,
 		BrokerName:           r.BrokerName,
 		BrokerUUID:           r.BrokerUuid,
+		BrokerCode:           r.BrokerCode,
 		BrokerAPISettingName: r.BrokerApiSettingName,
 		Description:          r.Description,
 		Status:               r.Status,

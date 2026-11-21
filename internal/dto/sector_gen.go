@@ -42,6 +42,8 @@ type SectorResponse struct {
 	LatestSectorDate          *httpx.Date      `json:"latest_sector_date"`
 	TotalCorporate            *int32           `json:"total_corporate"`
 	ParentSectorUUID          *uuid.UUID       `json:"parent_sector_uuid"`
+	ParentSectorName          *string          `json:"parent_sector_name"`
+	ParentSectorCode          *string          `json:"parent_sector_code"`
 	CreatedAt                 time.Time        `json:"created_at"`
 	UpdatedAt                 time.Time        `json:"updated_at"`
 }
@@ -59,6 +61,8 @@ func SectorFromRow(r sqlc.GetSectorByUUIDRow) SectorResponse {
 		LatestSectorDate:          httpx.DateOf(r.LatestSectorDate),
 		TotalCorporate:            r.TotalCorporate,
 		ParentSectorUUID:          r.ParentSectorUuid,
+		ParentSectorName:          r.ParentSectorName,
+		ParentSectorCode:          r.ParentSectorCode,
 		CreatedAt:                 r.CreatedAt,
 		UpdatedAt:                 r.UpdatedAt,
 	}

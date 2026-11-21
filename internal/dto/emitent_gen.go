@@ -52,7 +52,9 @@ type EmitentResponse struct {
 	SubSectorName *string    `json:"sub_sector_name"`
 	Telephone     *string    `json:"telephone"`
 	SectorUUID    *uuid.UUID `json:"sector_uuid"`
+	SectorCode    *string    `json:"sector_code"`
 	SubSectorUUID *uuid.UUID `json:"sub_sector_uuid"`
+	SubSectorCode *string    `json:"sub_sector_code"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
@@ -72,7 +74,9 @@ func EmitentFromRow(r sqlc.GetEmitentByUUIDRow) EmitentResponse {
 		SubSectorName: r.SubSectorName,
 		Telephone:     r.Telephone,
 		SectorUUID:    r.SectorUuid,
+		SectorCode:    r.SectorCode,
 		SubSectorUUID: r.SubSectorUuid,
+		SubSectorCode: r.SubSectorCode,
 		CreatedAt:     r.CreatedAt,
 		UpdatedAt:     r.UpdatedAt,
 	}

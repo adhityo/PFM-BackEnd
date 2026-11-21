@@ -61,11 +61,18 @@ type StockTradeResponse struct {
 	TransactionFeeAmount     *decimal.Decimal `json:"transaction_fee_amount"`
 	TradeValue               *decimal.Decimal `json:"trade_value"`
 	BrokerUUID               *uuid.UUID       `json:"broker_uuid"`
+	BrokerCode               *string          `json:"broker_code"`
 	InvestmentManagerUUID    *uuid.UUID       `json:"investment_manager_uuid"`
+	InvestmentManagerName    *string          `json:"investment_manager_name"`
+	InvestmentManagerCode    *string          `json:"investment_manager_code"`
 	SettlementDate           *httpx.Date      `json:"settlement_date"`
 	PortfolioUUID            *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName            *string          `json:"portfolio_name"`
+	PortfolioCode            *string          `json:"portfolio_code"`
 	StockTradeStatus         *string          `json:"stock_trade_status"`
 	TradeTypeUUID            *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeName            *string          `json:"trade_type_name"`
+	TradeTypeCode            *string          `json:"trade_type_code"`
 	StockName                *string          `json:"stock_name"`
 	BrokerName               *string          `json:"broker_name"`
 	CreatedAt                time.Time        `json:"created_at"`
@@ -88,11 +95,18 @@ func StockTradeFromRow(r sqlc.GetStockTradeByUUIDRow) StockTradeResponse {
 		TransactionFeeAmount:     r.TransactionFeeAmount,
 		TradeValue:               r.TradeValue,
 		BrokerUUID:               r.BrokerUuid,
+		BrokerCode:               r.BrokerCode,
 		InvestmentManagerUUID:    r.InvestmentManagerUuid,
+		InvestmentManagerName:    r.InvestmentManagerName,
+		InvestmentManagerCode:    r.InvestmentManagerCode,
 		SettlementDate:           httpx.DateOf(r.SettlementDate),
 		PortfolioUUID:            r.PortfolioUuid,
+		PortfolioName:            r.PortfolioName,
+		PortfolioCode:            r.PortfolioCode,
 		StockTradeStatus:         crud.EnumName(r.StockTradeStatus, []string{"draft", "settled", "cancelled", "reversed"}),
 		TradeTypeUUID:            r.TradeTypeUuid,
+		TradeTypeName:            r.TradeTypeName,
+		TradeTypeCode:            r.TradeTypeCode,
 		StockName:                r.StockName,
 		BrokerName:               r.BrokerName,
 		CreatedAt:                r.CreatedAt,

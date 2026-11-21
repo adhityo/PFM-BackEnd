@@ -38,34 +38,46 @@ func (r *CashSettlementCategoryRequest) Normalize() {
 
 // CashSettlementCategoryResponse is the public representation of cash_settlement_category.
 type CashSettlementCategoryResponse struct {
-	UUID                             uuid.UUID        `json:"uuid"`
-	CashSettlementCategoryName       *string          `json:"cash_settlement_category_name"`
-	CashSettlementCategoryCode       *string          `json:"cash_settlement_category_code"`
-	Description                      *string          `json:"description"`
-	InboundSettlement                bool             `json:"inbound_settlement"`
-	OutboundSettlement               bool             `json:"outbound_settlement"`
-	SettlementFeePercentage          *decimal.Decimal `json:"settlement_fee_percentage"`
-	SettlementFeeAccountUUID         *uuid.UUID       `json:"settlement_fee_account_uuid"`
-	CashSettlementAccountUUID        *uuid.UUID       `json:"cash_settlement_account_uuid"`
-	CashSettlementCounterAccountUUID *uuid.UUID       `json:"cash_settlement_counter_account_uuid"`
-	CreatedAt                        time.Time        `json:"created_at"`
-	UpdatedAt                        time.Time        `json:"updated_at"`
+	UUID                               uuid.UUID        `json:"uuid"`
+	CashSettlementCategoryName         *string          `json:"cash_settlement_category_name"`
+	CashSettlementCategoryCode         *string          `json:"cash_settlement_category_code"`
+	Description                        *string          `json:"description"`
+	InboundSettlement                  bool             `json:"inbound_settlement"`
+	OutboundSettlement                 bool             `json:"outbound_settlement"`
+	SettlementFeePercentage            *decimal.Decimal `json:"settlement_fee_percentage"`
+	SettlementFeeAccountUUID           *uuid.UUID       `json:"settlement_fee_account_uuid"`
+	SettlementFeeAccountName           *string          `json:"settlement_fee_account_name"`
+	SettlementFeeAccountNumber         *string          `json:"settlement_fee_account_number"`
+	CashSettlementAccountUUID          *uuid.UUID       `json:"cash_settlement_account_uuid"`
+	CashSettlementAccountName          *string          `json:"cash_settlement_account_name"`
+	CashSettlementAccountNumber        *string          `json:"cash_settlement_account_number"`
+	CashSettlementCounterAccountUUID   *uuid.UUID       `json:"cash_settlement_counter_account_uuid"`
+	CashSettlementCounterAccountName   *string          `json:"cash_settlement_counter_account_name"`
+	CashSettlementCounterAccountNumber *string          `json:"cash_settlement_counter_account_number"`
+	CreatedAt                          time.Time        `json:"created_at"`
+	UpdatedAt                          time.Time        `json:"updated_at"`
 }
 
 // CashSettlementCategoryFromRow maps a cash_settlement_category row to its response.
 func CashSettlementCategoryFromRow(r sqlc.GetCashSettlementCategoryByUUIDRow) CashSettlementCategoryResponse {
 	return CashSettlementCategoryResponse{
-		UUID:                             r.Uuid,
-		CashSettlementCategoryName:       r.CashSettlementCategoryName,
-		CashSettlementCategoryCode:       r.CashSettlementCategoryCode,
-		Description:                      r.Description,
-		InboundSettlement:                r.InboundSettlement,
-		OutboundSettlement:               r.OutboundSettlement,
-		SettlementFeePercentage:          r.SettlementFeePercentage,
-		SettlementFeeAccountUUID:         r.SettlementFeeAccountUuid,
-		CashSettlementAccountUUID:        r.CashSettlementAccountUuid,
-		CashSettlementCounterAccountUUID: r.CashSettlementCounterAccountUuid,
-		CreatedAt:                        r.CreatedAt,
-		UpdatedAt:                        r.UpdatedAt,
+		UUID:                               r.Uuid,
+		CashSettlementCategoryName:         r.CashSettlementCategoryName,
+		CashSettlementCategoryCode:         r.CashSettlementCategoryCode,
+		Description:                        r.Description,
+		InboundSettlement:                  r.InboundSettlement,
+		OutboundSettlement:                 r.OutboundSettlement,
+		SettlementFeePercentage:            r.SettlementFeePercentage,
+		SettlementFeeAccountUUID:           r.SettlementFeeAccountUuid,
+		SettlementFeeAccountName:           r.SettlementFeeAccountName,
+		SettlementFeeAccountNumber:         r.SettlementFeeAccountNumber,
+		CashSettlementAccountUUID:          r.CashSettlementAccountUuid,
+		CashSettlementAccountName:          r.CashSettlementAccountName,
+		CashSettlementAccountNumber:        r.CashSettlementAccountNumber,
+		CashSettlementCounterAccountUUID:   r.CashSettlementCounterAccountUuid,
+		CashSettlementCounterAccountName:   r.CashSettlementCounterAccountName,
+		CashSettlementCounterAccountNumber: r.CashSettlementCounterAccountNumber,
+		CreatedAt:                          r.CreatedAt,
+		UpdatedAt:                          r.UpdatedAt,
 	}
 }

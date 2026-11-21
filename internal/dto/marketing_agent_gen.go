@@ -80,6 +80,8 @@ type MarketingAgentResponse struct {
 	MarketingUniqueNumber  *string     `json:"marketing_unique_number"`
 	SynchronizeNotes       *string     `json:"synchronize_notes"`
 	LeaderAgentUUID        *uuid.UUID  `json:"leader_agent_uuid"`
+	LeaderAgentName        *string     `json:"leader_agent_name"`
+	LeaderAgentNumber      *string     `json:"leader_agent_number"`
 	CreatedAt              time.Time   `json:"created_at"`
 	UpdatedAt              time.Time   `json:"updated_at"`
 }
@@ -112,6 +114,8 @@ func MarketingAgentFromRow(r sqlc.GetMarketingAgentByUUIDRow) MarketingAgentResp
 		MarketingUniqueNumber:  r.MarketingUniqueNumber,
 		SynchronizeNotes:       r.SynchronizeNotes,
 		LeaderAgentUUID:        r.LeaderAgentUuid,
+		LeaderAgentName:        r.LeaderAgentName,
+		LeaderAgentNumber:      r.LeaderAgentNumber,
 		CreatedAt:              r.CreatedAt,
 		UpdatedAt:              r.UpdatedAt,
 	}

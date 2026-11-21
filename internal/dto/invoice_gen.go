@@ -50,6 +50,8 @@ type InvoiceResponse struct {
 	TotalMember        *int32           `json:"total_member"`
 	Year               *int32           `json:"year"`
 	ClientUUID         *uuid.UUID       `json:"client_uuid"`
+	ClientName         *string          `json:"client_name"`
+	ClientCode         *string          `json:"client_code"`
 	CreatedAt          time.Time        `json:"created_at"`
 	UpdatedAt          time.Time        `json:"updated_at"`
 }
@@ -71,6 +73,8 @@ func InvoiceFromRow(r sqlc.GetInvoiceByUUIDRow) InvoiceResponse {
 		TotalMember:        r.TotalMember,
 		Year:               r.Year,
 		ClientUUID:         r.ClientUuid,
+		ClientName:         r.ClientName,
+		ClientCode:         r.ClientCode,
 		CreatedAt:          r.CreatedAt,
 		UpdatedAt:          r.UpdatedAt,
 	}

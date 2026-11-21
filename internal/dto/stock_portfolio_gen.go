@@ -16,7 +16,11 @@ import (
 type StockPortfolioResponse struct {
 	UUID                 uuid.UUID        `json:"uuid"`
 	PortfolioUUID        *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName        *string          `json:"portfolio_name"`
+	PortfolioCode        *string          `json:"portfolio_code"`
 	StockUUID            *uuid.UUID       `json:"stock_uuid"`
+	StockName            *string          `json:"stock_name"`
+	StockCode            *string          `json:"stock_code"`
 	InceptionDate        *httpx.Date      `json:"inception_date"`
 	AveragePrice         *decimal.Decimal `json:"average_price"`
 	StockAmount          *decimal.Decimal `json:"stock_amount"`
@@ -32,7 +36,11 @@ func StockPortfolioFromRow(r sqlc.GetStockPortfolioByUUIDRow) StockPortfolioResp
 	return StockPortfolioResponse{
 		UUID:                 r.Uuid,
 		PortfolioUUID:        r.PortfolioUuid,
+		PortfolioName:        r.PortfolioName,
+		PortfolioCode:        r.PortfolioCode,
 		StockUUID:            r.StockUuid,
+		StockName:            r.StockName,
+		StockCode:            r.StockCode,
 		InceptionDate:        httpx.DateOf(r.InceptionDate),
 		AveragePrice:         r.AveragePrice,
 		StockAmount:          r.StockAmount,

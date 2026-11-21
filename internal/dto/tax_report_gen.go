@@ -36,7 +36,10 @@ type TaxReportResponse struct {
 	TaxReportNumber      *string    `json:"tax_report_number"`
 	TreasuryTaxNumber    *string    `json:"treasury_tax_number"`
 	DependantUUID        *uuid.UUID `json:"dependant_uuid"`
+	DependantName        *string    `json:"dependant_name"`
 	MemberUUID           *uuid.UUID `json:"member_uuid"`
+	MemberName           *string    `json:"member_name"`
+	MemberNumber         *string    `json:"member_number"`
 	CreatedAt            time.Time  `json:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at"`
 }
@@ -49,7 +52,10 @@ func TaxReportFromRow(r sqlc.GetTaxReportByUUIDRow) TaxReportResponse {
 		TaxReportNumber:      r.TaxReportNumber,
 		TreasuryTaxNumber:    r.TreasuryTaxNumber,
 		DependantUUID:        r.DependantUuid,
+		DependantName:        r.DependantName,
 		MemberUUID:           r.MemberUuid,
+		MemberName:           r.MemberName,
+		MemberNumber:         r.MemberNumber,
 		CreatedAt:            r.CreatedAt,
 		UpdatedAt:            r.UpdatedAt,
 	}

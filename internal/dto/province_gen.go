@@ -34,6 +34,8 @@ type ProvinceResponse struct {
 	ProvinceCode *string    `json:"province_code"`
 	ProvinceName *string    `json:"province_name"`
 	CountryUUID  *uuid.UUID `json:"country_uuid"`
+	CountryName  *string    `json:"country_name"`
+	CountryCode  *string    `json:"country_code"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
@@ -46,6 +48,8 @@ func ProvinceFromRow(r sqlc.GetProvinceByUUIDRow) ProvinceResponse {
 		ProvinceCode: r.ProvinceCode,
 		ProvinceName: r.ProvinceName,
 		CountryUUID:  r.CountryUuid,
+		CountryName:  r.CountryName,
+		CountryCode:  r.CountryCode,
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
 	}

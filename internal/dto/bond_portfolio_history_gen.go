@@ -16,7 +16,11 @@ import (
 type BondPortfolioHistoryResponse struct {
 	UUID              uuid.UUID        `json:"uuid"`
 	BondUUID          *uuid.UUID       `json:"bond_uuid"`
+	BondName          *string          `json:"bond_name"`
+	BondCode          *string          `json:"bond_code"`
 	PortfolioUUID     *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName     *string          `json:"portfolio_name"`
+	PortfolioCode     *string          `json:"portfolio_code"`
 	Nominal           *decimal.Decimal `json:"nominal"`
 	Coupon            *decimal.Decimal `json:"coupon"`
 	MaturityDate      *httpx.Date      `json:"maturity_date"`
@@ -33,7 +37,11 @@ func BondPortfolioHistoryFromRow(r sqlc.GetBondPortfolioHistoryByUUIDRow) BondPo
 	return BondPortfolioHistoryResponse{
 		UUID:              r.Uuid,
 		BondUUID:          r.BondUuid,
+		BondName:          r.BondName,
+		BondCode:          r.BondCode,
 		PortfolioUUID:     r.PortfolioUuid,
+		PortfolioName:     r.PortfolioName,
+		PortfolioCode:     r.PortfolioCode,
 		Nominal:           r.Nominal,
 		Coupon:            r.Coupon,
 		MaturityDate:      httpx.DateOf(r.MaturityDate),

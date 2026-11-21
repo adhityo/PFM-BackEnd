@@ -47,6 +47,8 @@ type PlacementResponse struct {
 	StartDate             *httpx.Date      `json:"start_date"`
 	Status                *int16           `json:"status"`
 	InvestmentManagerUUID *uuid.UUID       `json:"investment_manager_uuid"`
+	InvestmentManagerName *string          `json:"investment_manager_name"`
+	InvestmentManagerCode *string          `json:"investment_manager_code"`
 	CreatedAt             time.Time        `json:"created_at"`
 	UpdatedAt             time.Time        `json:"updated_at"`
 }
@@ -63,6 +65,8 @@ func PlacementFromRow(r sqlc.GetPlacementByUUIDRow) PlacementResponse {
 		StartDate:             httpx.DateOf(r.StartDate),
 		Status:                r.Status,
 		InvestmentManagerUUID: r.InvestmentManagerUuid,
+		InvestmentManagerName: r.InvestmentManagerName,
+		InvestmentManagerCode: r.InvestmentManagerCode,
 		CreatedAt:             r.CreatedAt,
 		UpdatedAt:             r.UpdatedAt,
 	}

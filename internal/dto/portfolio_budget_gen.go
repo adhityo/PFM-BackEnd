@@ -48,7 +48,11 @@ func (r *PortfolioBudgetRequest) Normalize() {
 type PortfolioBudgetResponse struct {
 	UUID                       uuid.UUID        `json:"uuid"`
 	PortfolioUUID              *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName              *string          `json:"portfolio_name"`
+	PortfolioCode              *string          `json:"portfolio_code"`
 	AssetClassUUID             *uuid.UUID       `json:"asset_class_uuid"`
+	AssetClassName             *string          `json:"asset_class_name"`
+	AssetClassCode             *string          `json:"asset_class_code"`
 	BudgetYear                 *int32           `json:"budget_year"`
 	AllocationBudget           *decimal.Decimal `json:"allocation_budget"`
 	BudgetMaxTotalOjk          *decimal.Decimal `json:"budget_max_total_ojk"`
@@ -73,7 +77,11 @@ func PortfolioBudgetFromRow(r sqlc.GetPortfolioBudgetByUUIDRow) PortfolioBudgetR
 	return PortfolioBudgetResponse{
 		UUID:                       r.Uuid,
 		PortfolioUUID:              r.PortfolioUuid,
+		PortfolioName:              r.PortfolioName,
+		PortfolioCode:              r.PortfolioCode,
 		AssetClassUUID:             r.AssetClassUuid,
+		AssetClassName:             r.AssetClassName,
+		AssetClassCode:             r.AssetClassCode,
 		BudgetYear:                 r.BudgetYear,
 		AllocationBudget:           r.AllocationBudget,
 		BudgetMaxTotalOjk:          r.BudgetMaxTotalOjk,

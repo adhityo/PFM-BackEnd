@@ -32,6 +32,7 @@ type CryptoListingExchangeResponse struct {
 	Description        *string    `json:"description"`
 	Status             *string    `json:"status"`
 	CryptoExchangeUUID *uuid.UUID `json:"crypto_exchange_uuid"`
+	CryptoExchangeCode *string    `json:"crypto_exchange_code"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
@@ -44,6 +45,7 @@ func CryptoListingExchangeFromRow(r sqlc.GetCryptoListingExchangeByUUIDRow) Cryp
 		Description:        r.Description,
 		Status:             r.Status,
 		CryptoExchangeUUID: r.CryptoExchangeUuid,
+		CryptoExchangeCode: r.CryptoExchangeCode,
 		CreatedAt:          r.CreatedAt,
 		UpdatedAt:          r.UpdatedAt,
 	}

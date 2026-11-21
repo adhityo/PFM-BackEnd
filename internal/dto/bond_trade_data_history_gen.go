@@ -57,12 +57,19 @@ type BondTradeDataHistoryResponse struct {
 	ValidationNumber           *string          `json:"validation_number"`
 	BondUUID                   *uuid.UUID       `json:"bond_uuid"`
 	BrokerUUID                 *uuid.UUID       `json:"broker_uuid"`
+	BrokerCode                 *string          `json:"broker_code"`
 	CustodianBankUUID          *uuid.UUID       `json:"custodian_bank_uuid"`
+	CustodianBankName          *string          `json:"custodian_bank_name"`
 	InvestorUUID               *uuid.UUID       `json:"investor_uuid"`
 	MarketingAgentUUID         *uuid.UUID       `json:"marketing_agent_uuid"`
+	MarketingAgentNumber       *string          `json:"marketing_agent_number"`
 	ParentBondTradeUUID        *uuid.UUID       `json:"parent_bond_trade_uuid"`
 	PortfolioUUID              *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName              *string          `json:"portfolio_name"`
+	PortfolioCode              *string          `json:"portfolio_code"`
 	TradeTypeUUID              *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeName              *string          `json:"trade_type_name"`
+	TradeTypeCode              *string          `json:"trade_type_code"`
 	BondTradeUUID              *uuid.UUID       `json:"bond_trade_uuid"`
 	CreatedAt                  time.Time        `json:"created_at"`
 	UpdatedAt                  time.Time        `json:"updated_at"`
@@ -114,12 +121,19 @@ func BondTradeDataHistoryFromRow(r sqlc.GetBondTradeDataHistoryByUUIDRow) BondTr
 		ValidationNumber:           r.ValidationNumber,
 		BondUUID:                   r.BondUuid,
 		BrokerUUID:                 r.BrokerUuid,
+		BrokerCode:                 r.BrokerCode,
 		CustodianBankUUID:          r.CustodianBankUuid,
+		CustodianBankName:          r.CustodianBankName,
 		InvestorUUID:               r.InvestorUuid,
 		MarketingAgentUUID:         r.MarketingAgentUuid,
+		MarketingAgentNumber:       r.MarketingAgentNumber,
 		ParentBondTradeUUID:        r.ParentBondTradeUuid,
 		PortfolioUUID:              r.PortfolioUuid,
+		PortfolioName:              r.PortfolioName,
+		PortfolioCode:              r.PortfolioCode,
 		TradeTypeUUID:              r.TradeTypeUuid,
+		TradeTypeName:              r.TradeTypeName,
+		TradeTypeCode:              r.TradeTypeCode,
 		BondTradeUUID:              r.BondTradeUuid,
 		CreatedAt:                  r.CreatedAt,
 		UpdatedAt:                  r.UpdatedAt,

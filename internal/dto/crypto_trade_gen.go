@@ -61,7 +61,10 @@ type CryptoTradeResponse struct {
 	CryptoUUID           *uuid.UUID       `json:"crypto_uuid"`
 	CryptoTradePlanUUID  *uuid.UUID       `json:"crypto_trade_plan_uuid"`
 	TradeTypeUUID        *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeCode        *string          `json:"trade_type_code"`
 	PortfolioUUID        *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName        *string          `json:"portfolio_name"`
+	PortfolioCode        *string          `json:"portfolio_code"`
 	CreatedAt            time.Time        `json:"created_at"`
 	UpdatedAt            time.Time        `json:"updated_at"`
 }
@@ -85,7 +88,10 @@ func CryptoTradeFromRow(r sqlc.GetCryptoTradeByUUIDRow) CryptoTradeResponse {
 		CryptoUUID:           r.CryptoUuid,
 		CryptoTradePlanUUID:  r.CryptoTradePlanUuid,
 		TradeTypeUUID:        r.TradeTypeUuid,
+		TradeTypeCode:        r.TradeTypeCode,
 		PortfolioUUID:        r.PortfolioUuid,
+		PortfolioName:        r.PortfolioName,
+		PortfolioCode:        r.PortfolioCode,
 		CreatedAt:            r.CreatedAt,
 		UpdatedAt:            r.UpdatedAt,
 	}

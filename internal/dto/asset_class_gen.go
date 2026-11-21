@@ -36,6 +36,8 @@ type AssetClassResponse struct {
 	Description          *string    `json:"description"`
 	AssetClassStatus     *int16     `json:"asset_class_status"`
 	ParentAssetClassUUID *uuid.UUID `json:"parent_asset_class_uuid"`
+	ParentAssetClassName *string    `json:"parent_asset_class_name"`
+	ParentAssetClassCode *string    `json:"parent_asset_class_code"`
 	CreatedAt            time.Time  `json:"created_at"`
 	UpdatedAt            time.Time  `json:"updated_at"`
 }
@@ -49,6 +51,8 @@ func AssetClassFromRow(r sqlc.GetAssetClassByUUIDRow) AssetClassResponse {
 		Description:          r.Description,
 		AssetClassStatus:     r.AssetClassStatus,
 		ParentAssetClassUUID: r.ParentAssetClassUuid,
+		ParentAssetClassName: r.ParentAssetClassName,
+		ParentAssetClassCode: r.ParentAssetClassCode,
 		CreatedAt:            r.CreatedAt,
 		UpdatedAt:            r.UpdatedAt,
 	}

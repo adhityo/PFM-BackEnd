@@ -30,6 +30,8 @@ func (r *DepositoInterestHistoryRequest) Normalize() {
 type DepositoInterestHistoryResponse struct {
 	UUID         uuid.UUID        `json:"uuid"`
 	DepositoUUID *uuid.UUID       `json:"deposito_uuid"`
+	DepositoName *string          `json:"deposito_name"`
+	DepositoCode *string          `json:"deposito_code"`
 	InterestRate *decimal.Decimal `json:"interest_rate"`
 	Description  *string          `json:"description"`
 	CreatedAt    time.Time        `json:"created_at"`
@@ -41,6 +43,8 @@ func DepositoInterestHistoryFromRow(r sqlc.GetDepositoInterestHistoryByUUIDRow) 
 	return DepositoInterestHistoryResponse{
 		UUID:         r.Uuid,
 		DepositoUUID: r.DepositoUuid,
+		DepositoName: r.DepositoName,
+		DepositoCode: r.DepositoCode,
 		InterestRate: r.InterestRate,
 		Description:  r.Description,
 		CreatedAt:    r.CreatedAt,

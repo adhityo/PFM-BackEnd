@@ -61,6 +61,7 @@ type BondPeriodeDistributionResponse struct {
 	TotalFundValue           *decimal.Decimal `json:"total_fund_value"`
 	TotalInvestorCount       *int32           `json:"total_investor_count"`
 	BondUUID                 *uuid.UUID       `json:"bond_uuid"`
+	BondCode                 *string          `json:"bond_code"`
 	CreatedAt                time.Time        `json:"created_at"`
 	UpdatedAt                time.Time        `json:"updated_at"`
 }
@@ -83,6 +84,7 @@ func BondPeriodeDistributionFromRow(r sqlc.GetBondPeriodeDistributionByUUIDRow) 
 		TotalFundValue:           r.TotalFundValue,
 		TotalInvestorCount:       r.TotalInvestorCount,
 		BondUUID:                 r.BondUuid,
+		BondCode:                 r.BondCode,
 		CreatedAt:                r.CreatedAt,
 		UpdatedAt:                r.UpdatedAt,
 	}

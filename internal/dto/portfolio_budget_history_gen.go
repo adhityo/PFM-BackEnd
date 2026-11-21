@@ -16,6 +16,8 @@ type PortfolioBudgetHistoryResponse struct {
 	UUID                     uuid.UUID        `json:"uuid"`
 	PortfolioBudgetUUID      *uuid.UUID       `json:"portfolio_budget_uuid"`
 	AssetClassUUID           *uuid.UUID       `json:"asset_class_uuid"`
+	AssetClassName           *string          `json:"asset_class_name"`
+	AssetClassCode           *string          `json:"asset_class_code"`
 	BudgetYear               *int32           `json:"budget_year"`
 	Month                    *int32           `json:"month"`
 	RealAllocationValue      *decimal.Decimal `json:"real_allocation_value"`
@@ -34,6 +36,8 @@ func PortfolioBudgetHistoryFromRow(r sqlc.GetPortfolioBudgetHistoryByUUIDRow) Po
 		UUID:                     r.Uuid,
 		PortfolioBudgetUUID:      r.PortfolioBudgetUuid,
 		AssetClassUUID:           r.AssetClassUuid,
+		AssetClassName:           r.AssetClassName,
+		AssetClassCode:           r.AssetClassCode,
 		BudgetYear:               r.BudgetYear,
 		Month:                    r.Month,
 		RealAllocationValue:      r.RealAllocationValue,

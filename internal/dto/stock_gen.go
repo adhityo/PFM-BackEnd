@@ -48,9 +48,13 @@ type StockResponse struct {
 	LatestWeightedShare         *decimal.Decimal `json:"latest_weighted_share"`
 	StockStatus                 *int16           `json:"stock_status"`
 	SectorUUID                  *uuid.UUID       `json:"sector_uuid"`
+	SectorCode                  *string          `json:"sector_code"`
 	SubSectorUUID               *uuid.UUID       `json:"sub_sector_uuid"`
+	SubSectorCode               *string          `json:"sub_sector_code"`
 	BetaValue                   *decimal.Decimal `json:"beta_value"`
 	StockTypeUUID               *uuid.UUID       `json:"stock_type_uuid"`
+	StockTypeName               *string          `json:"stock_type_name"`
+	StockTypeCode               *string          `json:"stock_type_code"`
 	LatestPriceBookValue        *decimal.Decimal `json:"latest_price_book_value"`
 	LatestDebtEquityRatio       *decimal.Decimal `json:"latest_debt_equity_ratio"`
 	LatestPriceEarningRatio     *decimal.Decimal `json:"latest_price_earning_ratio"`
@@ -103,9 +107,13 @@ func StockFromRow(r sqlc.GetStockByUUIDRow) StockResponse {
 		LatestWeightedShare:         r.LatestWeightedShare,
 		StockStatus:                 r.StockStatus,
 		SectorUUID:                  r.SectorUuid,
+		SectorCode:                  r.SectorCode,
 		SubSectorUUID:               r.SubSectorUuid,
+		SubSectorCode:               r.SubSectorCode,
 		BetaValue:                   r.BetaValue,
 		StockTypeUUID:               r.StockTypeUuid,
+		StockTypeName:               r.StockTypeName,
+		StockTypeCode:               r.StockTypeCode,
 		LatestPriceBookValue:        r.LatestPriceBookValue,
 		LatestDebtEquityRatio:       r.LatestDebtEquityRatio,
 		LatestPriceEarningRatio:     r.LatestPriceEarningRatio,

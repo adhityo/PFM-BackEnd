@@ -20,7 +20,11 @@ type CryptoPortfolioResponse struct {
 	TotalCryptoQuantity *decimal.Decimal `json:"total_crypto_quantity"`
 	TotalValue          *decimal.Decimal `json:"total_value"`
 	PortfolioUUID       *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName       *string          `json:"portfolio_name"`
+	PortfolioCode       *string          `json:"portfolio_code"`
 	CryptoUUID          *uuid.UUID       `json:"crypto_uuid"`
+	CryptoName          *string          `json:"crypto_name"`
+	CryptoCode          *string          `json:"crypto_code"`
 	CreatedAt           time.Time        `json:"created_at"`
 	UpdatedAt           time.Time        `json:"updated_at"`
 }
@@ -35,7 +39,11 @@ func CryptoPortfolioFromRow(r sqlc.GetCryptoPortfolioByUUIDRow) CryptoPortfolioR
 		TotalCryptoQuantity: r.TotalCryptoQuantity,
 		TotalValue:          r.TotalValue,
 		PortfolioUUID:       r.PortfolioUuid,
+		PortfolioName:       r.PortfolioName,
+		PortfolioCode:       r.PortfolioCode,
 		CryptoUUID:          r.CryptoUuid,
+		CryptoName:          r.CryptoName,
+		CryptoCode:          r.CryptoCode,
 		CreatedAt:           r.CreatedAt,
 		UpdatedAt:           r.UpdatedAt,
 	}

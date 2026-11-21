@@ -81,17 +81,23 @@ type BondTradeResponse struct {
 	UUID                     uuid.UUID        `json:"uuid"`
 	BondUUID                 *uuid.UUID       `json:"bond_uuid"`
 	PortfolioUUID            *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName            *string          `json:"portfolio_name"`
+	PortfolioCode            *string          `json:"portfolio_code"`
 	TradeDate                *httpx.Date      `json:"trade_date"`
 	SettlementDate           *httpx.Date      `json:"settlement_date"`
 	Nominal                  *decimal.Decimal `json:"nominal"`
 	PurchasedPrice           *decimal.Decimal `json:"purchased_price"`
 	BrokerUUID               *uuid.UUID       `json:"broker_uuid"`
+	BrokerCode               *string          `json:"broker_code"`
 	CustodianBankUUID        *uuid.UUID       `json:"custodian_bank_uuid"`
+	CustodianBankName        *string          `json:"custodian_bank_name"`
 	NumberOfDaysCoupon       *decimal.Decimal `json:"number_of_days_coupon"`
 	PurchasedNominal         *decimal.Decimal `json:"purchased_nominal"`
 	AccruedInterest          *decimal.Decimal `json:"accrued_interest"`
 	TotalProceed             *decimal.Decimal `json:"total_proceed"`
 	TradeTypeUUID            *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeName            *string          `json:"trade_type_name"`
+	TradeTypeCode            *string          `json:"trade_type_code"`
 	BondTradeStatus          *string          `json:"bond_trade_status"`
 	TradePrice               *decimal.Decimal `json:"trade_price"`
 	TradeSize                *decimal.Decimal `json:"trade_size"`
@@ -104,6 +110,7 @@ type BondTradeResponse struct {
 	TransactionFeePercentage *decimal.Decimal `json:"transaction_fee_percentage"`
 	InvestorUUID             *uuid.UUID       `json:"investor_uuid"`
 	MarketingAgentUUID       *uuid.UUID       `json:"marketing_agent_uuid"`
+	MarketingAgentNumber     *string          `json:"marketing_agent_number"`
 	MarketingAgentCode       *string          `json:"marketing_agent_code"`
 	ParentBondTradeUUID      *uuid.UUID       `json:"parent_bond_trade_uuid"`
 	InvestorName             *string          `json:"investor_name"`
@@ -126,6 +133,8 @@ type BondTradeResponse struct {
 	IsSynchronized           bool             `json:"is_synchronized"`
 	SynchronizeNotes         *string          `json:"synchronize_notes"`
 	BondPeriodeOptionUUID    *uuid.UUID       `json:"bond_periode_option_uuid"`
+	BondPeriodeOptionName    *string          `json:"bond_periode_option_name"`
+	BondPeriodeOptionCode    *string          `json:"bond_periode_option_code"`
 	ApprovalDescription      *string          `json:"approval_description"`
 	ApprovedBy               *string          `json:"approved_by"`
 	ApprovedTime             *time.Time       `json:"approved_time"`
@@ -141,17 +150,23 @@ func BondTradeFromRow(r sqlc.GetBondTradeByUUIDRow) BondTradeResponse {
 		UUID:                     r.Uuid,
 		BondUUID:                 r.BondUuid,
 		PortfolioUUID:            r.PortfolioUuid,
+		PortfolioName:            r.PortfolioName,
+		PortfolioCode:            r.PortfolioCode,
 		TradeDate:                httpx.DateOf(r.TradeDate),
 		SettlementDate:           httpx.DateOf(r.SettlementDate),
 		Nominal:                  r.Nominal,
 		PurchasedPrice:           r.PurchasedPrice,
 		BrokerUUID:               r.BrokerUuid,
+		BrokerCode:               r.BrokerCode,
 		CustodianBankUUID:        r.CustodianBankUuid,
+		CustodianBankName:        r.CustodianBankName,
 		NumberOfDaysCoupon:       r.NumberOfDaysCoupon,
 		PurchasedNominal:         r.PurchasedNominal,
 		AccruedInterest:          r.AccruedInterest,
 		TotalProceed:             r.TotalProceed,
 		TradeTypeUUID:            r.TradeTypeUuid,
+		TradeTypeName:            r.TradeTypeName,
+		TradeTypeCode:            r.TradeTypeCode,
 		BondTradeStatus:          crud.EnumLabel(r.BondTradeStatus, map[int16]string{-1: "cancelled", 0: "draft", 1: "approved"}),
 		TradePrice:               r.TradePrice,
 		TradeSize:                r.TradeSize,
@@ -164,6 +179,7 @@ func BondTradeFromRow(r sqlc.GetBondTradeByUUIDRow) BondTradeResponse {
 		TransactionFeePercentage: r.TransactionFeePercentage,
 		InvestorUUID:             r.InvestorUuid,
 		MarketingAgentUUID:       r.MarketingAgentUuid,
+		MarketingAgentNumber:     r.MarketingAgentNumber,
 		MarketingAgentCode:       r.MarketingAgentCode,
 		ParentBondTradeUUID:      r.ParentBondTradeUuid,
 		InvestorName:             r.InvestorName,
@@ -186,6 +202,8 @@ func BondTradeFromRow(r sqlc.GetBondTradeByUUIDRow) BondTradeResponse {
 		IsSynchronized:           r.IsSynchronized,
 		SynchronizeNotes:         r.SynchronizeNotes,
 		BondPeriodeOptionUUID:    r.BondPeriodeOptionUuid,
+		BondPeriodeOptionName:    r.BondPeriodeOptionName,
+		BondPeriodeOptionCode:    r.BondPeriodeOptionCode,
 		ApprovalDescription:      r.ApprovalDescription,
 		ApprovedBy:               r.ApprovedBy,
 		ApprovedTime:             r.ApprovedTime,

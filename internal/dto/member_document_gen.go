@@ -43,8 +43,12 @@ type MemberDocumentResponse struct {
 	DocumentStatus           *int16      `json:"document_status"`
 	DocumentFileUUID         *uuid.UUID  `json:"document_file_uuid"`
 	DocumentCategoryUUID     *uuid.UUID  `json:"document_category_uuid"`
+	DocumentCategoryName     *string     `json:"document_category_name"`
+	DocumentCategoryCode     *string     `json:"document_category_code"`
 	MemberBenefitPayoutUUID  *uuid.UUID  `json:"member_benefit_payout_uuid"`
 	MemberUUID               *uuid.UUID  `json:"member_uuid"`
+	MemberName               *string     `json:"member_name"`
+	MemberNumber             *string     `json:"member_number"`
 	MemberPremiumPaymentUUID *uuid.UUID  `json:"member_premium_payment_uuid"`
 	CreatedAt                time.Time   `json:"created_at"`
 	UpdatedAt                time.Time   `json:"updated_at"`
@@ -59,8 +63,12 @@ func MemberDocumentFromRow(r sqlc.GetMemberDocumentByUUIDRow) MemberDocumentResp
 		DocumentStatus:           r.DocumentStatus,
 		DocumentFileUUID:         r.DocumentFileUuid,
 		DocumentCategoryUUID:     r.DocumentCategoryUuid,
+		DocumentCategoryName:     r.DocumentCategoryName,
+		DocumentCategoryCode:     r.DocumentCategoryCode,
 		MemberBenefitPayoutUUID:  r.MemberBenefitPayoutUuid,
 		MemberUUID:               r.MemberUuid,
+		MemberName:               r.MemberName,
+		MemberNumber:             r.MemberNumber,
 		MemberPremiumPaymentUUID: r.MemberPremiumPaymentUuid,
 		CreatedAt:                r.CreatedAt,
 		UpdatedAt:                r.UpdatedAt,

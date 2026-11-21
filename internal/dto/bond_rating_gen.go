@@ -34,8 +34,12 @@ func (r *BondRatingRequest) Normalize() {
 type BondRatingResponse struct {
 	UUID             uuid.UUID   `json:"uuid"`
 	BondUUID         *uuid.UUID  `json:"bond_uuid"`
+	BondCode         *string     `json:"bond_code"`
 	RatingUUID       *uuid.UUID  `json:"rating_uuid"`
+	RatingName       *string     `json:"rating_name"`
+	RatingCode       *string     `json:"rating_code"`
 	RatingAgencyUUID *uuid.UUID  `json:"rating_agency_uuid"`
+	RatingAgencyCode *string     `json:"rating_agency_code"`
 	Description      *string     `json:"description"`
 	RatingDate       *httpx.Date `json:"rating_date"`
 	BondName         *string     `json:"bond_name"`
@@ -50,8 +54,12 @@ func BondRatingFromRow(r sqlc.GetBondRatingByUUIDRow) BondRatingResponse {
 	return BondRatingResponse{
 		UUID:             r.Uuid,
 		BondUUID:         r.BondUuid,
+		BondCode:         r.BondCode,
 		RatingUUID:       r.RatingUuid,
+		RatingName:       r.RatingName,
+		RatingCode:       r.RatingCode,
 		RatingAgencyUUID: r.RatingAgencyUuid,
+		RatingAgencyCode: r.RatingAgencyCode,
 		Description:      r.Description,
 		RatingDate:       httpx.DateOf(r.RatingDate),
 		BondName:         r.BondName,

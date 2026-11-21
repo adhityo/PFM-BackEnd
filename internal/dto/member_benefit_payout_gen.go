@@ -52,12 +52,17 @@ type MemberBenefitPayoutResponse struct {
 	MemberBenefitPayoutStatus *string          `json:"member_benefit_payout_status"`
 	ValueDescription          *string          `json:"value_description"`
 	BenefitPayoutBatchUUID    *uuid.UUID       `json:"benefit_payout_batch_uuid"`
+	BenefitPayoutBatchName    *string          `json:"benefit_payout_batch_name"`
 	MemberUUID                *uuid.UUID       `json:"member_uuid"`
+	MemberName                *string          `json:"member_name"`
+	MemberNumber              *string          `json:"member_number"`
 	DependantUUID             *uuid.UUID       `json:"dependant_uuid"`
+	DependantName             *string          `json:"dependant_name"`
 	Month                     *int32           `json:"month"`
 	PaymentMethod             *int16           `json:"payment_method"`
 	Year                      *int32           `json:"year"`
 	TaxReportUUID             *uuid.UUID       `json:"tax_report_uuid"`
+	TaxReportNumber           *string          `json:"tax_report_number"`
 	CreatedAt                 time.Time        `json:"created_at"`
 	UpdatedAt                 time.Time        `json:"updated_at"`
 }
@@ -74,12 +79,17 @@ func MemberBenefitPayoutFromRow(r sqlc.GetMemberBenefitPayoutByUUIDRow) MemberBe
 		MemberBenefitPayoutStatus: crud.EnumName(r.MemberBenefitPayoutStatus, []string{"draft", "approved", "paid", "cancelled"}),
 		ValueDescription:          r.ValueDescription,
 		BenefitPayoutBatchUUID:    r.BenefitPayoutBatchUuid,
+		BenefitPayoutBatchName:    r.BenefitPayoutBatchName,
 		MemberUUID:                r.MemberUuid,
+		MemberName:                r.MemberName,
+		MemberNumber:              r.MemberNumber,
 		DependantUUID:             r.DependantUuid,
+		DependantName:             r.DependantName,
 		Month:                     r.Month,
 		PaymentMethod:             r.PaymentMethod,
 		Year:                      r.Year,
 		TaxReportUUID:             r.TaxReportUuid,
+		TaxReportNumber:           r.TaxReportNumber,
 		CreatedAt:                 r.CreatedAt,
 		UpdatedAt:                 r.UpdatedAt,
 	}

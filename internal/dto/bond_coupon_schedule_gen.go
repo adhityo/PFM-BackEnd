@@ -34,6 +34,8 @@ type BondCouponScheduleResponse struct {
 	UUID            uuid.UUID        `json:"uuid"`
 	CouponDate      *httpx.Date      `json:"coupon_date"`
 	BondUUID        *uuid.UUID       `json:"bond_uuid"`
+	BondName        *string          `json:"bond_name"`
+	BondCode        *string          `json:"bond_code"`
 	CouponRate      *decimal.Decimal `json:"coupon_rate"`
 	CouponValue     *decimal.Decimal `json:"coupon_value"`
 	CouponPaidValue *decimal.Decimal `json:"coupon_paid_value"`
@@ -50,6 +52,8 @@ func BondCouponScheduleFromRow(r sqlc.GetBondCouponScheduleByUUIDRow) BondCoupon
 		UUID:            r.Uuid,
 		CouponDate:      httpx.DateOf(r.CouponDate),
 		BondUUID:        r.BondUuid,
+		BondName:        r.BondName,
+		BondCode:        r.BondCode,
 		CouponRate:      r.CouponRate,
 		CouponValue:     r.CouponValue,
 		CouponPaidValue: r.CouponPaidValue,

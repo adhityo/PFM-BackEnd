@@ -38,8 +38,13 @@ type FinanceAccountResponse struct {
 	FinanceAccountNumber   *string    `json:"finance_account_number"`
 	Description            *string    `json:"description"`
 	ParentAccountUUID      *uuid.UUID `json:"parent_account_uuid"`
+	ParentAccountName      *string    `json:"parent_account_name"`
+	ParentAccountNumber    *string    `json:"parent_account_number"`
 	FinanceAccountTypeUUID *uuid.UUID `json:"finance_account_type_uuid"`
+	FinanceAccountTypeName *string    `json:"finance_account_type_name"`
 	PortfolioUUID          *uuid.UUID `json:"portfolio_uuid"`
+	PortfolioName          *string    `json:"portfolio_name"`
+	PortfolioCode          *string    `json:"portfolio_code"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }
@@ -52,8 +57,13 @@ func FinanceAccountFromRow(r sqlc.GetFinanceAccountByUUIDRow) FinanceAccountResp
 		FinanceAccountNumber:   r.FinanceAccountNumber,
 		Description:            r.Description,
 		ParentAccountUUID:      r.ParentAccountUuid,
+		ParentAccountName:      r.ParentAccountName,
+		ParentAccountNumber:    r.ParentAccountNumber,
 		FinanceAccountTypeUUID: r.FinanceAccountTypeUuid,
+		FinanceAccountTypeName: r.FinanceAccountTypeName,
 		PortfolioUUID:          r.PortfolioUuid,
+		PortfolioName:          r.PortfolioName,
+		PortfolioCode:          r.PortfolioCode,
 		CreatedAt:              r.CreatedAt,
 		UpdatedAt:              r.UpdatedAt,
 	}

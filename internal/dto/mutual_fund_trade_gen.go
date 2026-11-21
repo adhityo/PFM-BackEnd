@@ -46,13 +46,18 @@ func (r *MutualFundTradeRequest) Normalize() {
 type MutualFundTradeResponse struct {
 	UUID                 uuid.UUID        `json:"uuid"`
 	MutualFundUUID       *uuid.UUID       `json:"mutual_fund_uuid"`
+	MutualFundCode       *string          `json:"mutual_fund_code"`
 	TotalUnit            *decimal.Decimal `json:"total_unit"`
 	NetAssetValue        *decimal.Decimal `json:"net_asset_value"`
 	TotalInvestmentValue *decimal.Decimal `json:"total_investment_value"`
 	TradeTypeUUID        *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeName        *string          `json:"trade_type_name"`
+	TradeTypeCode        *string          `json:"trade_type_code"`
 	Status               *string          `json:"status"`
 	TransactionTime      *time.Time       `json:"transaction_time"`
 	PortfolioUUID        *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName        *string          `json:"portfolio_name"`
+	PortfolioCode        *string          `json:"portfolio_code"`
 	TransactionDate      *httpx.Date      `json:"transaction_date"`
 	TransactionFee       *decimal.Decimal `json:"transaction_fee"`
 	MutualFundName       *string          `json:"mutual_fund_name"`
@@ -66,13 +71,18 @@ func MutualFundTradeFromRow(r sqlc.GetMutualFundTradeByUUIDRow) MutualFundTradeR
 	return MutualFundTradeResponse{
 		UUID:                 r.Uuid,
 		MutualFundUUID:       r.MutualFundUuid,
+		MutualFundCode:       r.MutualFundCode,
 		TotalUnit:            r.TotalUnit,
 		NetAssetValue:        r.NetAssetValue,
 		TotalInvestmentValue: r.TotalInvestmentValue,
 		TradeTypeUUID:        r.TradeTypeUuid,
+		TradeTypeName:        r.TradeTypeName,
+		TradeTypeCode:        r.TradeTypeCode,
 		Status:               crud.EnumName(r.Status, []string{"draft", "settled", "cancelled", "reversed"}),
 		TransactionTime:      r.TransactionTime,
 		PortfolioUUID:        r.PortfolioUuid,
+		PortfolioName:        r.PortfolioName,
+		PortfolioCode:        r.PortfolioCode,
 		TransactionDate:      httpx.DateOf(r.TransactionDate),
 		TransactionFee:       r.TransactionFee,
 		MutualFundName:       r.MutualFundName,

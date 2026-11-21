@@ -42,7 +42,11 @@ func (r *IndicesStockRequest) Normalize() {
 type IndicesStockResponse struct {
 	UUID                      uuid.UUID        `json:"uuid"`
 	IndicesUUID               *uuid.UUID       `json:"indices_uuid"`
+	IndicesName               *string          `json:"indices_name"`
+	IndicesCode               *string          `json:"indices_code"`
 	StockUUID                 *uuid.UUID       `json:"stock_uuid"`
+	StockName                 *string          `json:"stock_name"`
+	StockCode                 *string          `json:"stock_code"`
 	Weight                    *decimal.Decimal `json:"weight"`
 	RegistrationDate          *httpx.Date      `json:"registration_date"`
 	IndicesStockStatus        *int16           `json:"indices_stock_status"`
@@ -59,7 +63,11 @@ func IndicesStockFromRow(r sqlc.GetIndicesStockByUUIDRow) IndicesStockResponse {
 	return IndicesStockResponse{
 		UUID:                      r.Uuid,
 		IndicesUUID:               r.IndicesUuid,
+		IndicesName:               r.IndicesName,
+		IndicesCode:               r.IndicesCode,
 		StockUUID:                 r.StockUuid,
+		StockName:                 r.StockName,
+		StockCode:                 r.StockCode,
 		Weight:                    r.Weight,
 		RegistrationDate:          httpx.DateOf(r.RegistrationDate),
 		IndicesStockStatus:        r.IndicesStockStatus,

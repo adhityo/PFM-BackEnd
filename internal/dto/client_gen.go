@@ -52,6 +52,8 @@ type ClientResponse struct {
 	Telephone       *string    `json:"telephone"`
 	Faximile        *string    `json:"faximile"`
 	SectorUUID      *uuid.UUID `json:"sector_uuid"`
+	SectorName      *string    `json:"sector_name"`
+	SectorCode      *string    `json:"sector_code"`
 	BasePlatformURL *string    `json:"base_platform_url"`
 	ClientCode      *string    `json:"client_code"`
 	CreatedAt       time.Time  `json:"created_at"`
@@ -71,6 +73,8 @@ func ClientFromRow(r sqlc.GetClientByUUIDRow) ClientResponse {
 		Telephone:       r.Telephone,
 		Faximile:        r.Faximile,
 		SectorUUID:      r.SectorUuid,
+		SectorName:      r.SectorName,
+		SectorCode:      r.SectorCode,
 		BasePlatformURL: r.BasePlatformUrl,
 		ClientCode:      r.ClientCode,
 		CreatedAt:       r.CreatedAt,

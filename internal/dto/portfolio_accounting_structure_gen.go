@@ -36,12 +36,21 @@ func (r *PortfolioAccountingStructureRequest) Normalize() {
 type PortfolioAccountingStructureResponse struct {
 	UUID                   uuid.UUID  `json:"uuid"`
 	PortfolioUUID          *uuid.UUID `json:"portfolio_uuid"`
+	PortfolioName          *string    `json:"portfolio_name"`
+	PortfolioCode          *string    `json:"portfolio_code"`
 	AssetClassUUID         *uuid.UUID `json:"asset_class_uuid"`
+	AssetClassName         *string    `json:"asset_class_name"`
+	AssetClassCode         *string    `json:"asset_class_code"`
 	TradeTypeUUID          *uuid.UUID `json:"trade_type_uuid"`
+	TradeTypeName          *string    `json:"trade_type_name"`
+	TradeTypeCode          *string    `json:"trade_type_code"`
 	Description            *string    `json:"description"`
 	FinanceAccountUUID     *uuid.UUID `json:"finance_account_uuid"`
+	FinanceAccountName     *string    `json:"finance_account_name"`
+	FinanceAccountNumber   *string    `json:"finance_account_number"`
 	Status                 *int16     `json:"status"`
 	FinanceAccountTypeUUID *uuid.UUID `json:"finance_account_type_uuid"`
+	FinanceAccountTypeName *string    `json:"finance_account_type_name"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }
@@ -51,12 +60,21 @@ func PortfolioAccountingStructureFromRow(r sqlc.GetPortfolioAccountingStructureB
 	return PortfolioAccountingStructureResponse{
 		UUID:                   r.Uuid,
 		PortfolioUUID:          r.PortfolioUuid,
+		PortfolioName:          r.PortfolioName,
+		PortfolioCode:          r.PortfolioCode,
 		AssetClassUUID:         r.AssetClassUuid,
+		AssetClassName:         r.AssetClassName,
+		AssetClassCode:         r.AssetClassCode,
 		TradeTypeUUID:          r.TradeTypeUuid,
+		TradeTypeName:          r.TradeTypeName,
+		TradeTypeCode:          r.TradeTypeCode,
 		Description:            r.Description,
 		FinanceAccountUUID:     r.FinanceAccountUuid,
+		FinanceAccountName:     r.FinanceAccountName,
+		FinanceAccountNumber:   r.FinanceAccountNumber,
 		Status:                 r.Status,
 		FinanceAccountTypeUUID: r.FinanceAccountTypeUuid,
+		FinanceAccountTypeName: r.FinanceAccountTypeName,
 		CreatedAt:              r.CreatedAt,
 		UpdatedAt:              r.UpdatedAt,
 	}

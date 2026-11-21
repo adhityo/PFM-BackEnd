@@ -16,7 +16,11 @@ import (
 type MutualFundPortfolioResponse struct {
 	UUID                 uuid.UUID        `json:"uuid"`
 	MutualFundUUID       *uuid.UUID       `json:"mutual_fund_uuid"`
+	MutualFundName       *string          `json:"mutual_fund_name"`
+	MutualFundCode       *string          `json:"mutual_fund_code"`
 	PortfolioUUID        *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName        *string          `json:"portfolio_name"`
+	PortfolioCode        *string          `json:"portfolio_code"`
 	AverageNAV           *decimal.Decimal `json:"average_nav"`
 	TotalUnit            *decimal.Decimal `json:"total_unit"`
 	LatestNAV            *decimal.Decimal `json:"latest_nav"`
@@ -33,7 +37,11 @@ func MutualFundPortfolioFromRow(r sqlc.GetMutualFundPortfolioByUUIDRow) MutualFu
 	return MutualFundPortfolioResponse{
 		UUID:                 r.Uuid,
 		MutualFundUUID:       r.MutualFundUuid,
+		MutualFundName:       r.MutualFundName,
+		MutualFundCode:       r.MutualFundCode,
 		PortfolioUUID:        r.PortfolioUuid,
+		PortfolioName:        r.PortfolioName,
+		PortfolioCode:        r.PortfolioCode,
 		AverageNAV:           r.AverageNav,
 		TotalUnit:            r.TotalUnit,
 		LatestNAV:            r.LatestNav,

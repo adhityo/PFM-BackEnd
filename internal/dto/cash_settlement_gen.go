@@ -49,8 +49,14 @@ func (r *CashSettlementRequest) Normalize() {
 type CashSettlementResponse struct {
 	UUID                       uuid.UUID        `json:"uuid"`
 	CashSettlementCategoryUUID *uuid.UUID       `json:"cash_settlement_category_uuid"`
+	CashSettlementCategoryName *string          `json:"cash_settlement_category_name"`
+	CashSettlementCategoryCode *string          `json:"cash_settlement_category_code"`
 	MemberUUID                 *uuid.UUID       `json:"member_uuid"`
+	MemberName                 *string          `json:"member_name"`
+	MemberNumber               *string          `json:"member_number"`
 	ClientUUID                 *uuid.UUID       `json:"client_uuid"`
+	ClientName                 *string          `json:"client_name"`
+	ClientCode                 *string          `json:"client_code"`
 	CashSettlementValue        *decimal.Decimal `json:"cash_settlement_value"`
 	CashSettlementSubject      *string          `json:"cash_settlement_subject"`
 	ValidationNumber           *string          `json:"validation_number"`
@@ -70,8 +76,14 @@ func CashSettlementFromRow(r sqlc.GetCashSettlementByUUIDRow) CashSettlementResp
 	return CashSettlementResponse{
 		UUID:                       r.Uuid,
 		CashSettlementCategoryUUID: r.CashSettlementCategoryUuid,
+		CashSettlementCategoryName: r.CashSettlementCategoryName,
+		CashSettlementCategoryCode: r.CashSettlementCategoryCode,
 		MemberUUID:                 r.MemberUuid,
+		MemberName:                 r.MemberName,
+		MemberNumber:               r.MemberNumber,
 		ClientUUID:                 r.ClientUuid,
+		ClientName:                 r.ClientName,
+		ClientCode:                 r.ClientCode,
 		CashSettlementValue:        r.CashSettlementValue,
 		CashSettlementSubject:      r.CashSettlementSubject,
 		ValidationNumber:           r.ValidationNumber,

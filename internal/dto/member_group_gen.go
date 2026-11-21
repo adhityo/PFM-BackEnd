@@ -42,8 +42,14 @@ type MemberGroupResponse struct {
 	MemberGroupName   *string    `json:"member_group_name"`
 	MemberGroupNumber *string    `json:"member_group_number"`
 	CityUUID          *uuid.UUID `json:"city_uuid"`
+	CityName          *string    `json:"city_name"`
+	CityCode          *string    `json:"city_code"`
 	CountryUUID       *uuid.UUID `json:"country_uuid"`
+	CountryName       *string    `json:"country_name"`
+	CountryCode       *string    `json:"country_code"`
 	ProvinceUUID      *uuid.UUID `json:"province_uuid"`
+	ProvinceName      *string    `json:"province_name"`
+	ProvinceCode      *string    `json:"province_code"`
 	MemberGroupStatus *int16     `json:"member_group_status"`
 	CreatedAt         time.Time  `json:"created_at"`
 	UpdatedAt         time.Time  `json:"updated_at"`
@@ -58,8 +64,14 @@ func MemberGroupFromRow(r sqlc.GetMemberGroupByUUIDRow) MemberGroupResponse {
 		MemberGroupName:   r.MemberGroupName,
 		MemberGroupNumber: r.MemberGroupNumber,
 		CityUUID:          r.CityUuid,
+		CityName:          r.CityName,
+		CityCode:          r.CityCode,
 		CountryUUID:       r.CountryUuid,
+		CountryName:       r.CountryName,
+		CountryCode:       r.CountryCode,
 		ProvinceUUID:      r.ProvinceUuid,
+		ProvinceName:      r.ProvinceName,
+		ProvinceCode:      r.ProvinceCode,
 		MemberGroupStatus: r.MemberGroupStatus,
 		CreatedAt:         r.CreatedAt,
 		UpdatedAt:         r.UpdatedAt,

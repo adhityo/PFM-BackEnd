@@ -36,6 +36,8 @@ type BankResponse struct {
 	BankClearingCode *string    `json:"bank_clearing_code"`
 	BankSwiftCode    *string    `json:"bank_swift_code"`
 	BankClassUUID    *uuid.UUID `json:"bank_class_uuid"`
+	BankClassName    *string    `json:"bank_class_name"`
+	BankClassCode    *string    `json:"bank_class_code"`
 	Description      *string    `json:"description"`
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
@@ -49,6 +51,8 @@ func BankFromRow(r sqlc.GetBankByUUIDRow) BankResponse {
 		BankClearingCode: r.BankClearingCode,
 		BankSwiftCode:    r.BankSwiftCode,
 		BankClassUUID:    r.BankClassUuid,
+		BankClassName:    r.BankClassName,
+		BankClassCode:    r.BankClassCode,
 		Description:      r.Description,
 		CreatedAt:        r.CreatedAt,
 		UpdatedAt:        r.UpdatedAt,

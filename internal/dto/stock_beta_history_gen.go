@@ -35,8 +35,10 @@ func (r *StockBetaHistoryRequest) Normalize() {
 type StockBetaHistoryResponse struct {
 	UUID             uuid.UUID        `json:"uuid"`
 	StockUUID        *uuid.UUID       `json:"stock_uuid"`
+	StockCode        *string          `json:"stock_code"`
 	BetaValue        *decimal.Decimal `json:"beta_value"`
 	DataProviderUUID *uuid.UUID       `json:"data_provider_uuid"`
+	DataProviderCode *string          `json:"data_provider_code"`
 	Description      *string          `json:"description"`
 	RegisterDate     *httpx.Date      `json:"register_date"`
 	DataProviderName *string          `json:"data_provider_name"`
@@ -50,8 +52,10 @@ func StockBetaHistoryFromRow(r sqlc.GetStockBetaHistoryByUUIDRow) StockBetaHisto
 	return StockBetaHistoryResponse{
 		UUID:             r.Uuid,
 		StockUUID:        r.StockUuid,
+		StockCode:        r.StockCode,
 		BetaValue:        r.BetaValue,
 		DataProviderUUID: r.DataProviderUuid,
+		DataProviderCode: r.DataProviderCode,
 		Description:      r.Description,
 		RegisterDate:     httpx.DateOf(r.RegisterDate),
 		DataProviderName: r.DataProviderName,

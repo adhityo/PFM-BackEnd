@@ -47,6 +47,7 @@ func (r *StockHistoryRequest) Normalize() {
 type StockHistoryResponse struct {
 	UUID                        uuid.UUID        `json:"uuid"`
 	StockUUID                   *uuid.UUID       `json:"stock_uuid"`
+	StockName                   *string          `json:"stock_name"`
 	StockCode                   *string          `json:"stock_code"`
 	ClosingDate                 *httpx.Date      `json:"closing_date"`
 	ClosingPrice                *decimal.Decimal `json:"closing_price"`
@@ -54,6 +55,8 @@ type StockHistoryResponse struct {
 	TotalMarketCapitalization   *decimal.Decimal `json:"total_market_capitalization"`
 	TotalMarketShare            *decimal.Decimal `json:"total_market_share"`
 	StockTypeUUID               *uuid.UUID       `json:"stock_type_uuid"`
+	StockTypeName               *string          `json:"stock_type_name"`
+	StockTypeCode               *string          `json:"stock_type_code"`
 	PriceToBookValue            *decimal.Decimal `json:"price_to_book_value"`
 	PriceEarningRatio           *decimal.Decimal `json:"price_earning_ratio"`
 	FundamentalMonth            *int32           `json:"fundamental_month"`
@@ -68,6 +71,7 @@ func StockHistoryFromRow(r sqlc.GetStockHistoryByUUIDRow) StockHistoryResponse {
 	return StockHistoryResponse{
 		UUID:                        r.Uuid,
 		StockUUID:                   r.StockUuid,
+		StockName:                   r.StockName,
 		StockCode:                   r.StockCode,
 		ClosingDate:                 httpx.DateOf(r.ClosingDate),
 		ClosingPrice:                r.ClosingPrice,
@@ -75,6 +79,8 @@ func StockHistoryFromRow(r sqlc.GetStockHistoryByUUIDRow) StockHistoryResponse {
 		TotalMarketCapitalization:   r.TotalMarketCapitalization,
 		TotalMarketShare:            r.TotalMarketShare,
 		StockTypeUUID:               r.StockTypeUuid,
+		StockTypeName:               r.StockTypeName,
+		StockTypeCode:               r.StockTypeCode,
 		PriceToBookValue:            r.PriceToBookValue,
 		PriceEarningRatio:           r.PriceEarningRatio,
 		FundamentalMonth:            r.FundamentalMonth,

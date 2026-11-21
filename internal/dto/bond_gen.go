@@ -112,6 +112,8 @@ type BondResponse struct {
 	BondName                        *string          `json:"bond_name"`
 	BondCode                        *string          `json:"bond_code"`
 	BondTypeUUID                    *uuid.UUID       `json:"bond_type_uuid"`
+	BondTypeName                    *string          `json:"bond_type_name"`
+	BondTypeCode                    *string          `json:"bond_type_code"`
 	Description                     *string          `json:"description"`
 	Coupon                          *decimal.Decimal `json:"coupon"`
 	CouponPaymentPeriode            *int32           `json:"coupon_payment_periode"`
@@ -121,10 +123,16 @@ type BondResponse struct {
 	BondPrice                       *decimal.Decimal `json:"bond_price"`
 	YieldToMaturity                 *decimal.Decimal `json:"yield_to_maturity"`
 	RatingUUID                      *uuid.UUID       `json:"rating_uuid"`
+	RatingName                      *string          `json:"rating_name"`
+	RatingCode                      *string          `json:"rating_code"`
 	SectorUUID                      *uuid.UUID       `json:"sector_uuid"`
+	SectorName                      *string          `json:"sector_name"`
+	SectorCode                      *string          `json:"sector_code"`
 	BondClassificationID            *int64           `json:"bond_classification_id"`
 	IssuanceDate                    *httpx.Date      `json:"issuance_date"`
 	ClientUUID                      *uuid.UUID       `json:"client_uuid"`
+	ClientName                      *string          `json:"client_name"`
+	ClientCode                      *string          `json:"client_code"`
 	NextCouponDate                  *httpx.Date      `json:"next_coupon_date"`
 	BondStatus                      *string          `json:"bond_status"`
 	BondDurationDays                *int32           `json:"bond_duration_days"`
@@ -141,6 +149,8 @@ type BondResponse struct {
 	TanggalAktaPengakuanUtang       *httpx.Date      `json:"tanggal_akta_pengakuan_utang"`
 	TanggalAktaPerjanjianPenerbitan *httpx.Date      `json:"tanggal_akta_perjanjian_penerbitan"`
 	ParentBondUUID                  *uuid.UUID       `json:"parent_bond_uuid"`
+	ParentBondName                  *string          `json:"parent_bond_name"`
+	ParentBondCode                  *string          `json:"parent_bond_code"`
 	CouponType                      *int16           `json:"coupon_type"`
 	Arranger                        *string          `json:"arranger"`
 	AssetAppraisal                  *string          `json:"asset_appraisal"`
@@ -164,6 +174,8 @@ type BondResponse struct {
 	EmitentName                     *string          `json:"emitent_name"`
 	BondSeriesNumber                *string          `json:"bond_series_number"`
 	BondPeriodeOptionUUID           *uuid.UUID       `json:"bond_periode_option_uuid"`
+	BondPeriodeOptionName           *string          `json:"bond_periode_option_name"`
+	BondPeriodeOptionCode           *string          `json:"bond_periode_option_code"`
 	BondActivateSyncStatus          *int16           `json:"bond_activate_sync_status"`
 	BondExpireSyncStatus            *int16           `json:"bond_expire_sync_status"`
 	BondOfferingSyncStatus          *int16           `json:"bond_offering_sync_status"`
@@ -181,6 +193,8 @@ func BondFromRow(r sqlc.GetBondByUUIDRow) BondResponse {
 		BondName:                        r.BondName,
 		BondCode:                        r.BondCode,
 		BondTypeUUID:                    r.BondTypeUuid,
+		BondTypeName:                    r.BondTypeName,
+		BondTypeCode:                    r.BondTypeCode,
 		Description:                     r.Description,
 		Coupon:                          r.Coupon,
 		CouponPaymentPeriode:            r.CouponPaymentPeriode,
@@ -190,10 +204,16 @@ func BondFromRow(r sqlc.GetBondByUUIDRow) BondResponse {
 		BondPrice:                       r.BondPrice,
 		YieldToMaturity:                 r.YieldToMaturity,
 		RatingUUID:                      r.RatingUuid,
+		RatingName:                      r.RatingName,
+		RatingCode:                      r.RatingCode,
 		SectorUUID:                      r.SectorUuid,
+		SectorName:                      r.SectorName,
+		SectorCode:                      r.SectorCode,
 		BondClassificationID:            r.BondClassificationID,
 		IssuanceDate:                    httpx.DateOf(r.IssuanceDate),
 		ClientUUID:                      r.ClientUuid,
+		ClientName:                      r.ClientName,
+		ClientCode:                      r.ClientCode,
 		NextCouponDate:                  httpx.DateOf(r.NextCouponDate),
 		BondStatus:                      crud.EnumName(r.BondStatus, []string{"draft", "offering", "active", "matured"}),
 		BondDurationDays:                r.BondDurationDays,
@@ -210,6 +230,8 @@ func BondFromRow(r sqlc.GetBondByUUIDRow) BondResponse {
 		TanggalAktaPengakuanUtang:       httpx.DateOf(r.TanggalAktaPengakuanUtang),
 		TanggalAktaPerjanjianPenerbitan: httpx.DateOf(r.TanggalAktaPerjanjianPenerbitan),
 		ParentBondUUID:                  r.ParentBondUuid,
+		ParentBondName:                  r.ParentBondName,
+		ParentBondCode:                  r.ParentBondCode,
 		CouponType:                      r.CouponType,
 		Arranger:                        r.Arranger,
 		AssetAppraisal:                  r.AssetAppraisal,
@@ -233,6 +255,8 @@ func BondFromRow(r sqlc.GetBondByUUIDRow) BondResponse {
 		EmitentName:                     r.EmitentName,
 		BondSeriesNumber:                r.BondSeriesNumber,
 		BondPeriodeOptionUUID:           r.BondPeriodeOptionUuid,
+		BondPeriodeOptionName:           r.BondPeriodeOptionName,
+		BondPeriodeOptionCode:           r.BondPeriodeOptionCode,
 		BondActivateSyncStatus:          r.BondActivateSyncStatus,
 		BondExpireSyncStatus:            r.BondExpireSyncStatus,
 		BondOfferingSyncStatus:          r.BondOfferingSyncStatus,

@@ -34,6 +34,8 @@ func (r *MutualFundHistoryRequest) Normalize() {
 type MutualFundHistoryResponse struct {
 	UUID           uuid.UUID        `json:"uuid"`
 	MutualFundUUID *uuid.UUID       `json:"mutual_fund_uuid"`
+	MutualFundName *string          `json:"mutual_fund_name"`
+	MutualFundCode *string          `json:"mutual_fund_code"`
 	ClosingDate    *httpx.Date      `json:"closing_date"`
 	NetAssetValue  *decimal.Decimal `json:"net_asset_value"`
 	Description    *string          `json:"description"`
@@ -47,6 +49,8 @@ func MutualFundHistoryFromRow(r sqlc.GetMutualFundHistoryByUUIDRow) MutualFundHi
 	return MutualFundHistoryResponse{
 		UUID:           r.Uuid,
 		MutualFundUUID: r.MutualFundUuid,
+		MutualFundName: r.MutualFundName,
+		MutualFundCode: r.MutualFundCode,
 		ClosingDate:    httpx.DateOf(r.ClosingDate),
 		NetAssetValue:  r.NetAssetValue,
 		Description:    r.Description,

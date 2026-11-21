@@ -17,6 +17,8 @@ type BondPortfolioResponse struct {
 	UUID            uuid.UUID        `json:"uuid"`
 	BondUUID        *uuid.UUID       `json:"bond_uuid"`
 	PortfolioUUID   *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName   *string          `json:"portfolio_name"`
+	PortfolioCode   *string          `json:"portfolio_code"`
 	Nominal         *decimal.Decimal `json:"nominal"`
 	Coupon          *decimal.Decimal `json:"coupon"`
 	MaturityDate    *httpx.Date      `json:"maturity_date"`
@@ -24,6 +26,8 @@ type BondPortfolioResponse struct {
 	PurchasedPrice  *decimal.Decimal `json:"purchased_price"`
 	YieldToMaturity *decimal.Decimal `json:"yield_to_maturity"`
 	RatingUUID      *uuid.UUID       `json:"rating_uuid"`
+	RatingName      *string          `json:"rating_name"`
+	RatingCode      *string          `json:"rating_code"`
 	AccruedInterest *decimal.Decimal `json:"accrued_interest"`
 	BondCode        *string          `json:"bond_code"`
 	BondName        *string          `json:"bond_name"`
@@ -41,6 +45,8 @@ func BondPortfolioFromRow(r sqlc.GetBondPortfolioByUUIDRow) BondPortfolioRespons
 		UUID:            r.Uuid,
 		BondUUID:        r.BondUuid,
 		PortfolioUUID:   r.PortfolioUuid,
+		PortfolioName:   r.PortfolioName,
+		PortfolioCode:   r.PortfolioCode,
 		Nominal:         r.Nominal,
 		Coupon:          r.Coupon,
 		MaturityDate:    httpx.DateOf(r.MaturityDate),
@@ -48,6 +54,8 @@ func BondPortfolioFromRow(r sqlc.GetBondPortfolioByUUIDRow) BondPortfolioRespons
 		PurchasedPrice:  r.PurchasedPrice,
 		YieldToMaturity: r.YieldToMaturity,
 		RatingUUID:      r.RatingUuid,
+		RatingName:      r.RatingName,
+		RatingCode:      r.RatingCode,
 		AccruedInterest: r.AccruedInterest,
 		BondCode:        r.BondCode,
 		BondName:        r.BondName,

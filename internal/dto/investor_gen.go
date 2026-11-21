@@ -77,9 +77,17 @@ type InvestorResponse struct {
 	Status                         *int16     `json:"status"`
 	Telephone                      *string    `json:"telephone"`
 	CityUUID                       *uuid.UUID `json:"city_uuid"`
+	CityName                       *string    `json:"city_name"`
+	CityCode                       *string    `json:"city_code"`
 	CountryUUID                    *uuid.UUID `json:"country_uuid"`
+	CountryName                    *string    `json:"country_name"`
+	CountryCode                    *string    `json:"country_code"`
 	InvestorCategoryUUID           *uuid.UUID `json:"investor_category_uuid"`
+	InvestorCategoryName           *string    `json:"investor_category_name"`
+	InvestorCategoryCode           *string    `json:"investor_category_code"`
 	ProvinceUUID                   *uuid.UUID `json:"province_uuid"`
+	ProvinceName                   *string    `json:"province_name"`
+	ProvinceCode                   *string    `json:"province_code"`
 	AddressCity                    *string    `json:"address_city"`
 	AddressPostalCode              *string    `json:"address_postal_code"`
 	Bank                           *string    `json:"bank"`
@@ -113,9 +121,17 @@ func InvestorFromRow(r sqlc.GetInvestorByUUIDRow) InvestorResponse {
 		Status:                         r.Status,
 		Telephone:                      r.Telephone,
 		CityUUID:                       r.CityUuid,
+		CityName:                       r.CityName,
+		CityCode:                       r.CityCode,
 		CountryUUID:                    r.CountryUuid,
+		CountryName:                    r.CountryName,
+		CountryCode:                    r.CountryCode,
 		InvestorCategoryUUID:           r.InvestorCategoryUuid,
+		InvestorCategoryName:           r.InvestorCategoryName,
+		InvestorCategoryCode:           r.InvestorCategoryCode,
 		ProvinceUUID:                   r.ProvinceUuid,
+		ProvinceName:                   r.ProvinceName,
+		ProvinceCode:                   r.ProvinceCode,
 		AddressCity:                    r.AddressCity,
 		AddressPostalCode:              r.AddressPostalCode,
 		Bank:                           r.Bank,

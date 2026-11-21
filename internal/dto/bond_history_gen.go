@@ -15,9 +15,12 @@ import (
 type BondHistoryResponse struct {
 	UUID        uuid.UUID        `json:"uuid"`
 	BondUUID    *uuid.UUID       `json:"bond_uuid"`
+	BondName    *string          `json:"bond_name"`
 	BondPrice   *decimal.Decimal `json:"bond_price"`
 	BondCode    *string          `json:"bond_code"`
 	RatingUUID  *uuid.UUID       `json:"rating_uuid"`
+	RatingName  *string          `json:"rating_name"`
+	RatingCode  *string          `json:"rating_code"`
 	Description *string          `json:"description"`
 	CreatedAt   time.Time        `json:"created_at"`
 	UpdatedAt   time.Time        `json:"updated_at"`
@@ -28,9 +31,12 @@ func BondHistoryFromRow(r sqlc.GetBondHistoryByUUIDRow) BondHistoryResponse {
 	return BondHistoryResponse{
 		UUID:        r.Uuid,
 		BondUUID:    r.BondUuid,
+		BondName:    r.BondName,
 		BondPrice:   r.BondPrice,
 		BondCode:    r.BondCode,
 		RatingUUID:  r.RatingUuid,
+		RatingName:  r.RatingName,
+		RatingCode:  r.RatingCode,
 		Description: r.Description,
 		CreatedAt:   r.CreatedAt,
 		UpdatedAt:   r.UpdatedAt,

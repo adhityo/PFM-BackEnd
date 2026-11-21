@@ -36,7 +36,10 @@ func (r *PortfolioBankRequest) Normalize() {
 type PortfolioBankResponse struct {
 	UUID           uuid.UUID  `json:"uuid"`
 	PortfolioUUID  *uuid.UUID `json:"portfolio_uuid"`
+	PortfolioName  *string    `json:"portfolio_name"`
+	PortfolioCode  *string    `json:"portfolio_code"`
 	BankUUID       *uuid.UUID `json:"bank_uuid"`
+	BankName       *string    `json:"bank_name"`
 	AccountNumber  *string    `json:"account_number"`
 	AccountName    *string    `json:"account_name"`
 	BankBranchName *string    `json:"bank_branch_name"`
@@ -51,7 +54,10 @@ func PortfolioBankFromRow(r sqlc.GetPortfolioBankByUUIDRow) PortfolioBankRespons
 	return PortfolioBankResponse{
 		UUID:           r.Uuid,
 		PortfolioUUID:  r.PortfolioUuid,
+		PortfolioName:  r.PortfolioName,
+		PortfolioCode:  r.PortfolioCode,
 		BankUUID:       r.BankUuid,
+		BankName:       r.BankName,
 		AccountNumber:  r.AccountNumber,
 		AccountName:    r.AccountName,
 		BankBranchName: r.BankBranchName,

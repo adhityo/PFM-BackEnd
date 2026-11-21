@@ -34,30 +34,42 @@ func (r *PortfolioCostStructureRequest) Normalize() {
 
 // PortfolioCostStructureResponse is the public representation of portfolio_cost_structure.
 type PortfolioCostStructureResponse struct {
-	UUID                uuid.UUID        `json:"uuid"`
-	PortfolioUUID       *uuid.UUID       `json:"portfolio_uuid"`
-	TradeTypeUUID       *uuid.UUID       `json:"trade_type_uuid"`
-	TransactionCost     *decimal.Decimal `json:"transaction_cost"`
-	Description         *string          `json:"description"`
-	CostStructureStatus *int16           `json:"cost_structure_status"`
-	FinanceAccountUUID  *uuid.UUID       `json:"finance_account_uuid"`
-	Status              *int16           `json:"status"`
-	CreatedAt           time.Time        `json:"created_at"`
-	UpdatedAt           time.Time        `json:"updated_at"`
+	UUID                 uuid.UUID        `json:"uuid"`
+	PortfolioUUID        *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName        *string          `json:"portfolio_name"`
+	PortfolioCode        *string          `json:"portfolio_code"`
+	TradeTypeUUID        *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeName        *string          `json:"trade_type_name"`
+	TradeTypeCode        *string          `json:"trade_type_code"`
+	TransactionCost      *decimal.Decimal `json:"transaction_cost"`
+	Description          *string          `json:"description"`
+	CostStructureStatus  *int16           `json:"cost_structure_status"`
+	FinanceAccountUUID   *uuid.UUID       `json:"finance_account_uuid"`
+	FinanceAccountName   *string          `json:"finance_account_name"`
+	FinanceAccountNumber *string          `json:"finance_account_number"`
+	Status               *int16           `json:"status"`
+	CreatedAt            time.Time        `json:"created_at"`
+	UpdatedAt            time.Time        `json:"updated_at"`
 }
 
 // PortfolioCostStructureFromRow maps a portfolio_cost_structure row to its response.
 func PortfolioCostStructureFromRow(r sqlc.GetPortfolioCostStructureByUUIDRow) PortfolioCostStructureResponse {
 	return PortfolioCostStructureResponse{
-		UUID:                r.Uuid,
-		PortfolioUUID:       r.PortfolioUuid,
-		TradeTypeUUID:       r.TradeTypeUuid,
-		TransactionCost:     r.TransactionCost,
-		Description:         r.Description,
-		CostStructureStatus: r.CostStructureStatus,
-		FinanceAccountUUID:  r.FinanceAccountUuid,
-		Status:              r.Status,
-		CreatedAt:           r.CreatedAt,
-		UpdatedAt:           r.UpdatedAt,
+		UUID:                 r.Uuid,
+		PortfolioUUID:        r.PortfolioUuid,
+		PortfolioName:        r.PortfolioName,
+		PortfolioCode:        r.PortfolioCode,
+		TradeTypeUUID:        r.TradeTypeUuid,
+		TradeTypeName:        r.TradeTypeName,
+		TradeTypeCode:        r.TradeTypeCode,
+		TransactionCost:      r.TransactionCost,
+		Description:          r.Description,
+		CostStructureStatus:  r.CostStructureStatus,
+		FinanceAccountUUID:   r.FinanceAccountUuid,
+		FinanceAccountName:   r.FinanceAccountName,
+		FinanceAccountNumber: r.FinanceAccountNumber,
+		Status:               r.Status,
+		CreatedAt:            r.CreatedAt,
+		UpdatedAt:            r.UpdatedAt,
 	}
 }

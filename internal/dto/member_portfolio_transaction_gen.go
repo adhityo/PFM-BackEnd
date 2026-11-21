@@ -45,6 +45,8 @@ type MemberPortfolioTransactionResponse struct {
 	EffectiveNAV           *decimal.Decimal `json:"effective_nav"`
 	TotalTransactionValue  *decimal.Decimal `json:"total_transaction_value"`
 	TradeTypeUUID          *uuid.UUID       `json:"trade_type_uuid"`
+	TradeTypeName          *string          `json:"trade_type_name"`
+	TradeTypeCode          *string          `json:"trade_type_code"`
 	TransactionStatus      *string          `json:"transaction_status"`
 	CostOfTransactionValue *decimal.Decimal `json:"cost_of_transaction_value"`
 	CreatedAt              time.Time        `json:"created_at"`
@@ -61,6 +63,8 @@ func MemberPortfolioTransactionFromRow(r sqlc.GetMemberPortfolioTransactionByUUI
 		EffectiveNAV:           r.EffectiveNav,
 		TotalTransactionValue:  r.TotalTransactionValue,
 		TradeTypeUUID:          r.TradeTypeUuid,
+		TradeTypeName:          r.TradeTypeName,
+		TradeTypeCode:          r.TradeTypeCode,
 		TransactionStatus:      crud.EnumName(r.TransactionStatus, []string{"draft", "settled", "cancelled", "reversed"}),
 		CostOfTransactionValue: r.CostOfTransactionValue,
 		CreatedAt:              r.CreatedAt,

@@ -59,7 +59,11 @@ type AgentFeeTransactionResponse struct {
 	TaxPaidValue            *decimal.Decimal `json:"tax_paid_value"`
 	TaxValue                *decimal.Decimal `json:"tax_value"`
 	BondUUID                *uuid.UUID       `json:"bond_uuid"`
+	BondName                *string          `json:"bond_name"`
+	BondCode                *string          `json:"bond_code"`
 	MarketingAgentUUID      *uuid.UUID       `json:"marketing_agent_uuid"`
+	MarketingAgentName      *string          `json:"marketing_agent_name"`
+	MarketingAgentNumber    *string          `json:"marketing_agent_number"`
 	AgentLevel              *string          `json:"agent_level"`
 	AgentNumber             *string          `json:"agent_number"`
 	AgentType               *string          `json:"agent_type"`
@@ -92,7 +96,11 @@ func AgentFeeTransactionFromRow(r sqlc.GetAgentFeeTransactionByUUIDRow) AgentFee
 		TaxPaidValue:            r.TaxPaidValue,
 		TaxValue:                r.TaxValue,
 		BondUUID:                r.BondUuid,
+		BondName:                r.BondName,
+		BondCode:                r.BondCode,
 		MarketingAgentUUID:      r.MarketingAgentUuid,
+		MarketingAgentName:      r.MarketingAgentName,
+		MarketingAgentNumber:    r.MarketingAgentNumber,
 		AgentLevel:              r.AgentLevel,
 		AgentNumber:             r.AgentNumber,
 		AgentType:               r.AgentType,

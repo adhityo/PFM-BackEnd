@@ -45,7 +45,11 @@ type MutualFundResponse struct {
 	NetAssetValue          *decimal.Decimal `json:"net_asset_value"`
 	LatestUpdateDate       *httpx.Date      `json:"latest_update_date"`
 	MutualFundCategoryUUID *uuid.UUID       `json:"mutual_fund_category_uuid"`
+	MutualFundCategoryName *string          `json:"mutual_fund_category_name"`
+	MutualFundCategoryCode *string          `json:"mutual_fund_category_code"`
 	InvestmentManagerUUID  *uuid.UUID       `json:"investment_manager_uuid"`
+	InvestmentManagerName  *string          `json:"investment_manager_name"`
+	InvestmentManagerCode  *string          `json:"investment_manager_code"`
 	FundCategoryName       *string          `json:"fund_category_name"`
 	IsPrivatePlacement     bool             `json:"is_private_placement"`
 	IssuanceDate           *httpx.Date      `json:"issuance_date"`
@@ -64,7 +68,11 @@ func MutualFundFromRow(r sqlc.GetMutualFundByUUIDRow) MutualFundResponse {
 		NetAssetValue:          r.NetAssetValue,
 		LatestUpdateDate:       httpx.DateOf(r.LatestUpdateDate),
 		MutualFundCategoryUUID: r.MutualFundCategoryUuid,
+		MutualFundCategoryName: r.MutualFundCategoryName,
+		MutualFundCategoryCode: r.MutualFundCategoryCode,
 		InvestmentManagerUUID:  r.InvestmentManagerUuid,
+		InvestmentManagerName:  r.InvestmentManagerName,
+		InvestmentManagerCode:  r.InvestmentManagerCode,
 		FundCategoryName:       r.FundCategoryName,
 		IsPrivatePlacement:     r.IsPrivatePlacement,
 		IssuanceDate:           httpx.DateOf(r.IssuanceDate),

@@ -36,32 +36,40 @@ func (r *BankAccountRequest) Normalize() {
 
 // BankAccountResponse is the public representation of bank_account.
 type BankAccountResponse struct {
-	UUID               uuid.UUID  `json:"uuid"`
-	BankAccountName    *string    `json:"bank_account_name"`
-	BankAccountNumber  *string    `json:"bank_account_number"`
-	BankBranchName     *string    `json:"bank_branch_name"`
-	BankName           *string    `json:"bank_name"`
-	Description        *string    `json:"description"`
-	Status             *int16     `json:"status"`
-	InvestorUUID       *uuid.UUID `json:"investor_uuid"`
-	MarketingAgentUUID *uuid.UUID `json:"marketing_agent_uuid"`
-	CreatedAt          time.Time  `json:"created_at"`
-	UpdatedAt          time.Time  `json:"updated_at"`
+	UUID                 uuid.UUID  `json:"uuid"`
+	BankAccountName      *string    `json:"bank_account_name"`
+	BankAccountNumber    *string    `json:"bank_account_number"`
+	BankBranchName       *string    `json:"bank_branch_name"`
+	BankName             *string    `json:"bank_name"`
+	Description          *string    `json:"description"`
+	Status               *int16     `json:"status"`
+	InvestorUUID         *uuid.UUID `json:"investor_uuid"`
+	InvestorName         *string    `json:"investor_name"`
+	InvestorNumber       *string    `json:"investor_number"`
+	MarketingAgentUUID   *uuid.UUID `json:"marketing_agent_uuid"`
+	MarketingAgentName   *string    `json:"marketing_agent_name"`
+	MarketingAgentNumber *string    `json:"marketing_agent_number"`
+	CreatedAt            time.Time  `json:"created_at"`
+	UpdatedAt            time.Time  `json:"updated_at"`
 }
 
 // BankAccountFromRow maps a bank_account row to its response.
 func BankAccountFromRow(r sqlc.GetBankAccountByUUIDRow) BankAccountResponse {
 	return BankAccountResponse{
-		UUID:               r.Uuid,
-		BankAccountName:    r.BankAccountName,
-		BankAccountNumber:  r.BankAccountNumber,
-		BankBranchName:     r.BankBranchName,
-		BankName:           r.BankName,
-		Description:        r.Description,
-		Status:             r.Status,
-		InvestorUUID:       r.InvestorUuid,
-		MarketingAgentUUID: r.MarketingAgentUuid,
-		CreatedAt:          r.CreatedAt,
-		UpdatedAt:          r.UpdatedAt,
+		UUID:                 r.Uuid,
+		BankAccountName:      r.BankAccountName,
+		BankAccountNumber:    r.BankAccountNumber,
+		BankBranchName:       r.BankBranchName,
+		BankName:             r.BankName,
+		Description:          r.Description,
+		Status:               r.Status,
+		InvestorUUID:         r.InvestorUuid,
+		InvestorName:         r.InvestorName,
+		InvestorNumber:       r.InvestorNumber,
+		MarketingAgentUUID:   r.MarketingAgentUuid,
+		MarketingAgentName:   r.MarketingAgentName,
+		MarketingAgentNumber: r.MarketingAgentNumber,
+		CreatedAt:            r.CreatedAt,
+		UpdatedAt:            r.UpdatedAt,
 	}
 }

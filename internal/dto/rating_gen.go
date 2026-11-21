@@ -35,6 +35,8 @@ type RatingResponse struct {
 	RatingCode       *string    `json:"rating_code"`
 	Description      *string    `json:"description"`
 	RatingAgencyUUID *uuid.UUID `json:"rating_agency_uuid"`
+	RatingAgencyName *string    `json:"rating_agency_name"`
+	RatingAgencyCode *string    `json:"rating_agency_code"`
 	Status           *int16     `json:"status"`
 	CreatedAt        time.Time  `json:"created_at"`
 	UpdatedAt        time.Time  `json:"updated_at"`
@@ -48,6 +50,8 @@ func RatingFromRow(r sqlc.GetRatingByUUIDRow) RatingResponse {
 		RatingCode:       r.RatingCode,
 		Description:      r.Description,
 		RatingAgencyUUID: r.RatingAgencyUuid,
+		RatingAgencyName: r.RatingAgencyName,
+		RatingAgencyCode: r.RatingAgencyCode,
 		Status:           r.Status,
 		CreatedAt:        r.CreatedAt,
 		UpdatedAt:        r.UpdatedAt,

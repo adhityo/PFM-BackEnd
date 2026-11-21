@@ -38,6 +38,8 @@ type CityResponse struct {
 	Latitude     *decimal.Decimal `json:"latitude"`
 	Longitude    *decimal.Decimal `json:"longitude"`
 	ProvinceUUID *uuid.UUID       `json:"province_uuid"`
+	ProvinceName *string          `json:"province_name"`
+	ProvinceCode *string          `json:"province_code"`
 	CreatedAt    time.Time        `json:"created_at"`
 	UpdatedAt    time.Time        `json:"updated_at"`
 }
@@ -51,6 +53,8 @@ func CityFromRow(r sqlc.GetCityByUUIDRow) CityResponse {
 		Latitude:     r.Latitude,
 		Longitude:    r.Longitude,
 		ProvinceUUID: r.ProvinceUuid,
+		ProvinceName: r.ProvinceName,
+		ProvinceCode: r.ProvinceCode,
 		CreatedAt:    r.CreatedAt,
 		UpdatedAt:    r.UpdatedAt,
 	}

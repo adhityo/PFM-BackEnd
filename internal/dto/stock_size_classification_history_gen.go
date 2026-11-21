@@ -33,7 +33,11 @@ func (r *StockSizeClassificationHistoryRequest) Normalize() {
 type StockSizeClassificationHistoryResponse struct {
 	UUID                        uuid.UUID   `json:"uuid"`
 	StockUUID                   *uuid.UUID  `json:"stock_uuid"`
+	StockName                   *string     `json:"stock_name"`
+	StockCode                   *string     `json:"stock_code"`
 	StockSizeClassificationUUID *uuid.UUID  `json:"stock_size_classification_uuid"`
+	StockSizeClassificationName *string     `json:"stock_size_classification_name"`
+	StockSizeClassificationCode *string     `json:"stock_size_classification_code"`
 	SizeChangeDate              *httpx.Date `json:"size_change_date"`
 	Description                 *string     `json:"description"`
 	Status                      *int16      `json:"status"`
@@ -46,7 +50,11 @@ func StockSizeClassificationHistoryFromRow(r sqlc.GetStockSizeClassificationHist
 	return StockSizeClassificationHistoryResponse{
 		UUID:                        r.Uuid,
 		StockUUID:                   r.StockUuid,
+		StockName:                   r.StockName,
+		StockCode:                   r.StockCode,
 		StockSizeClassificationUUID: r.StockSizeClassificationUuid,
+		StockSizeClassificationName: r.StockSizeClassificationName,
+		StockSizeClassificationCode: r.StockSizeClassificationCode,
 		SizeChangeDate:              httpx.DateOf(r.SizeChangeDate),
 		Description:                 r.Description,
 		Status:                      r.Status,

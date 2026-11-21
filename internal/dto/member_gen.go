@@ -93,9 +93,15 @@ type MemberResponse struct {
 	Birthdate                *httpx.Date      `json:"birthdate"`
 	Address                  *string          `json:"address"`
 	CityUUID                 *uuid.UUID       `json:"city_uuid"`
+	CityName                 *string          `json:"city_name"`
+	CityCode                 *string          `json:"city_code"`
 	ProvinceUUID             *uuid.UUID       `json:"province_uuid"`
+	ProvinceName             *string          `json:"province_name"`
+	ProvinceCode             *string          `json:"province_code"`
 	RegionID                 *int64           `json:"region_id"`
 	CountryUUID              *uuid.UUID       `json:"country_uuid"`
+	CountryName              *string          `json:"country_name"`
+	CountryCode              *string          `json:"country_code"`
 	PostalCode               *string          `json:"postal_code"`
 	Email                    *string          `json:"email"`
 	Telephone                *string          `json:"telephone"`
@@ -115,6 +121,8 @@ type MemberResponse struct {
 	RetiredDate              *httpx.Date      `json:"retired_date"`
 	StartWorkingDate         *httpx.Date      `json:"start_working_date"`
 	OccupationUUID           *uuid.UUID       `json:"occupation_uuid"`
+	OccupationName           *string          `json:"occupation_name"`
+	OccupationCode           *string          `json:"occupation_code"`
 	PensionBenefitValue      *decimal.Decimal `json:"pension_benefit_value"`
 	FamilyStatus             *string          `json:"family_status"`
 	PaymentMethod            *int16           `json:"payment_method"`
@@ -124,6 +132,8 @@ type MemberResponse struct {
 	Status                   *int16           `json:"status"`
 	TotalPensionPremiumValue *decimal.Decimal `json:"total_pension_premium_value"`
 	ClientUUID               *uuid.UUID       `json:"client_uuid"`
+	ClientName               *string          `json:"client_name"`
+	ClientCode               *string          `json:"client_code"`
 	CreatedAt                time.Time        `json:"created_at"`
 	UpdatedAt                time.Time        `json:"updated_at"`
 }
@@ -137,9 +147,15 @@ func MemberFromRow(r sqlc.GetMemberByUUIDRow) MemberResponse {
 		Birthdate:                httpx.DateOf(r.Birthdate),
 		Address:                  r.Address,
 		CityUUID:                 r.CityUuid,
+		CityName:                 r.CityName,
+		CityCode:                 r.CityCode,
 		ProvinceUUID:             r.ProvinceUuid,
+		ProvinceName:             r.ProvinceName,
+		ProvinceCode:             r.ProvinceCode,
 		RegionID:                 r.RegionID,
 		CountryUUID:              r.CountryUuid,
+		CountryName:              r.CountryName,
+		CountryCode:              r.CountryCode,
 		PostalCode:               r.PostalCode,
 		Email:                    r.Email,
 		Telephone:                r.Telephone,
@@ -159,6 +175,8 @@ func MemberFromRow(r sqlc.GetMemberByUUIDRow) MemberResponse {
 		RetiredDate:              httpx.DateOf(r.RetiredDate),
 		StartWorkingDate:         httpx.DateOf(r.StartWorkingDate),
 		OccupationUUID:           r.OccupationUuid,
+		OccupationName:           r.OccupationName,
+		OccupationCode:           r.OccupationCode,
 		PensionBenefitValue:      r.PensionBenefitValue,
 		FamilyStatus:             r.FamilyStatus,
 		PaymentMethod:            r.PaymentMethod,
@@ -168,6 +186,8 @@ func MemberFromRow(r sqlc.GetMemberByUUIDRow) MemberResponse {
 		Status:                   r.Status,
 		TotalPensionPremiumValue: r.TotalPensionPremiumValue,
 		ClientUUID:               r.ClientUuid,
+		ClientName:               r.ClientName,
+		ClientCode:               r.ClientCode,
 		CreatedAt:                r.CreatedAt,
 		UpdatedAt:                r.UpdatedAt,
 	}

@@ -35,30 +35,58 @@ func (r *AssetClassFinanceAccountRequest) Normalize() {
 
 // AssetClassFinanceAccountResponse is the public representation of asset_class_finance_account.
 type AssetClassFinanceAccountResponse struct {
-	UUID                      uuid.UUID  `json:"uuid"`
-	AssetClassUUID            *uuid.UUID `json:"asset_class_uuid"`
-	PortfolioUUID             *uuid.UUID `json:"portfolio_uuid"`
-	BuyAccountUUID            *uuid.UUID `json:"buy_account_uuid"`
-	SellAccountUUID           *uuid.UUID `json:"sell_account_uuid"`
-	CapitalGainAccountUUID    *uuid.UUID `json:"capital_gain_account_uuid"`
-	CapitalLossAccountUUID    *uuid.UUID `json:"capital_loss_account_uuid"`
-	InterestCouponAccountUUID *uuid.UUID `json:"interest_coupon_account_uuid"`
-	CreatedAt                 time.Time  `json:"created_at"`
-	UpdatedAt                 time.Time  `json:"updated_at"`
+	UUID                        uuid.UUID  `json:"uuid"`
+	AssetClassUUID              *uuid.UUID `json:"asset_class_uuid"`
+	AssetClassName              *string    `json:"asset_class_name"`
+	AssetClassCode              *string    `json:"asset_class_code"`
+	PortfolioUUID               *uuid.UUID `json:"portfolio_uuid"`
+	PortfolioName               *string    `json:"portfolio_name"`
+	PortfolioCode               *string    `json:"portfolio_code"`
+	BuyAccountUUID              *uuid.UUID `json:"buy_account_uuid"`
+	BuyAccountName              *string    `json:"buy_account_name"`
+	BuyAccountNumber            *string    `json:"buy_account_number"`
+	SellAccountUUID             *uuid.UUID `json:"sell_account_uuid"`
+	SellAccountName             *string    `json:"sell_account_name"`
+	SellAccountNumber           *string    `json:"sell_account_number"`
+	CapitalGainAccountUUID      *uuid.UUID `json:"capital_gain_account_uuid"`
+	CapitalGainAccountName      *string    `json:"capital_gain_account_name"`
+	CapitalGainAccountNumber    *string    `json:"capital_gain_account_number"`
+	CapitalLossAccountUUID      *uuid.UUID `json:"capital_loss_account_uuid"`
+	CapitalLossAccountName      *string    `json:"capital_loss_account_name"`
+	CapitalLossAccountNumber    *string    `json:"capital_loss_account_number"`
+	InterestCouponAccountUUID   *uuid.UUID `json:"interest_coupon_account_uuid"`
+	InterestCouponAccountName   *string    `json:"interest_coupon_account_name"`
+	InterestCouponAccountNumber *string    `json:"interest_coupon_account_number"`
+	CreatedAt                   time.Time  `json:"created_at"`
+	UpdatedAt                   time.Time  `json:"updated_at"`
 }
 
 // AssetClassFinanceAccountFromRow maps a asset_class_finance_account row to its response.
 func AssetClassFinanceAccountFromRow(r sqlc.GetAssetClassFinanceAccountByUUIDRow) AssetClassFinanceAccountResponse {
 	return AssetClassFinanceAccountResponse{
-		UUID:                      r.Uuid,
-		AssetClassUUID:            r.AssetClassUuid,
-		PortfolioUUID:             r.PortfolioUuid,
-		BuyAccountUUID:            r.BuyAccountUuid,
-		SellAccountUUID:           r.SellAccountUuid,
-		CapitalGainAccountUUID:    r.CapitalGainAccountUuid,
-		CapitalLossAccountUUID:    r.CapitalLossAccountUuid,
-		InterestCouponAccountUUID: r.InterestCouponAccountUuid,
-		CreatedAt:                 r.CreatedAt,
-		UpdatedAt:                 r.UpdatedAt,
+		UUID:                        r.Uuid,
+		AssetClassUUID:              r.AssetClassUuid,
+		AssetClassName:              r.AssetClassName,
+		AssetClassCode:              r.AssetClassCode,
+		PortfolioUUID:               r.PortfolioUuid,
+		PortfolioName:               r.PortfolioName,
+		PortfolioCode:               r.PortfolioCode,
+		BuyAccountUUID:              r.BuyAccountUuid,
+		BuyAccountName:              r.BuyAccountName,
+		BuyAccountNumber:            r.BuyAccountNumber,
+		SellAccountUUID:             r.SellAccountUuid,
+		SellAccountName:             r.SellAccountName,
+		SellAccountNumber:           r.SellAccountNumber,
+		CapitalGainAccountUUID:      r.CapitalGainAccountUuid,
+		CapitalGainAccountName:      r.CapitalGainAccountName,
+		CapitalGainAccountNumber:    r.CapitalGainAccountNumber,
+		CapitalLossAccountUUID:      r.CapitalLossAccountUuid,
+		CapitalLossAccountName:      r.CapitalLossAccountName,
+		CapitalLossAccountNumber:    r.CapitalLossAccountNumber,
+		InterestCouponAccountUUID:   r.InterestCouponAccountUuid,
+		InterestCouponAccountName:   r.InterestCouponAccountName,
+		InterestCouponAccountNumber: r.InterestCouponAccountNumber,
+		CreatedAt:                   r.CreatedAt,
+		UpdatedAt:                   r.UpdatedAt,
 	}
 }

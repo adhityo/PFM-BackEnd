@@ -53,6 +53,8 @@ type PropertyAssetResponse struct {
 	PurchaseValue         *decimal.Decimal `json:"purchase_value"`
 	Status                *int16           `json:"status"`
 	PropertyAssetTypeUUID *uuid.UUID       `json:"property_asset_type_uuid"`
+	PropertyAssetTypeName *string          `json:"property_asset_type_name"`
+	PropertyAssetTypeCode *string          `json:"property_asset_type_code"`
 	CreatedAt             time.Time        `json:"created_at"`
 	UpdatedAt             time.Time        `json:"updated_at"`
 }
@@ -71,6 +73,8 @@ func PropertyAssetFromRow(r sqlc.GetPropertyAssetByUUIDRow) PropertyAssetRespons
 		PurchaseValue:         r.PurchaseValue,
 		Status:                r.Status,
 		PropertyAssetTypeUUID: r.PropertyAssetTypeUuid,
+		PropertyAssetTypeName: r.PropertyAssetTypeName,
+		PropertyAssetTypeCode: r.PropertyAssetTypeCode,
 		CreatedAt:             r.CreatedAt,
 		UpdatedAt:             r.UpdatedAt,
 	}

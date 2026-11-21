@@ -48,8 +48,14 @@ type PortfolioResponse struct {
 	PortfolioStatus       *string          `json:"portfolio_status"`
 	Description           *string          `json:"description"`
 	InvestmentManagerUUID *uuid.UUID       `json:"investment_manager_uuid"`
+	InvestmentManagerName *string          `json:"investment_manager_name"`
+	InvestmentManagerCode *string          `json:"investment_manager_code"`
 	ParentPortfolioUUID   *uuid.UUID       `json:"parent_portfolio_uuid"`
+	ParentPortfolioName   *string          `json:"parent_portfolio_name"`
+	ParentPortfolioCode   *string          `json:"parent_portfolio_code"`
 	ClientUUID            *uuid.UUID       `json:"client_uuid"`
+	ClientName            *string          `json:"client_name"`
+	ClientCode            *string          `json:"client_code"`
 	CashFundValue         *decimal.Decimal `json:"cash_fund_value"`
 	Cagr                  *decimal.Decimal `json:"cagr"`
 	FundTargetRate        *decimal.Decimal `json:"fund_target_rate"`
@@ -69,8 +75,14 @@ func PortfolioFromRow(r sqlc.GetPortfolioByUUIDRow) PortfolioResponse {
 		PortfolioStatus:       r.PortfolioStatus,
 		Description:           r.Description,
 		InvestmentManagerUUID: r.InvestmentManagerUuid,
+		InvestmentManagerName: r.InvestmentManagerName,
+		InvestmentManagerCode: r.InvestmentManagerCode,
 		ParentPortfolioUUID:   r.ParentPortfolioUuid,
+		ParentPortfolioName:   r.ParentPortfolioName,
+		ParentPortfolioCode:   r.ParentPortfolioCode,
 		ClientUUID:            r.ClientUuid,
+		ClientName:            r.ClientName,
+		ClientCode:            r.ClientCode,
 		CashFundValue:         r.CashFundValue,
 		Cagr:                  r.Cagr,
 		FundTargetRate:        r.FundTargetRate,

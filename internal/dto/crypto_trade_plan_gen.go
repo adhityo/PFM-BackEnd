@@ -37,7 +37,10 @@ type CryptoTradePlanResponse struct {
 	Description        *string    `json:"description"`
 	Status             *string    `json:"status"`
 	CryptoExchangeUUID *uuid.UUID `json:"crypto_exchange_uuid"`
+	CryptoExchangeCode *string    `json:"crypto_exchange_code"`
 	CryptoUUID         *uuid.UUID `json:"crypto_uuid"`
+	CryptoName         *string    `json:"crypto_name"`
+	CryptoCode         *string    `json:"crypto_code"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
@@ -51,7 +54,10 @@ func CryptoTradePlanFromRow(r sqlc.GetCryptoTradePlanByUUIDRow) CryptoTradePlanR
 		Description:        r.Description,
 		Status:             r.Status,
 		CryptoExchangeUUID: r.CryptoExchangeUuid,
+		CryptoExchangeCode: r.CryptoExchangeCode,
 		CryptoUUID:         r.CryptoUuid,
+		CryptoName:         r.CryptoName,
+		CryptoCode:         r.CryptoCode,
 		CreatedAt:          r.CreatedAt,
 		UpdatedAt:          r.UpdatedAt,
 	}

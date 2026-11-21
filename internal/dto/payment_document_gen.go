@@ -41,6 +41,8 @@ type PaymentDocumentResponse struct {
 	DocumentFileUUID           *uuid.UUID `json:"document_file_uuid"`
 	BondCouponScheduleUUID     *uuid.UUID `json:"bond_coupon_schedule_uuid"`
 	DocumentCategoryUUID       *uuid.UUID `json:"document_category_uuid"`
+	DocumentCategoryName       *string    `json:"document_category_name"`
+	DocumentCategoryCode       *string    `json:"document_category_code"`
 	InvestorCouponScheduleUUID *uuid.UUID `json:"investor_coupon_schedule_uuid"`
 	CreatedAt                  time.Time  `json:"created_at"`
 	UpdatedAt                  time.Time  `json:"updated_at"`
@@ -56,6 +58,8 @@ func PaymentDocumentFromRow(r sqlc.GetPaymentDocumentByUUIDRow) PaymentDocumentR
 		DocumentFileUUID:           r.DocumentFileUuid,
 		BondCouponScheduleUUID:     r.BondCouponScheduleUuid,
 		DocumentCategoryUUID:       r.DocumentCategoryUuid,
+		DocumentCategoryName:       r.DocumentCategoryName,
+		DocumentCategoryCode:       r.DocumentCategoryCode,
 		InvestorCouponScheduleUUID: r.InvestorCouponScheduleUuid,
 		CreatedAt:                  r.CreatedAt,
 		UpdatedAt:                  r.UpdatedAt,

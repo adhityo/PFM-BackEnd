@@ -34,6 +34,8 @@ type PortfolioNoteResponse struct {
 	NoteSubject   *string    `json:"note_subject"`
 	Notes         *string    `json:"notes"`
 	PortfolioUUID *uuid.UUID `json:"portfolio_uuid"`
+	PortfolioName *string    `json:"portfolio_name"`
+	PortfolioCode *string    `json:"portfolio_code"`
 	Description   *string    `json:"description"`
 	Status        *int16     `json:"status"`
 	CreatedAt     time.Time  `json:"created_at"`
@@ -47,6 +49,8 @@ func PortfolioNoteFromRow(r sqlc.GetPortfolioNoteByUUIDRow) PortfolioNoteRespons
 		NoteSubject:   r.NoteSubject,
 		Notes:         r.Notes,
 		PortfolioUUID: r.PortfolioUuid,
+		PortfolioName: r.PortfolioName,
+		PortfolioCode: r.PortfolioCode,
 		Description:   r.Description,
 		Status:        r.Status,
 		CreatedAt:     r.CreatedAt,

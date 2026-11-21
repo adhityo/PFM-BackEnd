@@ -54,6 +54,7 @@ func (r *StockFundamentalHistoryRequest) Normalize() {
 type StockFundamentalHistoryResponse struct {
 	UUID                   uuid.UUID        `json:"uuid"`
 	StockUUID              *uuid.UUID       `json:"stock_uuid"`
+	StockName              *string          `json:"stock_name"`
 	RegisterDate           *httpx.Date      `json:"register_date"`
 	StockCode              *string          `json:"stock_code"`
 	SalesData              *decimal.Decimal `json:"sales_data"`
@@ -78,6 +79,7 @@ func StockFundamentalHistoryFromRow(r sqlc.GetStockFundamentalHistoryByUUIDRow) 
 	return StockFundamentalHistoryResponse{
 		UUID:                   r.Uuid,
 		StockUUID:              r.StockUuid,
+		StockName:              r.StockName,
 		RegisterDate:           httpx.DateOf(r.RegisterDate),
 		StockCode:              r.StockCode,
 		SalesData:              r.SalesData,

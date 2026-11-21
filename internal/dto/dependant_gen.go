@@ -82,6 +82,8 @@ type DependantResponse struct {
 	Sex                 *string          `json:"sex"`
 	Telephone           *string          `json:"telephone"`
 	MemberUUID          *uuid.UUID       `json:"member_uuid"`
+	MemberName          *string          `json:"member_name"`
+	MemberNumber        *string          `json:"member_number"`
 	PensionBenefitValue *decimal.Decimal `json:"pension_benefit_value"`
 	CreatedAt           time.Time        `json:"created_at"`
 	UpdatedAt           time.Time        `json:"updated_at"`
@@ -110,6 +112,8 @@ func DependantFromRow(r sqlc.GetDependantByUUIDRow) DependantResponse {
 		Sex:                 r.Sex,
 		Telephone:           r.Telephone,
 		MemberUUID:          r.MemberUuid,
+		MemberName:          r.MemberName,
+		MemberNumber:        r.MemberNumber,
 		PensionBenefitValue: r.PensionBenefitValue,
 		CreatedAt:           r.CreatedAt,
 		UpdatedAt:           r.UpdatedAt,

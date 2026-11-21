@@ -33,6 +33,8 @@ func (r *IndicesHistoryRequest) Normalize() {
 type IndicesHistoryResponse struct {
 	UUID                        uuid.UUID        `json:"uuid"`
 	IndicesUUID                 *uuid.UUID       `json:"indices_uuid"`
+	IndicesName                 *string          `json:"indices_name"`
+	IndicesCode                 *string          `json:"indices_code"`
 	ClosingDate                 *httpx.Date      `json:"closing_date"`
 	ClosingValue                *decimal.Decimal `json:"closing_value"`
 	ClosingMarketCapitalization *decimal.Decimal `json:"closing_market_capitalization"`
@@ -45,6 +47,8 @@ func IndicesHistoryFromRow(r sqlc.GetIndicesHistoryByUUIDRow) IndicesHistoryResp
 	return IndicesHistoryResponse{
 		UUID:                        r.Uuid,
 		IndicesUUID:                 r.IndicesUuid,
+		IndicesName:                 r.IndicesName,
+		IndicesCode:                 r.IndicesCode,
 		ClosingDate:                 httpx.DateOf(r.ClosingDate),
 		ClosingValue:                r.ClosingValue,
 		ClosingMarketCapitalization: r.ClosingMarketCapitalization,

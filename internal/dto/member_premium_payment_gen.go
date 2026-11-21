@@ -49,13 +49,18 @@ type MemberPremiumPaymentResponse struct {
 	Percentage              *decimal.Decimal `json:"percentage"`
 	Status                  *string          `json:"status"`
 	MemberUUID              *uuid.UUID       `json:"member_uuid"`
+	MemberName              *string          `json:"member_name"`
+	MemberNumber            *string          `json:"member_number"`
 	PremiumPaymentTypeUUID  *uuid.UUID       `json:"premium_payment_type_uuid"`
+	PremiumPaymentTypeName  *string          `json:"premium_payment_type_name"`
+	PremiumPaymentTypeCode  *string          `json:"premium_payment_type_code"`
 	AllowancePaymentNominal *decimal.Decimal `json:"allowance_payment_nominal"`
 	Month                   *int32           `json:"month"`
 	PaidNominal             *decimal.Decimal `json:"paid_nominal"`
 	SelfPaymentNominal      *decimal.Decimal `json:"self_payment_nominal"`
 	Year                    *int32           `json:"year"`
 	InvoiceUUID             *uuid.UUID       `json:"invoice_uuid"`
+	InvoiceNumber           *string          `json:"invoice_number"`
 	CreatedAt               time.Time        `json:"created_at"`
 	UpdatedAt               time.Time        `json:"updated_at"`
 }
@@ -70,13 +75,18 @@ func MemberPremiumPaymentFromRow(r sqlc.GetMemberPremiumPaymentByUUIDRow) Member
 		Percentage:              r.Percentage,
 		Status:                  crud.EnumName(r.Status, []string{"unpaid", "paid"}),
 		MemberUUID:              r.MemberUuid,
+		MemberName:              r.MemberName,
+		MemberNumber:            r.MemberNumber,
 		PremiumPaymentTypeUUID:  r.PremiumPaymentTypeUuid,
+		PremiumPaymentTypeName:  r.PremiumPaymentTypeName,
+		PremiumPaymentTypeCode:  r.PremiumPaymentTypeCode,
 		AllowancePaymentNominal: r.AllowancePaymentNominal,
 		Month:                   r.Month,
 		PaidNominal:             r.PaidNominal,
 		SelfPaymentNominal:      r.SelfPaymentNominal,
 		Year:                    r.Year,
 		InvoiceUUID:             r.InvoiceUuid,
+		InvoiceNumber:           r.InvoiceNumber,
 		CreatedAt:               r.CreatedAt,
 		UpdatedAt:               r.UpdatedAt,
 	}

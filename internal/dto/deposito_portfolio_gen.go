@@ -43,7 +43,11 @@ func (r *DepositoPortfolioRequest) Normalize() {
 type DepositoPortfolioResponse struct {
 	UUID                    uuid.UUID        `json:"uuid"`
 	DepositoUUID            *uuid.UUID       `json:"deposito_uuid"`
+	DepositoName            *string          `json:"deposito_name"`
+	DepositoCode            *string          `json:"deposito_code"`
 	PortfolioUUID           *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName           *string          `json:"portfolio_name"`
+	PortfolioCode           *string          `json:"portfolio_code"`
 	TotalDepositoAllocation *decimal.Decimal `json:"total_deposito_allocation"`
 	Tenor                   *int32           `json:"tenor"`
 	NetInterestRate         *decimal.Decimal `json:"net_interest_rate"`
@@ -63,7 +67,11 @@ func DepositoPortfolioFromRow(r sqlc.GetDepositoPortfolioByUUIDRow) DepositoPort
 	return DepositoPortfolioResponse{
 		UUID:                    r.Uuid,
 		DepositoUUID:            r.DepositoUuid,
+		DepositoName:            r.DepositoName,
+		DepositoCode:            r.DepositoCode,
 		PortfolioUUID:           r.PortfolioUuid,
+		PortfolioName:           r.PortfolioName,
+		PortfolioCode:           r.PortfolioCode,
 		TotalDepositoAllocation: r.TotalDepositoAllocation,
 		Tenor:                   r.Tenor,
 		NetInterestRate:         r.NetInterestRate,

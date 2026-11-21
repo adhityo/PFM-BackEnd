@@ -29,7 +29,11 @@ func (r *MemberPortfolioRequest) Normalize() {
 type MemberPortfolioResponse struct {
 	UUID                  uuid.UUID        `json:"uuid"`
 	MemberUUID            *uuid.UUID       `json:"member_uuid"`
+	MemberName            *string          `json:"member_name"`
+	MemberNumber          *string          `json:"member_number"`
 	PortfolioUUID         *uuid.UUID       `json:"portfolio_uuid"`
+	PortfolioName         *string          `json:"portfolio_name"`
+	PortfolioCode         *string          `json:"portfolio_code"`
 	TotalUnit             *decimal.Decimal `json:"total_unit"`
 	CurrentNetAssetValue  *decimal.Decimal `json:"current_net_asset_value"`
 	TotalInvestment       *decimal.Decimal `json:"total_investment"`
@@ -43,7 +47,11 @@ func MemberPortfolioFromRow(r sqlc.GetMemberPortfolioByUUIDRow) MemberPortfolioR
 	return MemberPortfolioResponse{
 		UUID:                  r.Uuid,
 		MemberUUID:            r.MemberUuid,
+		MemberName:            r.MemberName,
+		MemberNumber:          r.MemberNumber,
 		PortfolioUUID:         r.PortfolioUuid,
+		PortfolioName:         r.PortfolioName,
+		PortfolioCode:         r.PortfolioCode,
 		TotalUnit:             r.TotalUnit,
 		CurrentNetAssetValue:  r.CurrentNetAssetValue,
 		TotalInvestment:       r.TotalInvestment,
