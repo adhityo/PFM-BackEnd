@@ -43,9 +43,9 @@ run: ## Jalankan API (butuh .env)
 	$(GO) run ./cmd/api
 
 .PHONY: dev
-dev: ## Jalankan API dengan live reload (air: go install github.com/air-verse/air@latest)
+dev: ## API dengan live reload (air) + worker (email & log audit) sekaligus; Ctrl+C menghentikan keduanya
 	@command -v air >/dev/null || (echo "air belum terpasang: go install github.com/air-verse/air@latest" && exit 1)
-	air -c .air.toml
+	@trap 'kill 0' EXIT INT TERM; $(GO) run ./cmd/worker & air -c .air.toml
 
 .PHONY: worker
 worker: ## Jalankan worker: kirim audit outbox ke pfm_log + pembersihan (pakai user DB worker)

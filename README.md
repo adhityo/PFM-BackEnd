@@ -21,7 +21,7 @@ make db-grants                # hak akses minimum per database
 make seed                     # katalog permission & 7 role (security) + konfigurasi (core)
 make seed-admin               # admin pertama dari ADMIN_USERNAME/EMAIL/PASSWORD
 make run                      # API (HTTP_ADDR di .env, default :8080); `go run ./cmd/api` juga membaca .env
-make dev                      # API dengan live reload (air, .air.toml)
+make dev                      # API dengan live reload (air) + worker (email & log audit); Ctrl+C menghentikan keduanya
 make worker                   # (terminal lain, user DB worker) kirim audit ke pfm_log + pembersihan
 ```
 
@@ -193,7 +193,8 @@ Data dipisah agar kebocoran satu kredensial, dump, atau celah SQL injection tida
 - `forgot-password` selalu menjawab 204, sehingga email terdaftar tidak bisa ditebak. Maksimal 1 email per menit per akun selama tautan belum dipakai.
 - `activation_key` **tidak** dikembalikan API di production; di development tetap ada di respons untuk mempermudah uji.
 - API hanya mengantrekan email ke `mail_outbox` dalam transaksi yang sama. **Worker** yang mengirim lewat SMTP, dengan percobaan ulang bertahap hingga 8 kali; setelah gagal terakhir, isi email (berisi tautan rahasia) dihapus. Kredensial SMTP hanya dibutuhkan worker.
-- **Mailtrap:** isi `SMTP_HOST=sandbox.smtp.mailtrap.io`, `SMTP_PORT=2525`, `SMTP_TLS=starttls`, serta username dan password dari *Email Testing → Inbox → SMTP Settings*, lalu jalankan `make worker`.
+- **Email hanya terkirim bila worker berjalan.** `make dev` menjalankan API dan worker bersama; `make run` hanya API, jadi worker perlu dijalankan terpisah dengan `make worker`. Worker memakai `WORKER_DATABASE_URL_*` bila diisi (user `pfm_worker`/`pfm_log_writer`), selain itu `DATABASE_URL_*`.
+- **Mailtrap:** isi `SMTP_HOST=sandbox.smtp.mailtrap.io`, `SMTP_PORT=587` (atau 2525), `SMTP_TLS=starttls`, serta username dan password dari *Email Testing → Inbox → SMTP Settings*. Email sandbox tertangkap di inbox Mailtrap, tidak sampai ke alamat aslinya. Pengirim diatur dengan `SMTP_FROM` (alamat) dan `SMTP_FROM_NAME` (nama).
 - **Mailpit (lokal):** `make dev-up`, lalu `SMTP_HOST=localhost`, `SMTP_PORT=1025`, `SMTP_TLS=none`. Kotak masuk ada di http://localhost:8025.
 
 ## Otorisasi (RBAC) untuk frontend

@@ -4,9 +4,9 @@
 //   - every 15 minutes: remove stale pending uploads (pfm_document) and expired
 //     refresh tokens (pfm_security).
 //
-// It reads the same DATABASE_URL_* variables as the API, but should run with
-// its own users: one that may read/delete audit_outbox in the source
-// databases and one that may only INSERT into pfm_log (deploy/postgres).
+// It uses WORKER_DATABASE_URL_* when set (users pfm_worker / pfm_log_writer:
+// read/delete the outboxes, INSERT-only on pfm_log; deploy/postgres),
+// otherwise the API's DATABASE_URL_*.
 package main
 
 import (
@@ -47,7 +47,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if errs := cfg.ValidateDatabases(); len(errs) > 0 {
+	if errs := cfg.ValidateWorkerDatabases(); len(errs) > 0 {
 		return fmt.Errorf("konfigurasi tidak valid: %v", errs)
 	}
 	if err := cfg.ValidateMail(); err != nil {
@@ -57,7 +57,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
-	pools, err := database.OpenPools(ctx, cfg.DatabaseURLs(), 4)
+	pools, err := database.OpenPools(ctx, cfg.WorkerDatabaseURLs(), 4)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func run() error {
 	var mailer *mail.Deliverer
 	if cfg.MailEnabled() {
 		sender, err := mail.NewSMTPSender(mail.SMTPConfig{Host: cfg.SMTPHost, Port: cfg.SMTPPort, Username: cfg.SMTPUsername,
-			Password: cfg.SMTPPassword, TLS: cfg.SMTPTLS, From: cfg.SMTPFrom, Timeout: cfg.SMTPTimeout})
+			Password: cfg.SMTPPassword, TLS: cfg.SMTPTLS, From: cfg.MailFrom(), Timeout: cfg.SMTPTimeout})
 		if err != nil {
 			return err
 		}

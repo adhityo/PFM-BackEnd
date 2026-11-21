@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/mail"
 	"net/url"
 	"os"
 	"strings"
@@ -34,6 +35,14 @@ type Config struct {
 	// ScaffoldDatabaseURL is the dev-only union database for cmd/scaffold and `migrate -db all`.
 	ScaffoldDatabaseURL string `env:"SCAFFOLD_DATABASE_URL"`
 
+	// Optional worker credentials (pfm_worker / pfm_log_writer). When set, the
+	// worker uses them instead of DATABASE_URL_*, so API and worker can share
+	// one .env (make dev) while keeping least privilege.
+	WorkerURLCore     string `env:"WORKER_DATABASE_URL_CORE"`
+	WorkerURLSecurity string `env:"WORKER_DATABASE_URL_SECURITY"`
+	WorkerURLLog      string `env:"WORKER_DATABASE_URL_LOG"`
+	WorkerURLDocument string `env:"WORKER_DATABASE_URL_DOCUMENT"`
+
 	DBMaxConns int32 `env:"DB_MAX_CONNS" envDefault:"20"`
 
 	JWTPrivateKeyFile string        `env:"JWT_PRIVATE_KEY_FILE"`
@@ -60,7 +69,8 @@ type Config struct {
 	SMTPUsername     string        `env:"SMTP_USERNAME"`
 	SMTPPassword     string        `env:"SMTP_PASSWORD"`
 	SMTPTLS          string        `env:"SMTP_TLS" envDefault:"starttls"`
-	SMTPFrom         string        `env:"SMTP_FROM" envDefault:"PFM <no-reply@pfm.local>"`
+	SMTPFrom         string        `env:"SMTP_FROM" envDefault:"no-reply@pfm.local"` // address (or "Name <address>")
+	SMTPFromName     string        `env:"SMTP_FROM_NAME" envDefault:"PFM"`
 	SMTPTimeout      time.Duration `env:"SMTP_TIMEOUT" envDefault:"15s"`
 	FrontendBaseURL  string        `env:"FRONTEND_BASE_URL" envDefault:"http://localhost:3000"`
 	PasswordResetTTL time.Duration `env:"PASSWORD_RESET_TTL" envDefault:"1h"`
@@ -168,13 +178,31 @@ func (c Config) DatabaseURLs() map[string]string {
 		"log": c.DatabaseURLLog, "document": c.DatabaseURLDocument}
 }
 
+// WorkerDatabaseURLs returns the worker DSNs: WORKER_DATABASE_URL_* when
+// set, otherwise the runtime DSN of the same database.
+func (c Config) WorkerDatabaseURLs() map[string]string {
+	out := c.DatabaseURLs()
+	for name, dsn := range map[string]string{"core": c.WorkerURLCore, "security": c.WorkerURLSecurity,
+		"log": c.WorkerURLLog, "document": c.WorkerURLDocument} {
+		if dsn != "" {
+			out[name] = dsn
+		}
+	}
+	return out
+}
+
 // ValidateDatabases requires the four runtime DSNs and forbids sharing one
 // DSN between databases (that would undo the separation).
-func (c Config) ValidateDatabases() []error {
+func (c Config) ValidateDatabases() []error { return validateDSNs(c.DatabaseURLs()) }
+
+// ValidateWorkerDatabases is ValidateDatabases for WorkerDatabaseURLs.
+func (c Config) ValidateWorkerDatabases() []error { return validateDSNs(c.WorkerDatabaseURLs()) }
+
+func validateDSNs(urls map[string]string) []error {
 	var errs []error
 	seen := map[string]string{}
 	for _, name := range []string{"core", "security", "log", "document"} {
-		dsn := c.DatabaseURLs()[name]
+		dsn := urls[name]
 		if dsn == "" {
 			errs = append(errs, fmt.Errorf("DATABASE_URL_%s wajib diisi", strings.ToUpper(name)))
 			continue
@@ -186,6 +214,15 @@ func (c Config) ValidateDatabases() []error {
 		seen[dsn] = name
 	}
 	return errs
+}
+
+// MailFrom is the sender header: SMTP_FROM_NAME + SMTP_FROM, unless SMTP_FROM
+// already carries a name ("Nama <alamat>").
+func (c Config) MailFrom() string {
+	if strings.Contains(c.SMTPFrom, "<") || c.SMTPFromName == "" {
+		return c.SMTPFrom
+	}
+	return (&mail.Address{Name: c.SMTPFromName, Address: c.SMTPFrom}).String()
 }
 
 // MigrationURL returns the DSN used to migrate one database (falls back to
