@@ -94,7 +94,7 @@ func (q *Queries) CreateStock(ctx context.Context, arg CreateStockParams) (uuid.
 
 const getStockByUUID = `-- name: GetStockByUUID :one
 
-SELECT t.id, t.uuid, t.stock_name, t.stock_code, t.description, t.latest_closing_price, t.latest_closing_date, t.latest_market_capitalization, t.latest_listed_share_volume, t.latest_weighted_share, t.stock_status, t.sector_id, t.sub_sector_id, t.beta_value, t.stock_type_id, t.latest_price_book_value, t.latest_debt_equity_ratio, t.latest_price_earning_ratio, t.latest_return_on_equity, t.latest_earning_per_share, t.latest_operating_profit, t.latest_equity_value, t.latest_asset_value, t.latest_sales_value, t.latest_net_profit, t.latest_liability_value, t.latest_book_value, t.latest_return_on_asset, t.latest_operating_profit_margin, t.latest_net_profit_margin, t.sector_name, t.sub_sector_name, t.avg_sector_eps, t.avg_sector_bv, t.avg_sector_pbv, t.avg_sector_per, t.avg_sector_der, t.avg_sector_roa, t.avg_sector_roe, t.avg_sector_npm, t.avg_sector_opm, t.avg_subsector_eps, t.avg_subsector_bv, t.avg_subsector_pbv, t.avg_subsector_der, t.avg_subsector_per, t.avg_subsector_npm, t.avg_subsector_opm, t.status, r_sector_id.uuid AS sector_uuid, r_sub_sector_id.uuid AS sub_sector_uuid, r_stock_type_id.uuid AS stock_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_name, t.stock_code, t.description, t.latest_closing_price, t.latest_closing_date, t.latest_market_capitalization, t.latest_listed_share_volume, t.latest_weighted_share, t.stock_status, t.sector_id, t.sub_sector_id, t.beta_value, t.stock_type_id, t.latest_price_book_value, t.latest_debt_equity_ratio, t.latest_price_earning_ratio, t.latest_return_on_equity, t.latest_earning_per_share, t.latest_operating_profit, t.latest_equity_value, t.latest_asset_value, t.latest_sales_value, t.latest_net_profit, t.latest_liability_value, t.latest_book_value, t.latest_return_on_asset, t.latest_operating_profit_margin, t.latest_net_profit_margin, t.sector_name, t.sub_sector_name, t.avg_sector_eps, t.avg_sector_bv, t.avg_sector_pbv, t.avg_sector_per, t.avg_sector_der, t.avg_sector_roa, t.avg_sector_roe, t.avg_sector_npm, t.avg_sector_opm, t.avg_subsector_eps, t.avg_subsector_bv, t.avg_subsector_pbv, t.avg_subsector_der, t.avg_subsector_per, t.avg_subsector_npm, t.avg_subsector_opm, t.status, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_code AS sector_code, r_sub_sector_id.uuid AS sub_sector_uuid, r_sub_sector_id.sub_sector_code AS sub_sector_code, r_stock_type_id.uuid AS stock_type_uuid, r_stock_type_id.stock_type_name AS stock_type_name, r_stock_type_id.stock_type_code AS stock_type_code, t.created_at, t.updated_at
 FROM stock t
 LEFT JOIN sector r_sector_id ON r_sector_id.id = t.sector_id
 LEFT JOIN sub_sector r_sub_sector_id ON r_sub_sector_id.id = t.sub_sector_id
@@ -153,8 +153,12 @@ type GetStockByUUIDRow struct {
 	AvgSubsectorOpm             *decimal.Decimal
 	Status                      *int16
 	SectorUuid                  *uuid.UUID
+	SectorCode                  *string
 	SubSectorUuid               *uuid.UUID
+	SubSectorCode               *string
 	StockTypeUuid               *uuid.UUID
+	StockTypeName               *string
+	StockTypeCode               *string
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
 }
@@ -214,8 +218,12 @@ func (q *Queries) GetStockByUUID(ctx context.Context, argUuid uuid.UUID) (GetSto
 		&i.AvgSubsectorOpm,
 		&i.Status,
 		&i.SectorUuid,
+		&i.SectorCode,
 		&i.SubSectorUuid,
+		&i.SubSectorCode,
 		&i.StockTypeUuid,
+		&i.StockTypeName,
+		&i.StockTypeCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -223,7 +231,7 @@ func (q *Queries) GetStockByUUID(ctx context.Context, argUuid uuid.UUID) (GetSto
 }
 
 const listStock = `-- name: ListStock :many
-SELECT t.id, t.uuid, t.stock_name, t.stock_code, t.description, t.latest_closing_price, t.latest_closing_date, t.latest_market_capitalization, t.latest_listed_share_volume, t.latest_weighted_share, t.stock_status, t.sector_id, t.sub_sector_id, t.beta_value, t.stock_type_id, t.latest_price_book_value, t.latest_debt_equity_ratio, t.latest_price_earning_ratio, t.latest_return_on_equity, t.latest_earning_per_share, t.latest_operating_profit, t.latest_equity_value, t.latest_asset_value, t.latest_sales_value, t.latest_net_profit, t.latest_liability_value, t.latest_book_value, t.latest_return_on_asset, t.latest_operating_profit_margin, t.latest_net_profit_margin, t.sector_name, t.sub_sector_name, t.avg_sector_eps, t.avg_sector_bv, t.avg_sector_pbv, t.avg_sector_per, t.avg_sector_der, t.avg_sector_roa, t.avg_sector_roe, t.avg_sector_npm, t.avg_sector_opm, t.avg_subsector_eps, t.avg_subsector_bv, t.avg_subsector_pbv, t.avg_subsector_der, t.avg_subsector_per, t.avg_subsector_npm, t.avg_subsector_opm, t.status, r_sector_id.uuid AS sector_uuid, r_sub_sector_id.uuid AS sub_sector_uuid, r_stock_type_id.uuid AS stock_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_name, t.stock_code, t.description, t.latest_closing_price, t.latest_closing_date, t.latest_market_capitalization, t.latest_listed_share_volume, t.latest_weighted_share, t.stock_status, t.sector_id, t.sub_sector_id, t.beta_value, t.stock_type_id, t.latest_price_book_value, t.latest_debt_equity_ratio, t.latest_price_earning_ratio, t.latest_return_on_equity, t.latest_earning_per_share, t.latest_operating_profit, t.latest_equity_value, t.latest_asset_value, t.latest_sales_value, t.latest_net_profit, t.latest_liability_value, t.latest_book_value, t.latest_return_on_asset, t.latest_operating_profit_margin, t.latest_net_profit_margin, t.sector_name, t.sub_sector_name, t.avg_sector_eps, t.avg_sector_bv, t.avg_sector_pbv, t.avg_sector_per, t.avg_sector_der, t.avg_sector_roa, t.avg_sector_roe, t.avg_sector_npm, t.avg_sector_opm, t.avg_subsector_eps, t.avg_subsector_bv, t.avg_subsector_pbv, t.avg_subsector_der, t.avg_subsector_per, t.avg_subsector_npm, t.avg_subsector_opm, t.status, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_code AS sector_code, r_sub_sector_id.uuid AS sub_sector_uuid, r_sub_sector_id.sub_sector_code AS sub_sector_code, r_stock_type_id.uuid AS stock_type_uuid, r_stock_type_id.stock_type_name AS stock_type_name, r_stock_type_id.stock_type_code AS stock_type_code, t.created_at, t.updated_at
 FROM stock t
 LEFT JOIN sector r_sector_id ON r_sector_id.id = t.sector_id
 LEFT JOIN sub_sector r_sub_sector_id ON r_sub_sector_id.id = t.sub_sector_id
@@ -307,8 +315,12 @@ type ListStockRow struct {
 	AvgSubsectorOpm             *decimal.Decimal
 	Status                      *int16
 	SectorUuid                  *uuid.UUID
+	SectorCode                  *string
 	SubSectorUuid               *uuid.UUID
+	SubSectorCode               *string
 	StockTypeUuid               *uuid.UUID
+	StockTypeName               *string
+	StockTypeCode               *string
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
 }
@@ -381,8 +393,12 @@ func (q *Queries) ListStock(ctx context.Context, arg ListStockParams) ([]ListSto
 			&i.AvgSubsectorOpm,
 			&i.Status,
 			&i.SectorUuid,
+			&i.SectorCode,
 			&i.SubSectorUuid,
+			&i.SubSectorCode,
 			&i.StockTypeUuid,
+			&i.StockTypeName,
+			&i.StockTypeCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

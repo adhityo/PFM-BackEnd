@@ -58,7 +58,7 @@ func (q *Queries) CountInvestorDataHistory(ctx context.Context, arg CountInvesto
 
 const getInvestorDataHistoryByUUID = `-- name: GetInvestorDataHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.address, t.address_city, t.address_postal_code, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.description, t.email, t.identity_number, t.investor_name, t.investor_number, t.investor_number_counter, t.marketing_agent_code, t.mobile_phone, t.npwp, t.previous_address, t.previous_address_city, t.previous_address_postal_code, t.previous_bank, t.previous_bank_account_name, t.previous_bank_account_number, t.previous_bank_branch, t.previous_corresponding_address, t.previous_corresponding_address_city, t.previous_corresponding_address_postal_code, t.previous_email, t.previous_identity_number, t.previous_investor_category_id, t.previous_investor_name, t.previous_mobile_phone, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.investor_id, t.province_id, r_city_id.uuid AS city_uuid, r_country_id.uuid AS country_uuid, r_investor_category_id.uuid AS investor_category_uuid, r_investor_id.uuid AS investor_uuid, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.address_city, t.address_postal_code, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.description, t.email, t.identity_number, t.investor_name, t.investor_number, t.investor_number_counter, t.marketing_agent_code, t.mobile_phone, t.npwp, t.previous_address, t.previous_address_city, t.previous_address_postal_code, t.previous_bank, t.previous_bank_account_name, t.previous_bank_account_number, t.previous_bank_branch, t.previous_corresponding_address, t.previous_corresponding_address_city, t.previous_corresponding_address_postal_code, t.previous_email, t.previous_identity_number, t.previous_investor_category_id, t.previous_investor_name, t.previous_mobile_phone, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.investor_id, t.province_id, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_investor_category_id.uuid AS investor_category_uuid, r_investor_category_id.investor_category_name AS investor_category_name, r_investor_category_id.investor_category_code AS investor_category_code, r_investor_id.uuid AS investor_uuid, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM investor_data_history t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
@@ -120,10 +120,18 @@ type GetInvestorDataHistoryByUUIDRow struct {
 	InvestorID                             *int64
 	ProvinceID                             *int64
 	CityUuid                               *uuid.UUID
+	CityName                               *string
+	CityCode                               *string
 	CountryUuid                            *uuid.UUID
+	CountryName                            *string
+	CountryCode                            *string
 	InvestorCategoryUuid                   *uuid.UUID
+	InvestorCategoryName                   *string
+	InvestorCategoryCode                   *string
 	InvestorUuid                           *uuid.UUID
 	ProvinceUuid                           *uuid.UUID
+	ProvinceName                           *string
+	ProvinceCode                           *string
 	CreatedAt                              time.Time
 	UpdatedAt                              time.Time
 }
@@ -184,10 +192,18 @@ func (q *Queries) GetInvestorDataHistoryByUUID(ctx context.Context, argUuid uuid
 		&i.InvestorID,
 		&i.ProvinceID,
 		&i.CityUuid,
+		&i.CityName,
+		&i.CityCode,
 		&i.CountryUuid,
+		&i.CountryName,
+		&i.CountryCode,
 		&i.InvestorCategoryUuid,
+		&i.InvestorCategoryName,
+		&i.InvestorCategoryCode,
 		&i.InvestorUuid,
 		&i.ProvinceUuid,
+		&i.ProvinceName,
+		&i.ProvinceCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -195,7 +211,7 @@ func (q *Queries) GetInvestorDataHistoryByUUID(ctx context.Context, argUuid uuid
 }
 
 const listInvestorDataHistory = `-- name: ListInvestorDataHistory :many
-SELECT t.id, t.uuid, t.address, t.address_city, t.address_postal_code, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.description, t.email, t.identity_number, t.investor_name, t.investor_number, t.investor_number_counter, t.marketing_agent_code, t.mobile_phone, t.npwp, t.previous_address, t.previous_address_city, t.previous_address_postal_code, t.previous_bank, t.previous_bank_account_name, t.previous_bank_account_number, t.previous_bank_branch, t.previous_corresponding_address, t.previous_corresponding_address_city, t.previous_corresponding_address_postal_code, t.previous_email, t.previous_identity_number, t.previous_investor_category_id, t.previous_investor_name, t.previous_mobile_phone, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.investor_id, t.province_id, r_city_id.uuid AS city_uuid, r_country_id.uuid AS country_uuid, r_investor_category_id.uuid AS investor_category_uuid, r_investor_id.uuid AS investor_uuid, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.address_city, t.address_postal_code, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.description, t.email, t.identity_number, t.investor_name, t.investor_number, t.investor_number_counter, t.marketing_agent_code, t.mobile_phone, t.npwp, t.previous_address, t.previous_address_city, t.previous_address_postal_code, t.previous_bank, t.previous_bank_account_name, t.previous_bank_account_number, t.previous_bank_branch, t.previous_corresponding_address, t.previous_corresponding_address_city, t.previous_corresponding_address_postal_code, t.previous_email, t.previous_identity_number, t.previous_investor_category_id, t.previous_investor_name, t.previous_mobile_phone, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.investor_id, t.province_id, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_investor_category_id.uuid AS investor_category_uuid, r_investor_category_id.investor_category_name AS investor_category_name, r_investor_category_id.investor_category_code AS investor_category_code, r_investor_id.uuid AS investor_uuid, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM investor_data_history t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
@@ -289,10 +305,18 @@ type ListInvestorDataHistoryRow struct {
 	InvestorID                             *int64
 	ProvinceID                             *int64
 	CityUuid                               *uuid.UUID
+	CityName                               *string
+	CityCode                               *string
 	CountryUuid                            *uuid.UUID
+	CountryName                            *string
+	CountryCode                            *string
 	InvestorCategoryUuid                   *uuid.UUID
+	InvestorCategoryName                   *string
+	InvestorCategoryCode                   *string
 	InvestorUuid                           *uuid.UUID
 	ProvinceUuid                           *uuid.UUID
+	ProvinceName                           *string
+	ProvinceCode                           *string
 	CreatedAt                              time.Time
 	UpdatedAt                              time.Time
 }
@@ -368,10 +392,18 @@ func (q *Queries) ListInvestorDataHistory(ctx context.Context, arg ListInvestorD
 			&i.InvestorID,
 			&i.ProvinceID,
 			&i.CityUuid,
+			&i.CityName,
+			&i.CityCode,
 			&i.CountryUuid,
+			&i.CountryName,
+			&i.CountryCode,
 			&i.InvestorCategoryUuid,
+			&i.InvestorCategoryName,
+			&i.InvestorCategoryCode,
 			&i.InvestorUuid,
 			&i.ProvinceUuid,
+			&i.ProvinceName,
+			&i.ProvinceCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -73,7 +73,7 @@ func (q *Queries) CreateAssetClass(ctx context.Context, arg CreateAssetClassPara
 
 const getAssetClassByUUID = `-- name: GetAssetClassByUUID :one
 
-SELECT t.id, t.uuid, t.asset_class_name, t.asset_class_code, t.description, t.asset_class_status, t.parent_asset_class_id, r_parent_asset_class_id.uuid AS parent_asset_class_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.asset_class_name, t.asset_class_code, t.description, t.asset_class_status, t.parent_asset_class_id, r_parent_asset_class_id.uuid AS parent_asset_class_uuid, r_parent_asset_class_id.asset_class_name AS parent_asset_class_name, r_parent_asset_class_id.asset_class_code AS parent_asset_class_code, t.created_at, t.updated_at
 FROM asset_class t
 LEFT JOIN asset_class r_parent_asset_class_id ON r_parent_asset_class_id.id = t.parent_asset_class_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -88,6 +88,8 @@ type GetAssetClassByUUIDRow struct {
 	AssetClassStatus     *int16
 	ParentAssetClassID   *int64
 	ParentAssetClassUuid *uuid.UUID
+	ParentAssetClassName *string
+	ParentAssetClassCode *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -105,6 +107,8 @@ func (q *Queries) GetAssetClassByUUID(ctx context.Context, argUuid uuid.UUID) (G
 		&i.AssetClassStatus,
 		&i.ParentAssetClassID,
 		&i.ParentAssetClassUuid,
+		&i.ParentAssetClassName,
+		&i.ParentAssetClassCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -112,7 +116,7 @@ func (q *Queries) GetAssetClassByUUID(ctx context.Context, argUuid uuid.UUID) (G
 }
 
 const listAssetClass = `-- name: ListAssetClass :many
-SELECT t.id, t.uuid, t.asset_class_name, t.asset_class_code, t.description, t.asset_class_status, t.parent_asset_class_id, r_parent_asset_class_id.uuid AS parent_asset_class_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.asset_class_name, t.asset_class_code, t.description, t.asset_class_status, t.parent_asset_class_id, r_parent_asset_class_id.uuid AS parent_asset_class_uuid, r_parent_asset_class_id.asset_class_name AS parent_asset_class_name, r_parent_asset_class_id.asset_class_code AS parent_asset_class_code, t.created_at, t.updated_at
 FROM asset_class t
 LEFT JOIN asset_class r_parent_asset_class_id ON r_parent_asset_class_id.id = t.parent_asset_class_id
 WHERE t.deleted_at IS NULL
@@ -148,6 +152,8 @@ type ListAssetClassRow struct {
 	AssetClassStatus     *int16
 	ParentAssetClassID   *int64
 	ParentAssetClassUuid *uuid.UUID
+	ParentAssetClassName *string
+	ParentAssetClassCode *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -176,6 +182,8 @@ func (q *Queries) ListAssetClass(ctx context.Context, arg ListAssetClassParams) 
 			&i.AssetClassStatus,
 			&i.ParentAssetClassID,
 			&i.ParentAssetClassUuid,
+			&i.ParentAssetClassName,
+			&i.ParentAssetClassCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

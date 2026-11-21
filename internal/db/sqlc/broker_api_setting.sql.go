@@ -80,7 +80,7 @@ func (q *Queries) CreateBrokerApiSetting(ctx context.Context, arg CreateBrokerAp
 
 const getBrokerApiSettingByUUID = `-- name: GetBrokerApiSettingByUUID :one
 
-SELECT t.id, t.uuid, t.broker_name, t.broker_id, t.broker_api_setting_name, t.description, t.status, t.protocol, t.ip_address, t.ip_address_list, r_broker_id.uuid AS broker_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.broker_name, t.broker_id, t.broker_api_setting_name, t.description, t.status, t.protocol, t.ip_address, t.ip_address_list, r_broker_id.uuid AS broker_uuid, r_broker_id.broker_code AS broker_code, t.created_at, t.updated_at
 FROM broker_api_setting t
 LEFT JOIN broker r_broker_id ON r_broker_id.id = t.broker_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -98,6 +98,7 @@ type GetBrokerApiSettingByUUIDRow struct {
 	IpAddress            *netip.Addr
 	IpAddressList        []netip.Prefix
 	BrokerUuid           *uuid.UUID
+	BrokerCode           *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -118,6 +119,7 @@ func (q *Queries) GetBrokerApiSettingByUUID(ctx context.Context, argUuid uuid.UU
 		&i.IpAddress,
 		&i.IpAddressList,
 		&i.BrokerUuid,
+		&i.BrokerCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -125,7 +127,7 @@ func (q *Queries) GetBrokerApiSettingByUUID(ctx context.Context, argUuid uuid.UU
 }
 
 const listBrokerApiSetting = `-- name: ListBrokerApiSetting :many
-SELECT t.id, t.uuid, t.broker_name, t.broker_id, t.broker_api_setting_name, t.description, t.status, t.protocol, t.ip_address, t.ip_address_list, r_broker_id.uuid AS broker_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.broker_name, t.broker_id, t.broker_api_setting_name, t.description, t.status, t.protocol, t.ip_address, t.ip_address_list, r_broker_id.uuid AS broker_uuid, r_broker_id.broker_code AS broker_code, t.created_at, t.updated_at
 FROM broker_api_setting t
 LEFT JOIN broker r_broker_id ON r_broker_id.id = t.broker_id
 WHERE t.deleted_at IS NULL
@@ -161,6 +163,7 @@ type ListBrokerApiSettingRow struct {
 	IpAddress            *netip.Addr
 	IpAddressList        []netip.Prefix
 	BrokerUuid           *uuid.UUID
+	BrokerCode           *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -192,6 +195,7 @@ func (q *Queries) ListBrokerApiSetting(ctx context.Context, arg ListBrokerApiSet
 			&i.IpAddress,
 			&i.IpAddressList,
 			&i.BrokerUuid,
+			&i.BrokerCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

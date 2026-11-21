@@ -101,7 +101,7 @@ func (q *Queries) CreateBondPeriodeDistribution(ctx context.Context, arg CreateB
 
 const getBondPeriodeDistributionByUUID = `-- name: GetBondPeriodeDistributionByUUID :one
 
-SELECT t.id, t.uuid, t.bond_name, t.bond_number_template, t.bond_periode_code, t.bond_periode_name, t.certificate_print_template, t.coupon_rate, t.coupon_value, t.issuance_date, t.maturity_date, t.periode_duration, t.status, t.total_fund_value, t.total_investor_count, t.bond_id, r_bond_id.uuid AS bond_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_name, t.bond_number_template, t.bond_periode_code, t.bond_periode_name, t.certificate_print_template, t.coupon_rate, t.coupon_value, t.issuance_date, t.maturity_date, t.periode_duration, t.status, t.total_fund_value, t.total_investor_count, t.bond_id, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_code AS bond_code, t.created_at, t.updated_at
 FROM bond_periode_distribution t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -131,6 +131,7 @@ type GetBondPeriodeDistributionByUUIDRow struct {
 	TotalInvestorCount       *int32
 	BondID                   *int64
 	BondUuid                 *uuid.UUID
+	BondCode                 *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -157,6 +158,7 @@ func (q *Queries) GetBondPeriodeDistributionByUUID(ctx context.Context, arg GetB
 		&i.TotalInvestorCount,
 		&i.BondID,
 		&i.BondUuid,
+		&i.BondCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -164,7 +166,7 @@ func (q *Queries) GetBondPeriodeDistributionByUUID(ctx context.Context, arg GetB
 }
 
 const listBondPeriodeDistribution = `-- name: ListBondPeriodeDistribution :many
-SELECT t.id, t.uuid, t.bond_name, t.bond_number_template, t.bond_periode_code, t.bond_periode_name, t.certificate_print_template, t.coupon_rate, t.coupon_value, t.issuance_date, t.maturity_date, t.periode_duration, t.status, t.total_fund_value, t.total_investor_count, t.bond_id, r_bond_id.uuid AS bond_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_name, t.bond_number_template, t.bond_periode_code, t.bond_periode_name, t.certificate_print_template, t.coupon_rate, t.coupon_value, t.issuance_date, t.maturity_date, t.periode_duration, t.status, t.total_fund_value, t.total_investor_count, t.bond_id, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_code AS bond_code, t.created_at, t.updated_at
 FROM bond_periode_distribution t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 WHERE t.deleted_at IS NULL
@@ -207,6 +209,7 @@ type ListBondPeriodeDistributionRow struct {
 	TotalInvestorCount       *int32
 	BondID                   *int64
 	BondUuid                 *uuid.UUID
+	BondCode                 *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -245,6 +248,7 @@ func (q *Queries) ListBondPeriodeDistribution(ctx context.Context, arg ListBondP
 			&i.TotalInvestorCount,
 			&i.BondID,
 			&i.BondUuid,
+			&i.BondCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

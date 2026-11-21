@@ -98,6 +98,42 @@ func (sp *Spec) applyDefaults(t *Table) {
 	}
 }
 
+// schemaTables is the introspected schema (set by main), used to find the
+// display columns of referenced tables.
+var schemaTables Schema
+
+// labelCol is a display column of a referenced row exposed next to its FK.
+type labelCol struct{ Source, Alias string }
+
+// labelColumns returns, for an FK column, the referenced table's <ref>_name
+// and <ref>_code (or <ref>_number), exposed as <base>_name / <base>_code so
+// clients can show relations without extra requests. A label is skipped when
+// the table already has a column of that name (e.g. a snapshot column).
+func labelColumns(t *Table, fkCol string) []labelCol {
+	ref := t.FKs[fkCol]
+	rt := schemaTables[ref]
+	if rt == nil {
+		return nil
+	}
+	base := fkBase(fkCol)
+	var out []labelCol
+	try := func(src, suffix string) bool {
+		c, ok := rt.Column(src)
+		if !ok || !isText(c) {
+			return false
+		}
+		if _, clash := t.Column(base + suffix); !clash {
+			out = append(out, labelCol{Source: src, Alias: base + suffix})
+		}
+		return true
+	}
+	try(ref+"_name", "_name")
+	if !try(ref+"_code", "_code") {
+		try(ref+"_number", "_number")
+	}
+	return out
+}
+
 func (sp *Spec) isSnapshot(col string) bool { _, ok := sp.Snapshot[col]; return ok }
 
 // apiColumns are the business columns visible through the API, in table order.

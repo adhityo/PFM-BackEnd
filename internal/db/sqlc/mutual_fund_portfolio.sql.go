@@ -36,7 +36,7 @@ func (q *Queries) CountMutualFundPortfolio(ctx context.Context, arg CountMutualF
 
 const getMutualFundPortfolioByUUID = `-- name: GetMutualFundPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.mutual_fund_id, t.portfolio_id, t.average_nav, t.total_unit, t.latest_nav, t.total_investment_value, t.description, t.status, t.inception_date, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.mutual_fund_id, t.portfolio_id, t.average_nav, t.total_unit, t.latest_nav, t.total_investment_value, t.description, t.status, t.inception_date, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_mutual_fund_id.mutual_fund_name AS mutual_fund_name, r_mutual_fund_id.mutual_fund_code AS mutual_fund_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM mutual_fund_portfolio t
 LEFT JOIN mutual_fund r_mutual_fund_id ON r_mutual_fund_id.id = t.mutual_fund_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -62,7 +62,11 @@ type GetMutualFundPortfolioByUUIDRow struct {
 	Status               *int16
 	InceptionDate        *time.Time
 	MutualFundUuid       *uuid.UUID
+	MutualFundName       *string
+	MutualFundCode       *string
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -84,7 +88,11 @@ func (q *Queries) GetMutualFundPortfolioByUUID(ctx context.Context, arg GetMutua
 		&i.Status,
 		&i.InceptionDate,
 		&i.MutualFundUuid,
+		&i.MutualFundName,
+		&i.MutualFundCode,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -92,7 +100,7 @@ func (q *Queries) GetMutualFundPortfolioByUUID(ctx context.Context, arg GetMutua
 }
 
 const listMutualFundPortfolio = `-- name: ListMutualFundPortfolio :many
-SELECT t.id, t.uuid, t.mutual_fund_id, t.portfolio_id, t.average_nav, t.total_unit, t.latest_nav, t.total_investment_value, t.description, t.status, t.inception_date, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.mutual_fund_id, t.portfolio_id, t.average_nav, t.total_unit, t.latest_nav, t.total_investment_value, t.description, t.status, t.inception_date, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_mutual_fund_id.mutual_fund_name AS mutual_fund_name, r_mutual_fund_id.mutual_fund_code AS mutual_fund_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM mutual_fund_portfolio t
 LEFT JOIN mutual_fund r_mutual_fund_id ON r_mutual_fund_id.id = t.mutual_fund_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -129,7 +137,11 @@ type ListMutualFundPortfolioRow struct {
 	Status               *int16
 	InceptionDate        *time.Time
 	MutualFundUuid       *uuid.UUID
+	MutualFundName       *string
+	MutualFundCode       *string
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -163,7 +175,11 @@ func (q *Queries) ListMutualFundPortfolio(ctx context.Context, arg ListMutualFun
 			&i.Status,
 			&i.InceptionDate,
 			&i.MutualFundUuid,
+			&i.MutualFundName,
+			&i.MutualFundCode,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

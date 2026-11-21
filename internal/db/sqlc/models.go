@@ -2125,6 +2125,23 @@ type PortfolioCostStructure struct {
 	DeletedBy           *string
 }
 
+type PortfolioHolding struct {
+	AssetClass     string
+	Uuid           uuid.UUID
+	PortfolioID    *int64
+	InstrumentID   int64
+	InstrumentUuid *uuid.UUID
+	InstrumentCode *string
+	InstrumentName *string
+	Quantity       *decimal.Decimal
+	AveragePrice   *decimal.Decimal
+	CostValue      *decimal.Decimal
+	LastPrice      *decimal.Decimal
+	PriceDate      *time.Time
+	MarketValue    *decimal.Decimal
+	InceptionDate  *time.Time
+}
+
 type PortfolioNote struct {
 	ID          int64
 	Uuid        uuid.UUID

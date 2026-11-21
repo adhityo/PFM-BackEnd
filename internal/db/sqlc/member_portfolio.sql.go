@@ -65,7 +65,7 @@ func (q *Queries) CreateMemberPortfolio(ctx context.Context, arg CreateMemberPor
 
 const getMemberPortfolioByUUID = `-- name: GetMemberPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.member_id, t.portfolio_id, t.total_unit, t.current_net_asset_value, t.total_investment, t.latest_transaction_date, r_member_id.uuid AS member_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.member_id, t.portfolio_id, t.total_unit, t.current_net_asset_value, t.total_investment, t.latest_transaction_date, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM member_portfolio t
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -88,7 +88,11 @@ type GetMemberPortfolioByUUIDRow struct {
 	TotalInvestment       *decimal.Decimal
 	LatestTransactionDate *time.Time
 	MemberUuid            *uuid.UUID
+	MemberName            *string
+	MemberNumber          *string
 	PortfolioUuid         *uuid.UUID
+	PortfolioName         *string
+	PortfolioCode         *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -107,7 +111,11 @@ func (q *Queries) GetMemberPortfolioByUUID(ctx context.Context, arg GetMemberPor
 		&i.TotalInvestment,
 		&i.LatestTransactionDate,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -115,7 +123,7 @@ func (q *Queries) GetMemberPortfolioByUUID(ctx context.Context, arg GetMemberPor
 }
 
 const listMemberPortfolio = `-- name: ListMemberPortfolio :many
-SELECT t.id, t.uuid, t.member_id, t.portfolio_id, t.total_unit, t.current_net_asset_value, t.total_investment, t.latest_transaction_date, r_member_id.uuid AS member_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.member_id, t.portfolio_id, t.total_unit, t.current_net_asset_value, t.total_investment, t.latest_transaction_date, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM member_portfolio t
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -149,7 +157,11 @@ type ListMemberPortfolioRow struct {
 	TotalInvestment       *decimal.Decimal
 	LatestTransactionDate *time.Time
 	MemberUuid            *uuid.UUID
+	MemberName            *string
+	MemberNumber          *string
 	PortfolioUuid         *uuid.UUID
+	PortfolioName         *string
+	PortfolioCode         *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -180,7 +192,11 @@ func (q *Queries) ListMemberPortfolio(ctx context.Context, arg ListMemberPortfol
 			&i.TotalInvestment,
 			&i.LatestTransactionDate,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

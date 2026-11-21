@@ -123,7 +123,7 @@ func (q *Queries) CreateDependant(ctx context.Context, arg CreateDependantParams
 
 const getDependantByUUID = `-- name: GetDependantByUUID :one
 
-SELECT t.id, t.uuid, t.address, t.bank_account_name, t.bank_account_number, t.bank_branch, t.bank_name, t.birthdate, t.city, t.dependant_name, t.dependant_status, t.dependant_type, t.email, t.handphone, t.identity_number, t.npwp, t.postal_code, t.province, t.sex, t.telephone, t.member_id, t.pension_benefit_value, r_member_id.uuid AS member_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.bank_account_name, t.bank_account_number, t.bank_branch, t.bank_name, t.birthdate, t.city, t.dependant_name, t.dependant_status, t.dependant_type, t.email, t.handphone, t.identity_number, t.npwp, t.postal_code, t.province, t.sex, t.telephone, t.member_id, t.pension_benefit_value, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, t.created_at, t.updated_at
 FROM dependant t
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -159,6 +159,8 @@ type GetDependantByUUIDRow struct {
 	MemberID            *int64
 	PensionBenefitValue *decimal.Decimal
 	MemberUuid          *uuid.UUID
+	MemberName          *string
+	MemberNumber        *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -191,6 +193,8 @@ func (q *Queries) GetDependantByUUID(ctx context.Context, arg GetDependantByUUID
 		&i.MemberID,
 		&i.PensionBenefitValue,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -198,7 +202,7 @@ func (q *Queries) GetDependantByUUID(ctx context.Context, arg GetDependantByUUID
 }
 
 const listDependant = `-- name: ListDependant :many
-SELECT t.id, t.uuid, t.address, t.bank_account_name, t.bank_account_number, t.bank_branch, t.bank_name, t.birthdate, t.city, t.dependant_name, t.dependant_status, t.dependant_type, t.email, t.handphone, t.identity_number, t.npwp, t.postal_code, t.province, t.sex, t.telephone, t.member_id, t.pension_benefit_value, r_member_id.uuid AS member_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.bank_account_name, t.bank_account_number, t.bank_branch, t.bank_name, t.birthdate, t.city, t.dependant_name, t.dependant_status, t.dependant_type, t.email, t.handphone, t.identity_number, t.npwp, t.postal_code, t.province, t.sex, t.telephone, t.member_id, t.pension_benefit_value, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, t.created_at, t.updated_at
 FROM dependant t
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 WHERE t.deleted_at IS NULL
@@ -251,6 +255,8 @@ type ListDependantRow struct {
 	MemberID            *int64
 	PensionBenefitValue *decimal.Decimal
 	MemberUuid          *uuid.UUID
+	MemberName          *string
+	MemberNumber        *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -295,6 +301,8 @@ func (q *Queries) ListDependant(ctx context.Context, arg ListDependantParams) ([
 			&i.MemberID,
 			&i.PensionBenefitValue,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -43,7 +43,7 @@ func (q *Queries) CountBondPortfolioHistory(ctx context.Context, arg CountBondPo
 
 const getBondPortfolioHistoryByUUID = `-- name: GetBondPortfolioHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.yield_to_maturity, t.purchased_price, t.bond_portfolio_id, r_bond_id.uuid AS bond_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.yield_to_maturity, t.purchased_price, t.bond_portfolio_id, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_bond_id.bond_code AS bond_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, t.created_at, t.updated_at
 FROM bond_portfolio_history t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -70,7 +70,11 @@ type GetBondPortfolioHistoryByUUIDRow struct {
 	PurchasedPrice    *decimal.Decimal
 	BondPortfolioID   *int64
 	BondUuid          *uuid.UUID
+	BondName          *string
+	BondCode          *string
 	PortfolioUuid     *uuid.UUID
+	PortfolioName     *string
+	PortfolioCode     *string
 	BondPortfolioUuid *uuid.UUID
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -93,7 +97,11 @@ func (q *Queries) GetBondPortfolioHistoryByUUID(ctx context.Context, arg GetBond
 		&i.PurchasedPrice,
 		&i.BondPortfolioID,
 		&i.BondUuid,
+		&i.BondName,
+		&i.BondCode,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.BondPortfolioUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -102,7 +110,7 @@ func (q *Queries) GetBondPortfolioHistoryByUUID(ctx context.Context, arg GetBond
 }
 
 const listBondPortfolioHistory = `-- name: ListBondPortfolioHistory :many
-SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.yield_to_maturity, t.purchased_price, t.bond_portfolio_id, r_bond_id.uuid AS bond_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.yield_to_maturity, t.purchased_price, t.bond_portfolio_id, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_bond_id.bond_code AS bond_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, t.created_at, t.updated_at
 FROM bond_portfolio_history t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -142,7 +150,11 @@ type ListBondPortfolioHistoryRow struct {
 	PurchasedPrice    *decimal.Decimal
 	BondPortfolioID   *int64
 	BondUuid          *uuid.UUID
+	BondName          *string
+	BondCode          *string
 	PortfolioUuid     *uuid.UUID
+	PortfolioName     *string
+	PortfolioCode     *string
 	BondPortfolioUuid *uuid.UUID
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -178,7 +190,11 @@ func (q *Queries) ListBondPortfolioHistory(ctx context.Context, arg ListBondPort
 			&i.PurchasedPrice,
 			&i.BondPortfolioID,
 			&i.BondUuid,
+			&i.BondName,
+			&i.BondCode,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.BondPortfolioUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

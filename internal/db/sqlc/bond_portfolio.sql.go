@@ -48,7 +48,7 @@ func (q *Queries) CountBondPortfolio(ctx context.Context, arg CountBondPortfolio
 
 const getBondPortfolioByUUID = `-- name: GetBondPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.purchased_price, t.yield_to_maturity, t.rating_id, t.accrued_interest, t.bond_code, t.bond_name, t.market_value, t.average_price, t.bond_amount, t.inception_date, r_bond_id.uuid AS bond_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_rating_id.uuid AS rating_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.purchased_price, t.yield_to_maturity, t.rating_id, t.accrued_interest, t.bond_code, t.bond_name, t.market_value, t.average_price, t.bond_amount, t.inception_date, r_bond_id.uuid AS bond_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, t.created_at, t.updated_at
 FROM bond_portfolio t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -83,7 +83,11 @@ type GetBondPortfolioByUUIDRow struct {
 	InceptionDate   *time.Time
 	BondUuid        *uuid.UUID
 	PortfolioUuid   *uuid.UUID
+	PortfolioName   *string
+	PortfolioCode   *string
 	RatingUuid      *uuid.UUID
+	RatingName      *string
+	RatingCode      *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -113,7 +117,11 @@ func (q *Queries) GetBondPortfolioByUUID(ctx context.Context, arg GetBondPortfol
 		&i.InceptionDate,
 		&i.BondUuid,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.RatingUuid,
+		&i.RatingName,
+		&i.RatingCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -121,7 +129,7 @@ func (q *Queries) GetBondPortfolioByUUID(ctx context.Context, arg GetBondPortfol
 }
 
 const listBondPortfolio = `-- name: ListBondPortfolio :many
-SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.purchased_price, t.yield_to_maturity, t.rating_id, t.accrued_interest, t.bond_code, t.bond_name, t.market_value, t.average_price, t.bond_amount, t.inception_date, r_bond_id.uuid AS bond_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_rating_id.uuid AS rating_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.portfolio_id, t.nominal, t.coupon, t.maturity_date, t.status, t.purchased_price, t.yield_to_maturity, t.rating_id, t.accrued_interest, t.bond_code, t.bond_name, t.market_value, t.average_price, t.bond_amount, t.inception_date, r_bond_id.uuid AS bond_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, t.created_at, t.updated_at
 FROM bond_portfolio t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -173,7 +181,11 @@ type ListBondPortfolioRow struct {
 	InceptionDate   *time.Time
 	BondUuid        *uuid.UUID
 	PortfolioUuid   *uuid.UUID
+	PortfolioName   *string
+	PortfolioCode   *string
 	RatingUuid      *uuid.UUID
+	RatingName      *string
+	RatingCode      *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -217,7 +229,11 @@ func (q *Queries) ListBondPortfolio(ctx context.Context, arg ListBondPortfolioPa
 			&i.InceptionDate,
 			&i.BondUuid,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.RatingUuid,
+			&i.RatingName,
+			&i.RatingCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

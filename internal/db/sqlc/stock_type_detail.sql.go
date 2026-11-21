@@ -67,7 +67,7 @@ func (q *Queries) CreateStockTypeDetail(ctx context.Context, arg CreateStockType
 
 const getStockTypeDetailByUUID = `-- name: GetStockTypeDetailByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.stock_code, t.stock_name, t.stock_id, t.stock_type_id, r_stock_id.uuid AS stock_uuid, r_stock_type_id.uuid AS stock_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.stock_code, t.stock_name, t.stock_id, t.stock_type_id, r_stock_id.uuid AS stock_uuid, r_stock_type_id.uuid AS stock_type_uuid, r_stock_type_id.stock_type_name AS stock_type_name, r_stock_type_id.stock_type_code AS stock_type_code, t.created_at, t.updated_at
 FROM stock_type_detail t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN stock_type r_stock_type_id ON r_stock_type_id.id = t.stock_type_id
@@ -84,6 +84,8 @@ type GetStockTypeDetailByUUIDRow struct {
 	StockTypeID   *int64
 	StockUuid     *uuid.UUID
 	StockTypeUuid *uuid.UUID
+	StockTypeName *string
+	StockTypeCode *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -102,6 +104,8 @@ func (q *Queries) GetStockTypeDetailByUUID(ctx context.Context, argUuid uuid.UUI
 		&i.StockTypeID,
 		&i.StockUuid,
 		&i.StockTypeUuid,
+		&i.StockTypeName,
+		&i.StockTypeCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -109,7 +113,7 @@ func (q *Queries) GetStockTypeDetailByUUID(ctx context.Context, argUuid uuid.UUI
 }
 
 const listStockTypeDetail = `-- name: ListStockTypeDetail :many
-SELECT t.id, t.uuid, t.description, t.stock_code, t.stock_name, t.stock_id, t.stock_type_id, r_stock_id.uuid AS stock_uuid, r_stock_type_id.uuid AS stock_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.stock_code, t.stock_name, t.stock_id, t.stock_type_id, r_stock_id.uuid AS stock_uuid, r_stock_type_id.uuid AS stock_type_uuid, r_stock_type_id.stock_type_name AS stock_type_name, r_stock_type_id.stock_type_code AS stock_type_code, t.created_at, t.updated_at
 FROM stock_type_detail t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN stock_type r_stock_type_id ON r_stock_type_id.id = t.stock_type_id
@@ -141,6 +145,8 @@ type ListStockTypeDetailRow struct {
 	StockTypeID   *int64
 	StockUuid     *uuid.UUID
 	StockTypeUuid *uuid.UUID
+	StockTypeName *string
+	StockTypeCode *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -170,6 +176,8 @@ func (q *Queries) ListStockTypeDetail(ctx context.Context, arg ListStockTypeDeta
 			&i.StockTypeID,
 			&i.StockUuid,
 			&i.StockTypeUuid,
+			&i.StockTypeName,
+			&i.StockTypeCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

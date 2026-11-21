@@ -73,7 +73,7 @@ func (q *Queries) CreateRating(ctx context.Context, arg CreateRatingParams) (uui
 
 const getRatingByUUID = `-- name: GetRatingByUUID :one
 
-SELECT t.id, t.uuid, t.rating_name, t.rating_code, t.description, t.rating_agency_id, t.status, r_rating_agency_id.uuid AS rating_agency_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.rating_name, t.rating_code, t.description, t.rating_agency_id, t.status, r_rating_agency_id.uuid AS rating_agency_uuid, r_rating_agency_id.rating_agency_name AS rating_agency_name, r_rating_agency_id.rating_agency_code AS rating_agency_code, t.created_at, t.updated_at
 FROM rating t
 LEFT JOIN rating_agency r_rating_agency_id ON r_rating_agency_id.id = t.rating_agency_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -88,6 +88,8 @@ type GetRatingByUUIDRow struct {
 	RatingAgencyID   *int64
 	Status           *int16
 	RatingAgencyUuid *uuid.UUID
+	RatingAgencyName *string
+	RatingAgencyCode *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -105,6 +107,8 @@ func (q *Queries) GetRatingByUUID(ctx context.Context, argUuid uuid.UUID) (GetRa
 		&i.RatingAgencyID,
 		&i.Status,
 		&i.RatingAgencyUuid,
+		&i.RatingAgencyName,
+		&i.RatingAgencyCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -112,7 +116,7 @@ func (q *Queries) GetRatingByUUID(ctx context.Context, argUuid uuid.UUID) (GetRa
 }
 
 const listRating = `-- name: ListRating :many
-SELECT t.id, t.uuid, t.rating_name, t.rating_code, t.description, t.rating_agency_id, t.status, r_rating_agency_id.uuid AS rating_agency_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.rating_name, t.rating_code, t.description, t.rating_agency_id, t.status, r_rating_agency_id.uuid AS rating_agency_uuid, r_rating_agency_id.rating_agency_name AS rating_agency_name, r_rating_agency_id.rating_agency_code AS rating_agency_code, t.created_at, t.updated_at
 FROM rating t
 LEFT JOIN rating_agency r_rating_agency_id ON r_rating_agency_id.id = t.rating_agency_id
 WHERE t.deleted_at IS NULL
@@ -148,6 +152,8 @@ type ListRatingRow struct {
 	RatingAgencyID   *int64
 	Status           *int16
 	RatingAgencyUuid *uuid.UUID
+	RatingAgencyName *string
+	RatingAgencyCode *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -176,6 +182,8 @@ func (q *Queries) ListRating(ctx context.Context, arg ListRatingParams) ([]ListR
 			&i.RatingAgencyID,
 			&i.Status,
 			&i.RatingAgencyUuid,
+			&i.RatingAgencyName,
+			&i.RatingAgencyCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

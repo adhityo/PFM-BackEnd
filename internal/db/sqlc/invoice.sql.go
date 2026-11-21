@@ -81,7 +81,7 @@ func (q *Queries) CreateInvoice(ctx context.Context, arg CreateInvoiceParams) (u
 
 const getInvoiceByUUID = `-- name: GetInvoiceByUUID :one
 
-SELECT t.id, t.uuid, t.billing_description, t.description, t.invoice_date, t.invoice_due_date, t.invoice_number, t.invoice_status, t.invoice_tax_value, t.invoice_total_value, t.invoice_value, t.month, t.total_member, t.year, t.client_id, r_client_id.uuid AS client_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.billing_description, t.description, t.invoice_date, t.invoice_due_date, t.invoice_number, t.invoice_status, t.invoice_tax_value, t.invoice_total_value, t.invoice_value, t.month, t.total_member, t.year, t.client_id, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, t.created_at, t.updated_at
 FROM invoice t
 LEFT JOIN client r_client_id ON r_client_id.id = t.client_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -110,6 +110,8 @@ type GetInvoiceByUUIDRow struct {
 	Year               *int32
 	ClientID           *int64
 	ClientUuid         *uuid.UUID
+	ClientName         *string
+	ClientCode         *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -135,6 +137,8 @@ func (q *Queries) GetInvoiceByUUID(ctx context.Context, arg GetInvoiceByUUIDPara
 		&i.Year,
 		&i.ClientID,
 		&i.ClientUuid,
+		&i.ClientName,
+		&i.ClientCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -142,7 +146,7 @@ func (q *Queries) GetInvoiceByUUID(ctx context.Context, arg GetInvoiceByUUIDPara
 }
 
 const listInvoice = `-- name: ListInvoice :many
-SELECT t.id, t.uuid, t.billing_description, t.description, t.invoice_date, t.invoice_due_date, t.invoice_number, t.invoice_status, t.invoice_tax_value, t.invoice_total_value, t.invoice_value, t.month, t.total_member, t.year, t.client_id, r_client_id.uuid AS client_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.billing_description, t.description, t.invoice_date, t.invoice_due_date, t.invoice_number, t.invoice_status, t.invoice_tax_value, t.invoice_total_value, t.invoice_value, t.month, t.total_member, t.year, t.client_id, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, t.created_at, t.updated_at
 FROM invoice t
 LEFT JOIN client r_client_id ON r_client_id.id = t.client_id
 WHERE t.deleted_at IS NULL
@@ -187,6 +191,8 @@ type ListInvoiceRow struct {
 	Year               *int32
 	ClientID           *int64
 	ClientUuid         *uuid.UUID
+	ClientName         *string
+	ClientCode         *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -224,6 +230,8 @@ func (q *Queries) ListInvoice(ctx context.Context, arg ListInvoiceParams) ([]Lis
 			&i.Year,
 			&i.ClientID,
 			&i.ClientUuid,
+			&i.ClientName,
+			&i.ClientCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

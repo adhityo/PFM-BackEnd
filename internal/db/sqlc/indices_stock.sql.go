@@ -84,7 +84,7 @@ func (q *Queries) CreateIndicesStock(ctx context.Context, arg CreateIndicesStock
 
 const getIndicesStockByUUID = `-- name: GetIndicesStockByUUID :one
 
-SELECT t.id, t.uuid, t.indices_id, t.stock_id, t.weight, t.registration_date, t.indices_stock_status, t.description, t.stock_price, t.total_listed_share, t.total_market_capitalization, r_indices_id.uuid AS indices_uuid, r_stock_id.uuid AS stock_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.indices_id, t.stock_id, t.weight, t.registration_date, t.indices_stock_status, t.description, t.stock_price, t.total_listed_share, t.total_market_capitalization, r_indices_id.uuid AS indices_uuid, r_indices_id.indices_name AS indices_name, r_indices_id.indices_code AS indices_code, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_id.stock_code AS stock_code, t.created_at, t.updated_at
 FROM indices_stock t
 LEFT JOIN indices r_indices_id ON r_indices_id.id = t.indices_id
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
@@ -104,7 +104,11 @@ type GetIndicesStockByUUIDRow struct {
 	TotalListedShare          *decimal.Decimal
 	TotalMarketCapitalization *decimal.Decimal
 	IndicesUuid               *uuid.UUID
+	IndicesName               *string
+	IndicesCode               *string
 	StockUuid                 *uuid.UUID
+	StockName                 *string
+	StockCode                 *string
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -126,7 +130,11 @@ func (q *Queries) GetIndicesStockByUUID(ctx context.Context, argUuid uuid.UUID) 
 		&i.TotalListedShare,
 		&i.TotalMarketCapitalization,
 		&i.IndicesUuid,
+		&i.IndicesName,
+		&i.IndicesCode,
 		&i.StockUuid,
+		&i.StockName,
+		&i.StockCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -134,7 +142,7 @@ func (q *Queries) GetIndicesStockByUUID(ctx context.Context, argUuid uuid.UUID) 
 }
 
 const listIndicesStock = `-- name: ListIndicesStock :many
-SELECT t.id, t.uuid, t.indices_id, t.stock_id, t.weight, t.registration_date, t.indices_stock_status, t.description, t.stock_price, t.total_listed_share, t.total_market_capitalization, r_indices_id.uuid AS indices_uuid, r_stock_id.uuid AS stock_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.indices_id, t.stock_id, t.weight, t.registration_date, t.indices_stock_status, t.description, t.stock_price, t.total_listed_share, t.total_market_capitalization, r_indices_id.uuid AS indices_uuid, r_indices_id.indices_name AS indices_name, r_indices_id.indices_code AS indices_code, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_id.stock_code AS stock_code, t.created_at, t.updated_at
 FROM indices_stock t
 LEFT JOIN indices r_indices_id ON r_indices_id.id = t.indices_id
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
@@ -173,7 +181,11 @@ type ListIndicesStockRow struct {
 	TotalListedShare          *decimal.Decimal
 	TotalMarketCapitalization *decimal.Decimal
 	IndicesUuid               *uuid.UUID
+	IndicesName               *string
+	IndicesCode               *string
 	StockUuid                 *uuid.UUID
+	StockName                 *string
+	StockCode                 *string
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -206,7 +218,11 @@ func (q *Queries) ListIndicesStock(ctx context.Context, arg ListIndicesStockPara
 			&i.TotalListedShare,
 			&i.TotalMarketCapitalization,
 			&i.IndicesUuid,
+			&i.IndicesName,
+			&i.IndicesCode,
 			&i.StockUuid,
+			&i.StockName,
+			&i.StockCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

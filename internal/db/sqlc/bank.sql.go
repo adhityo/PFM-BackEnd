@@ -74,7 +74,7 @@ func (q *Queries) CreateBank(ctx context.Context, arg CreateBankParams) (uuid.UU
 
 const getBankByUUID = `-- name: GetBankByUUID :one
 
-SELECT t.id, t.uuid, t.bank_name, t.bank_clearing_code, t.bank_swift_code, t.bank_class_id, t.description, r_bank_class_id.uuid AS bank_class_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bank_name, t.bank_clearing_code, t.bank_swift_code, t.bank_class_id, t.description, r_bank_class_id.uuid AS bank_class_uuid, r_bank_class_id.bank_class_name AS bank_class_name, r_bank_class_id.bank_class_code AS bank_class_code, t.created_at, t.updated_at
 FROM bank t
 LEFT JOIN bank_class r_bank_class_id ON r_bank_class_id.id = t.bank_class_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -89,6 +89,8 @@ type GetBankByUUIDRow struct {
 	BankClassID      *int64
 	Description      *string
 	BankClassUuid    *uuid.UUID
+	BankClassName    *string
+	BankClassCode    *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -106,6 +108,8 @@ func (q *Queries) GetBankByUUID(ctx context.Context, argUuid uuid.UUID) (GetBank
 		&i.BankClassID,
 		&i.Description,
 		&i.BankClassUuid,
+		&i.BankClassName,
+		&i.BankClassCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -113,7 +117,7 @@ func (q *Queries) GetBankByUUID(ctx context.Context, argUuid uuid.UUID) (GetBank
 }
 
 const listBank = `-- name: ListBank :many
-SELECT t.id, t.uuid, t.bank_name, t.bank_clearing_code, t.bank_swift_code, t.bank_class_id, t.description, r_bank_class_id.uuid AS bank_class_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bank_name, t.bank_clearing_code, t.bank_swift_code, t.bank_class_id, t.description, r_bank_class_id.uuid AS bank_class_uuid, r_bank_class_id.bank_class_name AS bank_class_name, r_bank_class_id.bank_class_code AS bank_class_code, t.created_at, t.updated_at
 FROM bank t
 LEFT JOIN bank_class r_bank_class_id ON r_bank_class_id.id = t.bank_class_id
 WHERE t.deleted_at IS NULL
@@ -148,6 +152,8 @@ type ListBankRow struct {
 	BankClassID      *int64
 	Description      *string
 	BankClassUuid    *uuid.UUID
+	BankClassName    *string
+	BankClassCode    *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -176,6 +182,8 @@ func (q *Queries) ListBank(ctx context.Context, arg ListBankParams) ([]ListBankR
 			&i.BankClassID,
 			&i.Description,
 			&i.BankClassUuid,
+			&i.BankClassName,
+			&i.BankClassCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

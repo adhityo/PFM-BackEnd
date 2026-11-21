@@ -63,7 +63,7 @@ func (q *Queries) CreateIndicesHistory(ctx context.Context, arg CreateIndicesHis
 
 const getIndicesHistoryByUUID = `-- name: GetIndicesHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.indices_id, t.closing_date, t.closing_value, t.closing_market_capitalization, r_indices_id.uuid AS indices_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.indices_id, t.closing_date, t.closing_value, t.closing_market_capitalization, r_indices_id.uuid AS indices_uuid, r_indices_id.indices_name AS indices_name, r_indices_id.indices_code AS indices_code, t.created_at, t.updated_at
 FROM indices_history t
 LEFT JOIN indices r_indices_id ON r_indices_id.id = t.indices_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -77,6 +77,8 @@ type GetIndicesHistoryByUUIDRow struct {
 	ClosingValue                *decimal.Decimal
 	ClosingMarketCapitalization *decimal.Decimal
 	IndicesUuid                 *uuid.UUID
+	IndicesName                 *string
+	IndicesCode                 *string
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
 }
@@ -93,6 +95,8 @@ func (q *Queries) GetIndicesHistoryByUUID(ctx context.Context, argUuid uuid.UUID
 		&i.ClosingValue,
 		&i.ClosingMarketCapitalization,
 		&i.IndicesUuid,
+		&i.IndicesName,
+		&i.IndicesCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -100,7 +104,7 @@ func (q *Queries) GetIndicesHistoryByUUID(ctx context.Context, argUuid uuid.UUID
 }
 
 const listIndicesHistory = `-- name: ListIndicesHistory :many
-SELECT t.id, t.uuid, t.indices_id, t.closing_date, t.closing_value, t.closing_market_capitalization, r_indices_id.uuid AS indices_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.indices_id, t.closing_date, t.closing_value, t.closing_market_capitalization, r_indices_id.uuid AS indices_uuid, r_indices_id.indices_name AS indices_name, r_indices_id.indices_code AS indices_code, t.created_at, t.updated_at
 FROM indices_history t
 LEFT JOIN indices r_indices_id ON r_indices_id.id = t.indices_id
 WHERE t.deleted_at IS NULL
@@ -129,6 +133,8 @@ type ListIndicesHistoryRow struct {
 	ClosingValue                *decimal.Decimal
 	ClosingMarketCapitalization *decimal.Decimal
 	IndicesUuid                 *uuid.UUID
+	IndicesName                 *string
+	IndicesCode                 *string
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
 }
@@ -155,6 +161,8 @@ func (q *Queries) ListIndicesHistory(ctx context.Context, arg ListIndicesHistory
 			&i.ClosingValue,
 			&i.ClosingMarketCapitalization,
 			&i.IndicesUuid,
+			&i.IndicesName,
+			&i.IndicesCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

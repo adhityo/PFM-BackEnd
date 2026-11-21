@@ -92,7 +92,7 @@ func (q *Queries) CreatePortfolioAccountingStructure(ctx context.Context, arg Cr
 
 const getPortfolioAccountingStructureByUUID = `-- name: GetPortfolioAccountingStructureByUUID :one
 
-SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.trade_type_id, t.description, t.finance_account_id, t.status, t.finance_account_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_asset_class_id.uuid AS asset_class_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_finance_account_id.uuid AS finance_account_uuid, r_finance_account_type_id.uuid AS finance_account_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.trade_type_id, t.description, t.finance_account_id, t.status, t.finance_account_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_asset_class_id.uuid AS asset_class_uuid, r_asset_class_id.asset_class_name AS asset_class_name, r_asset_class_id.asset_class_code AS asset_class_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, r_finance_account_id.uuid AS finance_account_uuid, r_finance_account_id.finance_account_name AS finance_account_name, r_finance_account_id.finance_account_number AS finance_account_number, r_finance_account_type_id.uuid AS finance_account_type_uuid, r_finance_account_type_id.finance_account_type_name AS finance_account_type_name, t.created_at, t.updated_at
 FROM portfolio_accounting_structure t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN asset_class r_asset_class_id ON r_asset_class_id.id = t.asset_class_id
@@ -119,10 +119,19 @@ type GetPortfolioAccountingStructureByUUIDRow struct {
 	Status                 *int16
 	FinanceAccountTypeID   *int64
 	PortfolioUuid          *uuid.UUID
+	PortfolioName          *string
+	PortfolioCode          *string
 	AssetClassUuid         *uuid.UUID
+	AssetClassName         *string
+	AssetClassCode         *string
 	TradeTypeUuid          *uuid.UUID
+	TradeTypeName          *string
+	TradeTypeCode          *string
 	FinanceAccountUuid     *uuid.UUID
+	FinanceAccountName     *string
+	FinanceAccountNumber   *string
 	FinanceAccountTypeUuid *uuid.UUID
+	FinanceAccountTypeName *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -142,10 +151,19 @@ func (q *Queries) GetPortfolioAccountingStructureByUUID(ctx context.Context, arg
 		&i.Status,
 		&i.FinanceAccountTypeID,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.AssetClassUuid,
+		&i.AssetClassName,
+		&i.AssetClassCode,
 		&i.TradeTypeUuid,
+		&i.TradeTypeName,
+		&i.TradeTypeCode,
 		&i.FinanceAccountUuid,
+		&i.FinanceAccountName,
+		&i.FinanceAccountNumber,
 		&i.FinanceAccountTypeUuid,
+		&i.FinanceAccountTypeName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -153,7 +171,7 @@ func (q *Queries) GetPortfolioAccountingStructureByUUID(ctx context.Context, arg
 }
 
 const listPortfolioAccountingStructure = `-- name: ListPortfolioAccountingStructure :many
-SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.trade_type_id, t.description, t.finance_account_id, t.status, t.finance_account_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_asset_class_id.uuid AS asset_class_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_finance_account_id.uuid AS finance_account_uuid, r_finance_account_type_id.uuid AS finance_account_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.trade_type_id, t.description, t.finance_account_id, t.status, t.finance_account_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_asset_class_id.uuid AS asset_class_uuid, r_asset_class_id.asset_class_name AS asset_class_name, r_asset_class_id.asset_class_code AS asset_class_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, r_finance_account_id.uuid AS finance_account_uuid, r_finance_account_id.finance_account_name AS finance_account_name, r_finance_account_id.finance_account_number AS finance_account_number, r_finance_account_type_id.uuid AS finance_account_type_uuid, r_finance_account_type_id.finance_account_type_name AS finance_account_type_name, t.created_at, t.updated_at
 FROM portfolio_accounting_structure t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN asset_class r_asset_class_id ON r_asset_class_id.id = t.asset_class_id
@@ -197,10 +215,19 @@ type ListPortfolioAccountingStructureRow struct {
 	Status                 *int16
 	FinanceAccountTypeID   *int64
 	PortfolioUuid          *uuid.UUID
+	PortfolioName          *string
+	PortfolioCode          *string
 	AssetClassUuid         *uuid.UUID
+	AssetClassName         *string
+	AssetClassCode         *string
 	TradeTypeUuid          *uuid.UUID
+	TradeTypeName          *string
+	TradeTypeCode          *string
 	FinanceAccountUuid     *uuid.UUID
+	FinanceAccountName     *string
+	FinanceAccountNumber   *string
 	FinanceAccountTypeUuid *uuid.UUID
+	FinanceAccountTypeName *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -235,10 +262,19 @@ func (q *Queries) ListPortfolioAccountingStructure(ctx context.Context, arg List
 			&i.Status,
 			&i.FinanceAccountTypeID,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.AssetClassUuid,
+			&i.AssetClassName,
+			&i.AssetClassCode,
 			&i.TradeTypeUuid,
+			&i.TradeTypeName,
+			&i.TradeTypeCode,
 			&i.FinanceAccountUuid,
+			&i.FinanceAccountName,
+			&i.FinanceAccountNumber,
 			&i.FinanceAccountTypeUuid,
+			&i.FinanceAccountTypeName,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

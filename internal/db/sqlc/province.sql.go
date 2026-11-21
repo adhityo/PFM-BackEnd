@@ -70,7 +70,7 @@ func (q *Queries) CreateProvince(ctx context.Context, arg CreateProvinceParams) 
 
 const getProvinceByUUID = `-- name: GetProvinceByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.province_code, t.province_name, t.country_id, r_country_id.uuid AS country_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.province_code, t.province_name, t.country_id, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, t.created_at, t.updated_at
 FROM province t
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -84,6 +84,8 @@ type GetProvinceByUUIDRow struct {
 	ProvinceName *string
 	CountryID    *int64
 	CountryUuid  *uuid.UUID
+	CountryName  *string
+	CountryCode  *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -100,6 +102,8 @@ func (q *Queries) GetProvinceByUUID(ctx context.Context, argUuid uuid.UUID) (Get
 		&i.ProvinceName,
 		&i.CountryID,
 		&i.CountryUuid,
+		&i.CountryName,
+		&i.CountryCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -107,7 +111,7 @@ func (q *Queries) GetProvinceByUUID(ctx context.Context, argUuid uuid.UUID) (Get
 }
 
 const listProvince = `-- name: ListProvince :many
-SELECT t.id, t.uuid, t.description, t.province_code, t.province_name, t.country_id, r_country_id.uuid AS country_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.province_code, t.province_name, t.country_id, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, t.created_at, t.updated_at
 FROM province t
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
 WHERE t.deleted_at IS NULL
@@ -142,6 +146,8 @@ type ListProvinceRow struct {
 	ProvinceName *string
 	CountryID    *int64
 	CountryUuid  *uuid.UUID
+	CountryName  *string
+	CountryCode  *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -169,6 +175,8 @@ func (q *Queries) ListProvince(ctx context.Context, arg ListProvinceParams) ([]L
 			&i.ProvinceName,
 			&i.CountryID,
 			&i.CountryUuid,
+			&i.CountryName,
+			&i.CountryCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

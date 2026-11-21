@@ -72,7 +72,7 @@ func (q *Queries) CreateCryptoTradePlan(ctx context.Context, arg CreateCryptoTra
 
 const getCryptoTradePlanByUUID = `-- name: GetCryptoTradePlanByUUID :one
 
-SELECT t.id, t.uuid, t.crypto_exchange_name, t.crypto_pair_symbol, t.description, t.status, t.crypto_exchange_id, t.crypto_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, r_crypto_id.uuid AS crypto_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.crypto_exchange_name, t.crypto_pair_symbol, t.description, t.status, t.crypto_exchange_id, t.crypto_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, r_crypto_exchange_id.crypto_exchange_code AS crypto_exchange_code, r_crypto_id.uuid AS crypto_uuid, r_crypto_id.crypto_name AS crypto_name, r_crypto_id.crypto_code AS crypto_code, t.created_at, t.updated_at
 FROM crypto_trade_plan t
 LEFT JOIN crypto_exchange r_crypto_exchange_id ON r_crypto_exchange_id.id = t.crypto_exchange_id
 LEFT JOIN crypto r_crypto_id ON r_crypto_id.id = t.crypto_id
@@ -89,7 +89,10 @@ type GetCryptoTradePlanByUUIDRow struct {
 	CryptoExchangeID   *int64
 	CryptoID           *int64
 	CryptoExchangeUuid *uuid.UUID
+	CryptoExchangeCode *string
 	CryptoUuid         *uuid.UUID
+	CryptoName         *string
+	CryptoCode         *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -108,7 +111,10 @@ func (q *Queries) GetCryptoTradePlanByUUID(ctx context.Context, argUuid uuid.UUI
 		&i.CryptoExchangeID,
 		&i.CryptoID,
 		&i.CryptoExchangeUuid,
+		&i.CryptoExchangeCode,
 		&i.CryptoUuid,
+		&i.CryptoName,
+		&i.CryptoCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -116,7 +122,7 @@ func (q *Queries) GetCryptoTradePlanByUUID(ctx context.Context, argUuid uuid.UUI
 }
 
 const listCryptoTradePlan = `-- name: ListCryptoTradePlan :many
-SELECT t.id, t.uuid, t.crypto_exchange_name, t.crypto_pair_symbol, t.description, t.status, t.crypto_exchange_id, t.crypto_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, r_crypto_id.uuid AS crypto_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.crypto_exchange_name, t.crypto_pair_symbol, t.description, t.status, t.crypto_exchange_id, t.crypto_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, r_crypto_exchange_id.crypto_exchange_code AS crypto_exchange_code, r_crypto_id.uuid AS crypto_uuid, r_crypto_id.crypto_name AS crypto_name, r_crypto_id.crypto_code AS crypto_code, t.created_at, t.updated_at
 FROM crypto_trade_plan t
 LEFT JOIN crypto_exchange r_crypto_exchange_id ON r_crypto_exchange_id.id = t.crypto_exchange_id
 LEFT JOIN crypto r_crypto_id ON r_crypto_id.id = t.crypto_id
@@ -148,7 +154,10 @@ type ListCryptoTradePlanRow struct {
 	CryptoExchangeID   *int64
 	CryptoID           *int64
 	CryptoExchangeUuid *uuid.UUID
+	CryptoExchangeCode *string
 	CryptoUuid         *uuid.UUID
+	CryptoName         *string
+	CryptoCode         *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -178,7 +187,10 @@ func (q *Queries) ListCryptoTradePlan(ctx context.Context, arg ListCryptoTradePl
 			&i.CryptoExchangeID,
 			&i.CryptoID,
 			&i.CryptoExchangeUuid,
+			&i.CryptoExchangeCode,
 			&i.CryptoUuid,
+			&i.CryptoName,
+			&i.CryptoCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

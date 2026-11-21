@@ -60,7 +60,7 @@ func (q *Queries) CreateDepositoInterestHistory(ctx context.Context, arg CreateD
 
 const getDepositoInterestHistoryByUUID = `-- name: GetDepositoInterestHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.deposito_id, t.interest_rate, t.description, r_deposito_id.uuid AS deposito_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.deposito_id, t.interest_rate, t.description, r_deposito_id.uuid AS deposito_uuid, r_deposito_id.deposito_name AS deposito_name, r_deposito_id.deposito_code AS deposito_code, t.created_at, t.updated_at
 FROM deposito_interest_history t
 LEFT JOIN deposito r_deposito_id ON r_deposito_id.id = t.deposito_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -73,6 +73,8 @@ type GetDepositoInterestHistoryByUUIDRow struct {
 	InterestRate *decimal.Decimal
 	Description  *string
 	DepositoUuid *uuid.UUID
+	DepositoName *string
+	DepositoCode *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -88,6 +90,8 @@ func (q *Queries) GetDepositoInterestHistoryByUUID(ctx context.Context, argUuid 
 		&i.InterestRate,
 		&i.Description,
 		&i.DepositoUuid,
+		&i.DepositoName,
+		&i.DepositoCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -95,7 +99,7 @@ func (q *Queries) GetDepositoInterestHistoryByUUID(ctx context.Context, argUuid 
 }
 
 const listDepositoInterestHistory = `-- name: ListDepositoInterestHistory :many
-SELECT t.id, t.uuid, t.deposito_id, t.interest_rate, t.description, r_deposito_id.uuid AS deposito_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.deposito_id, t.interest_rate, t.description, r_deposito_id.uuid AS deposito_uuid, r_deposito_id.deposito_name AS deposito_name, r_deposito_id.deposito_code AS deposito_code, t.created_at, t.updated_at
 FROM deposito_interest_history t
 LEFT JOIN deposito r_deposito_id ON r_deposito_id.id = t.deposito_id
 WHERE t.deleted_at IS NULL
@@ -121,6 +125,8 @@ type ListDepositoInterestHistoryRow struct {
 	InterestRate *decimal.Decimal
 	Description  *string
 	DepositoUuid *uuid.UUID
+	DepositoName *string
+	DepositoCode *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -146,6 +152,8 @@ func (q *Queries) ListDepositoInterestHistory(ctx context.Context, arg ListDepos
 			&i.InterestRate,
 			&i.Description,
 			&i.DepositoUuid,
+			&i.DepositoName,
+			&i.DepositoCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

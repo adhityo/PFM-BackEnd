@@ -97,7 +97,7 @@ func (q *Queries) CreateStockFundamentalHistory(ctx context.Context, arg CreateS
 
 const getStockFundamentalHistoryByUUID = `-- name: GetStockFundamentalHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.stock_id, t.register_date, t.stock_code, t.sales_data, t.net_profit, t.asset, t.liability, t.equity, t.sales_growth, t.profit_growth, t.return_on_equity, t.debt_equity_ratio, t.stock_fundamental_status, t.earning_per_share, t.price_book_value, t.price_earning_ratio, r_stock_id.uuid AS stock_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.register_date, t.stock_code, t.sales_data, t.net_profit, t.asset, t.liability, t.equity, t.sales_growth, t.profit_growth, t.return_on_equity, t.debt_equity_ratio, t.stock_fundamental_status, t.earning_per_share, t.price_book_value, t.price_earning_ratio, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, t.created_at, t.updated_at
 FROM stock_fundamental_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -123,6 +123,7 @@ type GetStockFundamentalHistoryByUUIDRow struct {
 	PriceBookValue         *decimal.Decimal
 	PriceEarningRatio      *decimal.Decimal
 	StockUuid              *uuid.UUID
+	StockName              *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -151,6 +152,7 @@ func (q *Queries) GetStockFundamentalHistoryByUUID(ctx context.Context, argUuid 
 		&i.PriceBookValue,
 		&i.PriceEarningRatio,
 		&i.StockUuid,
+		&i.StockName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -158,7 +160,7 @@ func (q *Queries) GetStockFundamentalHistoryByUUID(ctx context.Context, argUuid 
 }
 
 const listStockFundamentalHistory = `-- name: ListStockFundamentalHistory :many
-SELECT t.id, t.uuid, t.stock_id, t.register_date, t.stock_code, t.sales_data, t.net_profit, t.asset, t.liability, t.equity, t.sales_growth, t.profit_growth, t.return_on_equity, t.debt_equity_ratio, t.stock_fundamental_status, t.earning_per_share, t.price_book_value, t.price_earning_ratio, r_stock_id.uuid AS stock_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.register_date, t.stock_code, t.sales_data, t.net_profit, t.asset, t.liability, t.equity, t.sales_growth, t.profit_growth, t.return_on_equity, t.debt_equity_ratio, t.stock_fundamental_status, t.earning_per_share, t.price_book_value, t.price_earning_ratio, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, t.created_at, t.updated_at
 FROM stock_fundamental_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 WHERE t.deleted_at IS NULL
@@ -199,6 +201,7 @@ type ListStockFundamentalHistoryRow struct {
 	PriceBookValue         *decimal.Decimal
 	PriceEarningRatio      *decimal.Decimal
 	StockUuid              *uuid.UUID
+	StockName              *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -237,6 +240,7 @@ func (q *Queries) ListStockFundamentalHistory(ctx context.Context, arg ListStock
 			&i.PriceBookValue,
 			&i.PriceEarningRatio,
 			&i.StockUuid,
+			&i.StockName,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

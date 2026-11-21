@@ -83,7 +83,7 @@ func (q *Queries) CreateBondRating(ctx context.Context, arg CreateBondRatingPara
 
 const getBondRatingByUUID = `-- name: GetBondRatingByUUID :one
 
-SELECT t.id, t.uuid, t.bond_id, t.rating_id, t.rating_agency_id, t.description, t.rating_date, t.bond_name, t.rating_agency_name, t.rating_value, r_bond_id.uuid AS bond_uuid, r_rating_id.uuid AS rating_uuid, r_rating_agency_id.uuid AS rating_agency_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.rating_id, t.rating_agency_id, t.description, t.rating_date, t.bond_name, t.rating_agency_name, t.rating_value, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_code AS bond_code, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, r_rating_agency_id.uuid AS rating_agency_uuid, r_rating_agency_id.rating_agency_code AS rating_agency_code, t.created_at, t.updated_at
 FROM bond_rating t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN rating r_rating_id ON r_rating_id.id = t.rating_id
@@ -109,8 +109,12 @@ type GetBondRatingByUUIDRow struct {
 	RatingAgencyName *string
 	RatingValue      *string
 	BondUuid         *uuid.UUID
+	BondCode         *string
 	RatingUuid       *uuid.UUID
+	RatingName       *string
+	RatingCode       *string
 	RatingAgencyUuid *uuid.UUID
+	RatingAgencyCode *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -131,8 +135,12 @@ func (q *Queries) GetBondRatingByUUID(ctx context.Context, arg GetBondRatingByUU
 		&i.RatingAgencyName,
 		&i.RatingValue,
 		&i.BondUuid,
+		&i.BondCode,
 		&i.RatingUuid,
+		&i.RatingName,
+		&i.RatingCode,
 		&i.RatingAgencyUuid,
+		&i.RatingAgencyCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -140,7 +148,7 @@ func (q *Queries) GetBondRatingByUUID(ctx context.Context, arg GetBondRatingByUU
 }
 
 const listBondRating = `-- name: ListBondRating :many
-SELECT t.id, t.uuid, t.bond_id, t.rating_id, t.rating_agency_id, t.description, t.rating_date, t.bond_name, t.rating_agency_name, t.rating_value, r_bond_id.uuid AS bond_uuid, r_rating_id.uuid AS rating_uuid, r_rating_agency_id.uuid AS rating_agency_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.rating_id, t.rating_agency_id, t.description, t.rating_date, t.bond_name, t.rating_agency_name, t.rating_value, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_code AS bond_code, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, r_rating_agency_id.uuid AS rating_agency_uuid, r_rating_agency_id.rating_agency_code AS rating_agency_code, t.created_at, t.updated_at
 FROM bond_rating t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN rating r_rating_id ON r_rating_id.id = t.rating_id
@@ -181,8 +189,12 @@ type ListBondRatingRow struct {
 	RatingAgencyName *string
 	RatingValue      *string
 	BondUuid         *uuid.UUID
+	BondCode         *string
 	RatingUuid       *uuid.UUID
+	RatingName       *string
+	RatingCode       *string
 	RatingAgencyUuid *uuid.UUID
+	RatingAgencyCode *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -216,8 +228,12 @@ func (q *Queries) ListBondRating(ctx context.Context, arg ListBondRatingParams) 
 			&i.RatingAgencyName,
 			&i.RatingValue,
 			&i.BondUuid,
+			&i.BondCode,
 			&i.RatingUuid,
+			&i.RatingName,
+			&i.RatingCode,
 			&i.RatingAgencyUuid,
+			&i.RatingAgencyCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

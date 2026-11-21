@@ -86,7 +86,7 @@ func (q *Queries) CreateMutualFund(ctx context.Context, arg CreateMutualFundPara
 
 const getMutualFundByUUID = `-- name: GetMutualFundByUUID :one
 
-SELECT t.id, t.uuid, t.mutual_fund_name, t.mutual_fund_code, t.description, t.net_asset_value, t.latest_update_date, t.mutual_fund_category_id, t.investment_manager_id, t.fund_category_name, t.is_private_placement, t.issuance_date, t.total_fund_value, r_mutual_fund_category_id.uuid AS mutual_fund_category_uuid, r_investment_manager_id.uuid AS investment_manager_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.mutual_fund_name, t.mutual_fund_code, t.description, t.net_asset_value, t.latest_update_date, t.mutual_fund_category_id, t.investment_manager_id, t.fund_category_name, t.is_private_placement, t.issuance_date, t.total_fund_value, r_mutual_fund_category_id.uuid AS mutual_fund_category_uuid, r_mutual_fund_category_id.mutual_fund_category_name AS mutual_fund_category_name, r_mutual_fund_category_id.mutual_fund_category_code AS mutual_fund_category_code, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, t.created_at, t.updated_at
 FROM mutual_fund t
 LEFT JOIN mutual_fund_category r_mutual_fund_category_id ON r_mutual_fund_category_id.id = t.mutual_fund_category_id
 LEFT JOIN investment_manager r_investment_manager_id ON r_investment_manager_id.id = t.investment_manager_id
@@ -108,7 +108,11 @@ type GetMutualFundByUUIDRow struct {
 	IssuanceDate           *time.Time
 	TotalFundValue         *decimal.Decimal
 	MutualFundCategoryUuid *uuid.UUID
+	MutualFundCategoryName *string
+	MutualFundCategoryCode *string
 	InvestmentManagerUuid  *uuid.UUID
+	InvestmentManagerName  *string
+	InvestmentManagerCode  *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -132,7 +136,11 @@ func (q *Queries) GetMutualFundByUUID(ctx context.Context, argUuid uuid.UUID) (G
 		&i.IssuanceDate,
 		&i.TotalFundValue,
 		&i.MutualFundCategoryUuid,
+		&i.MutualFundCategoryName,
+		&i.MutualFundCategoryCode,
 		&i.InvestmentManagerUuid,
+		&i.InvestmentManagerName,
+		&i.InvestmentManagerCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -140,7 +148,7 @@ func (q *Queries) GetMutualFundByUUID(ctx context.Context, argUuid uuid.UUID) (G
 }
 
 const listMutualFund = `-- name: ListMutualFund :many
-SELECT t.id, t.uuid, t.mutual_fund_name, t.mutual_fund_code, t.description, t.net_asset_value, t.latest_update_date, t.mutual_fund_category_id, t.investment_manager_id, t.fund_category_name, t.is_private_placement, t.issuance_date, t.total_fund_value, r_mutual_fund_category_id.uuid AS mutual_fund_category_uuid, r_investment_manager_id.uuid AS investment_manager_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.mutual_fund_name, t.mutual_fund_code, t.description, t.net_asset_value, t.latest_update_date, t.mutual_fund_category_id, t.investment_manager_id, t.fund_category_name, t.is_private_placement, t.issuance_date, t.total_fund_value, r_mutual_fund_category_id.uuid AS mutual_fund_category_uuid, r_mutual_fund_category_id.mutual_fund_category_name AS mutual_fund_category_name, r_mutual_fund_category_id.mutual_fund_category_code AS mutual_fund_category_code, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, t.created_at, t.updated_at
 FROM mutual_fund t
 LEFT JOIN mutual_fund_category r_mutual_fund_category_id ON r_mutual_fund_category_id.id = t.mutual_fund_category_id
 LEFT JOIN investment_manager r_investment_manager_id ON r_investment_manager_id.id = t.investment_manager_id
@@ -185,7 +193,11 @@ type ListMutualFundRow struct {
 	IssuanceDate           *time.Time
 	TotalFundValue         *decimal.Decimal
 	MutualFundCategoryUuid *uuid.UUID
+	MutualFundCategoryName *string
+	MutualFundCategoryCode *string
 	InvestmentManagerUuid  *uuid.UUID
+	InvestmentManagerName  *string
+	InvestmentManagerCode  *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -221,7 +233,11 @@ func (q *Queries) ListMutualFund(ctx context.Context, arg ListMutualFundParams) 
 			&i.IssuanceDate,
 			&i.TotalFundValue,
 			&i.MutualFundCategoryUuid,
+			&i.MutualFundCategoryName,
+			&i.MutualFundCategoryCode,
 			&i.InvestmentManagerUuid,
+			&i.InvestmentManagerName,
+			&i.InvestmentManagerCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -74,7 +74,7 @@ func (q *Queries) CreateStockBetaHistory(ctx context.Context, arg CreateStockBet
 
 const getStockBetaHistoryByUUID = `-- name: GetStockBetaHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.stock_id, t.beta_value, t.data_provider_id, t.description, t.register_date, t.data_provider_name, t.stock_name, r_stock_id.uuid AS stock_uuid, r_data_provider_id.uuid AS data_provider_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.beta_value, t.data_provider_id, t.description, t.register_date, t.data_provider_name, t.stock_name, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_code AS stock_code, r_data_provider_id.uuid AS data_provider_uuid, r_data_provider_id.rating_agency_code AS data_provider_code, t.created_at, t.updated_at
 FROM stock_beta_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN rating_agency r_data_provider_id ON r_data_provider_id.id = t.data_provider_id
@@ -92,7 +92,9 @@ type GetStockBetaHistoryByUUIDRow struct {
 	DataProviderName *string
 	StockName        *string
 	StockUuid        *uuid.UUID
+	StockCode        *string
 	DataProviderUuid *uuid.UUID
+	DataProviderCode *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -112,7 +114,9 @@ func (q *Queries) GetStockBetaHistoryByUUID(ctx context.Context, argUuid uuid.UU
 		&i.DataProviderName,
 		&i.StockName,
 		&i.StockUuid,
+		&i.StockCode,
 		&i.DataProviderUuid,
+		&i.DataProviderCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -120,7 +124,7 @@ func (q *Queries) GetStockBetaHistoryByUUID(ctx context.Context, argUuid uuid.UU
 }
 
 const listStockBetaHistory = `-- name: ListStockBetaHistory :many
-SELECT t.id, t.uuid, t.stock_id, t.beta_value, t.data_provider_id, t.description, t.register_date, t.data_provider_name, t.stock_name, r_stock_id.uuid AS stock_uuid, r_data_provider_id.uuid AS data_provider_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.beta_value, t.data_provider_id, t.description, t.register_date, t.data_provider_name, t.stock_name, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_code AS stock_code, r_data_provider_id.uuid AS data_provider_uuid, r_data_provider_id.rating_agency_code AS data_provider_code, t.created_at, t.updated_at
 FROM stock_beta_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN rating_agency r_data_provider_id ON r_data_provider_id.id = t.data_provider_id
@@ -155,7 +159,9 @@ type ListStockBetaHistoryRow struct {
 	DataProviderName *string
 	StockName        *string
 	StockUuid        *uuid.UUID
+	StockCode        *string
 	DataProviderUuid *uuid.UUID
+	DataProviderCode *string
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -186,7 +192,9 @@ func (q *Queries) ListStockBetaHistory(ctx context.Context, arg ListStockBetaHis
 			&i.DataProviderName,
 			&i.StockName,
 			&i.StockUuid,
+			&i.StockCode,
 			&i.DataProviderUuid,
+			&i.DataProviderCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

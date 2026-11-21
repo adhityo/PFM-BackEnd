@@ -111,7 +111,7 @@ func (q *Queries) CreateMarketingAgent(ctx context.Context, arg CreateMarketingA
 
 const getMarketingAgentByUUID = `-- name: GetMarketingAgentByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.location, t.marketing_agent_name, t.marketing_agent_number, t.npwp, t.status, t.address, t.birthdate, t.email, t.handphone, t.identity_number, t.telephone, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.agent_level, t.is_synchronized, t.latest_synchronized_time, t.leader_code, t.leader_name, t.marketing_unique_number, t.synchronize_notes, t.leader_agent_id, r_leader_agent_id.uuid AS leader_agent_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.location, t.marketing_agent_name, t.marketing_agent_number, t.npwp, t.status, t.address, t.birthdate, t.email, t.handphone, t.identity_number, t.telephone, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.agent_level, t.is_synchronized, t.latest_synchronized_time, t.leader_code, t.leader_name, t.marketing_unique_number, t.synchronize_notes, t.leader_agent_id, r_leader_agent_id.uuid AS leader_agent_uuid, r_leader_agent_id.marketing_agent_name AS leader_agent_name, r_leader_agent_id.marketing_agent_number AS leader_agent_number, t.created_at, t.updated_at
 FROM marketing_agent t
 LEFT JOIN marketing_agent r_leader_agent_id ON r_leader_agent_id.id = t.leader_agent_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -145,6 +145,8 @@ type GetMarketingAgentByUUIDRow struct {
 	SynchronizeNotes       *string
 	LeaderAgentID          *int64
 	LeaderAgentUuid        *uuid.UUID
+	LeaderAgentName        *string
+	LeaderAgentNumber      *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -181,6 +183,8 @@ func (q *Queries) GetMarketingAgentByUUID(ctx context.Context, argUuid uuid.UUID
 		&i.SynchronizeNotes,
 		&i.LeaderAgentID,
 		&i.LeaderAgentUuid,
+		&i.LeaderAgentName,
+		&i.LeaderAgentNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -188,7 +192,7 @@ func (q *Queries) GetMarketingAgentByUUID(ctx context.Context, argUuid uuid.UUID
 }
 
 const listMarketingAgent = `-- name: ListMarketingAgent :many
-SELECT t.id, t.uuid, t.description, t.location, t.marketing_agent_name, t.marketing_agent_number, t.npwp, t.status, t.address, t.birthdate, t.email, t.handphone, t.identity_number, t.telephone, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.agent_level, t.is_synchronized, t.latest_synchronized_time, t.leader_code, t.leader_name, t.marketing_unique_number, t.synchronize_notes, t.leader_agent_id, r_leader_agent_id.uuid AS leader_agent_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.location, t.marketing_agent_name, t.marketing_agent_number, t.npwp, t.status, t.address, t.birthdate, t.email, t.handphone, t.identity_number, t.telephone, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.agent_level, t.is_synchronized, t.latest_synchronized_time, t.leader_code, t.leader_name, t.marketing_unique_number, t.synchronize_notes, t.leader_agent_id, r_leader_agent_id.uuid AS leader_agent_uuid, r_leader_agent_id.marketing_agent_name AS leader_agent_name, r_leader_agent_id.marketing_agent_number AS leader_agent_number, t.created_at, t.updated_at
 FROM marketing_agent t
 LEFT JOIN marketing_agent r_leader_agent_id ON r_leader_agent_id.id = t.leader_agent_id
 WHERE t.deleted_at IS NULL
@@ -243,6 +247,8 @@ type ListMarketingAgentRow struct {
 	SynchronizeNotes       *string
 	LeaderAgentID          *int64
 	LeaderAgentUuid        *uuid.UUID
+	LeaderAgentName        *string
+	LeaderAgentNumber      *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -290,6 +296,8 @@ func (q *Queries) ListMarketingAgent(ctx context.Context, arg ListMarketingAgent
 			&i.SynchronizeNotes,
 			&i.LeaderAgentID,
 			&i.LeaderAgentUuid,
+			&i.LeaderAgentName,
+			&i.LeaderAgentNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

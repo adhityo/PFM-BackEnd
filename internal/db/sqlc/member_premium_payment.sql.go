@@ -96,7 +96,7 @@ func (q *Queries) CreateMemberPremiumPayment(ctx context.Context, arg CreateMemb
 
 const getMemberPremiumPaymentByUUID = `-- name: GetMemberPremiumPaymentByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.payment_date, t.payment_nominal, t.percentage, t.status, t.member_id, t.premium_payment_type, t.allowance_payment_nominal, t.month, t.paid_nominal, t.self_payment_nominal, t.year, t.invoice_id, r_member_id.uuid AS member_uuid, r_premium_payment_type.uuid AS premium_payment_type_uuid, r_invoice_id.uuid AS invoice_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.payment_date, t.payment_nominal, t.percentage, t.status, t.member_id, t.premium_payment_type, t.allowance_payment_nominal, t.month, t.paid_nominal, t.self_payment_nominal, t.year, t.invoice_id, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_premium_payment_type.uuid AS premium_payment_type_uuid, r_premium_payment_type.premium_payment_type_name AS premium_payment_type_name, r_premium_payment_type.premium_payment_type_code AS premium_payment_type_code, r_invoice_id.uuid AS invoice_uuid, r_invoice_id.invoice_number AS invoice_number, t.created_at, t.updated_at
 FROM member_premium_payment t
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 LEFT JOIN premium_payment_type r_premium_payment_type ON r_premium_payment_type.id = t.premium_payment_type
@@ -127,8 +127,13 @@ type GetMemberPremiumPaymentByUUIDRow struct {
 	Year                    *int32
 	InvoiceID               *int64
 	MemberUuid              *uuid.UUID
+	MemberName              *string
+	MemberNumber            *string
 	PremiumPaymentTypeUuid  *uuid.UUID
+	PremiumPaymentTypeName  *string
+	PremiumPaymentTypeCode  *string
 	InvoiceUuid             *uuid.UUID
+	InvoiceNumber           *string
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -154,8 +159,13 @@ func (q *Queries) GetMemberPremiumPaymentByUUID(ctx context.Context, arg GetMemb
 		&i.Year,
 		&i.InvoiceID,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.PremiumPaymentTypeUuid,
+		&i.PremiumPaymentTypeName,
+		&i.PremiumPaymentTypeCode,
 		&i.InvoiceUuid,
+		&i.InvoiceNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -163,7 +173,7 @@ func (q *Queries) GetMemberPremiumPaymentByUUID(ctx context.Context, arg GetMemb
 }
 
 const listMemberPremiumPayment = `-- name: ListMemberPremiumPayment :many
-SELECT t.id, t.uuid, t.description, t.payment_date, t.payment_nominal, t.percentage, t.status, t.member_id, t.premium_payment_type, t.allowance_payment_nominal, t.month, t.paid_nominal, t.self_payment_nominal, t.year, t.invoice_id, r_member_id.uuid AS member_uuid, r_premium_payment_type.uuid AS premium_payment_type_uuid, r_invoice_id.uuid AS invoice_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.payment_date, t.payment_nominal, t.percentage, t.status, t.member_id, t.premium_payment_type, t.allowance_payment_nominal, t.month, t.paid_nominal, t.self_payment_nominal, t.year, t.invoice_id, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_premium_payment_type.uuid AS premium_payment_type_uuid, r_premium_payment_type.premium_payment_type_name AS premium_payment_type_name, r_premium_payment_type.premium_payment_type_code AS premium_payment_type_code, r_invoice_id.uuid AS invoice_uuid, r_invoice_id.invoice_number AS invoice_number, t.created_at, t.updated_at
 FROM member_premium_payment t
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
 LEFT JOIN premium_payment_type r_premium_payment_type ON r_premium_payment_type.id = t.premium_payment_type
@@ -211,8 +221,13 @@ type ListMemberPremiumPaymentRow struct {
 	Year                    *int32
 	InvoiceID               *int64
 	MemberUuid              *uuid.UUID
+	MemberName              *string
+	MemberNumber            *string
 	PremiumPaymentTypeUuid  *uuid.UUID
+	PremiumPaymentTypeName  *string
+	PremiumPaymentTypeCode  *string
 	InvoiceUuid             *uuid.UUID
+	InvoiceNumber           *string
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -251,8 +266,13 @@ func (q *Queries) ListMemberPremiumPayment(ctx context.Context, arg ListMemberPr
 			&i.Year,
 			&i.InvoiceID,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.PremiumPaymentTypeUuid,
+			&i.PremiumPaymentTypeName,
+			&i.PremiumPaymentTypeCode,
 			&i.InvoiceUuid,
+			&i.InvoiceNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

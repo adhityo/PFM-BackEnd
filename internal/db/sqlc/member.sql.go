@@ -183,7 +183,7 @@ func (q *Queries) CreateMember(ctx context.Context, arg CreateMemberParams) (uui
 
 const getMemberByUUID = `-- name: GetMemberByUUID :one
 
-SELECT t.id, t.uuid, t.member_name, t.member_number, t.birthdate, t.address, t.city_id, t.province_id, t.region_id, t.country_id, t.postal_code, t.email, t.telephone, t.mobile_phone, t.faximile, t.description, t.bank_account_number, t.bank_account_name, t.bank_name, t.bank_branch_name, t.bank_id, t.identity_number, t.latest_allowance, t.latest_pension_premium, t.latest_salary, t.npwp, t.retired_date, t.start_working_date, t.occupation_id, t.pension_benefit_value, t.family_status, t.payment_method, t.pension_number, t.retirement_type, t.sex, t.status, t.total_pension_premium_value, t.client_id, r_city_id.uuid AS city_uuid, r_province_id.uuid AS province_uuid, r_country_id.uuid AS country_uuid, r_bank_id.uuid AS bank_uuid, r_occupation_id.uuid AS occupation_uuid, r_client_id.uuid AS client_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.member_name, t.member_number, t.birthdate, t.address, t.city_id, t.province_id, t.region_id, t.country_id, t.postal_code, t.email, t.telephone, t.mobile_phone, t.faximile, t.description, t.bank_account_number, t.bank_account_name, t.bank_name, t.bank_branch_name, t.bank_id, t.identity_number, t.latest_allowance, t.latest_pension_premium, t.latest_salary, t.npwp, t.retired_date, t.start_working_date, t.occupation_id, t.pension_benefit_value, t.family_status, t.payment_method, t.pension_number, t.retirement_type, t.sex, t.status, t.total_pension_premium_value, t.client_id, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_bank_id.uuid AS bank_uuid, r_occupation_id.uuid AS occupation_uuid, r_occupation_id.occupation_name AS occupation_name, r_occupation_id.occupation_code AS occupation_code, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, t.created_at, t.updated_at
 FROM member t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN province r_province_id ON r_province_id.id = t.province_id
@@ -240,11 +240,21 @@ type GetMemberByUUIDRow struct {
 	TotalPensionPremiumValue *decimal.Decimal
 	ClientID                 *int64
 	CityUuid                 *uuid.UUID
+	CityName                 *string
+	CityCode                 *string
 	ProvinceUuid             *uuid.UUID
+	ProvinceName             *string
+	ProvinceCode             *string
 	CountryUuid              *uuid.UUID
+	CountryName              *string
+	CountryCode              *string
 	BankUuid                 *uuid.UUID
 	OccupationUuid           *uuid.UUID
+	OccupationName           *string
+	OccupationCode           *string
 	ClientUuid               *uuid.UUID
+	ClientName               *string
+	ClientCode               *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -293,11 +303,21 @@ func (q *Queries) GetMemberByUUID(ctx context.Context, arg GetMemberByUUIDParams
 		&i.TotalPensionPremiumValue,
 		&i.ClientID,
 		&i.CityUuid,
+		&i.CityName,
+		&i.CityCode,
 		&i.ProvinceUuid,
+		&i.ProvinceName,
+		&i.ProvinceCode,
 		&i.CountryUuid,
+		&i.CountryName,
+		&i.CountryCode,
 		&i.BankUuid,
 		&i.OccupationUuid,
+		&i.OccupationName,
+		&i.OccupationCode,
 		&i.ClientUuid,
+		&i.ClientName,
+		&i.ClientCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -305,7 +325,7 @@ func (q *Queries) GetMemberByUUID(ctx context.Context, arg GetMemberByUUIDParams
 }
 
 const listMember = `-- name: ListMember :many
-SELECT t.id, t.uuid, t.member_name, t.member_number, t.birthdate, t.address, t.city_id, t.province_id, t.region_id, t.country_id, t.postal_code, t.email, t.telephone, t.mobile_phone, t.faximile, t.description, t.bank_account_number, t.bank_account_name, t.bank_name, t.bank_branch_name, t.bank_id, t.identity_number, t.latest_allowance, t.latest_pension_premium, t.latest_salary, t.npwp, t.retired_date, t.start_working_date, t.occupation_id, t.pension_benefit_value, t.family_status, t.payment_method, t.pension_number, t.retirement_type, t.sex, t.status, t.total_pension_premium_value, t.client_id, r_city_id.uuid AS city_uuid, r_province_id.uuid AS province_uuid, r_country_id.uuid AS country_uuid, r_bank_id.uuid AS bank_uuid, r_occupation_id.uuid AS occupation_uuid, r_client_id.uuid AS client_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.member_name, t.member_number, t.birthdate, t.address, t.city_id, t.province_id, t.region_id, t.country_id, t.postal_code, t.email, t.telephone, t.mobile_phone, t.faximile, t.description, t.bank_account_number, t.bank_account_name, t.bank_name, t.bank_branch_name, t.bank_id, t.identity_number, t.latest_allowance, t.latest_pension_premium, t.latest_salary, t.npwp, t.retired_date, t.start_working_date, t.occupation_id, t.pension_benefit_value, t.family_status, t.payment_method, t.pension_number, t.retirement_type, t.sex, t.status, t.total_pension_premium_value, t.client_id, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_bank_id.uuid AS bank_uuid, r_occupation_id.uuid AS occupation_uuid, r_occupation_id.occupation_name AS occupation_name, r_occupation_id.occupation_code AS occupation_code, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, t.created_at, t.updated_at
 FROM member t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN province r_province_id ON r_province_id.id = t.province_id
@@ -390,11 +410,21 @@ type ListMemberRow struct {
 	TotalPensionPremiumValue *decimal.Decimal
 	ClientID                 *int64
 	CityUuid                 *uuid.UUID
+	CityName                 *string
+	CityCode                 *string
 	ProvinceUuid             *uuid.UUID
+	ProvinceName             *string
+	ProvinceCode             *string
 	CountryUuid              *uuid.UUID
+	CountryName              *string
+	CountryCode              *string
 	BankUuid                 *uuid.UUID
 	OccupationUuid           *uuid.UUID
+	OccupationName           *string
+	OccupationCode           *string
 	ClientUuid               *uuid.UUID
+	ClientName               *string
+	ClientCode               *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -460,11 +490,21 @@ func (q *Queries) ListMember(ctx context.Context, arg ListMemberParams) ([]ListM
 			&i.TotalPensionPremiumValue,
 			&i.ClientID,
 			&i.CityUuid,
+			&i.CityName,
+			&i.CityCode,
 			&i.ProvinceUuid,
+			&i.ProvinceName,
+			&i.ProvinceCode,
 			&i.CountryUuid,
+			&i.CountryName,
+			&i.CountryCode,
 			&i.BankUuid,
 			&i.OccupationUuid,
+			&i.OccupationName,
+			&i.OccupationCode,
 			&i.ClientUuid,
+			&i.ClientName,
+			&i.ClientCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

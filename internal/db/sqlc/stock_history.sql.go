@@ -96,7 +96,7 @@ func (q *Queries) CreateStockHistory(ctx context.Context, arg CreateStockHistory
 
 const getStockHistoryByUUID = `-- name: GetStockHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.stock_id, t.stock_code, t.closing_date, t.closing_price, t.total_listed_share, t.total_market_capitalization, t.total_market_share, t.stock_type_id, t.price_to_book_value, t.price_earning_ratio, t.fundamental_month, t.fundamental_year, t.stock_fundamental_history_id, r_stock_id.uuid AS stock_uuid, r_stock_type_id.uuid AS stock_type_uuid, r_stock_fundamental_history_id.uuid AS stock_fundamental_history_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.stock_code, t.closing_date, t.closing_price, t.total_listed_share, t.total_market_capitalization, t.total_market_share, t.stock_type_id, t.price_to_book_value, t.price_earning_ratio, t.fundamental_month, t.fundamental_year, t.stock_fundamental_history_id, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_type_id.uuid AS stock_type_uuid, r_stock_type_id.stock_type_name AS stock_type_name, r_stock_type_id.stock_type_code AS stock_type_code, r_stock_fundamental_history_id.uuid AS stock_fundamental_history_uuid, t.created_at, t.updated_at
 FROM stock_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN stock_type r_stock_type_id ON r_stock_type_id.id = t.stock_type_id
@@ -121,7 +121,10 @@ type GetStockHistoryByUUIDRow struct {
 	FundamentalYear             *int32
 	StockFundamentalHistoryID   *int64
 	StockUuid                   *uuid.UUID
+	StockName                   *string
 	StockTypeUuid               *uuid.UUID
+	StockTypeName               *string
+	StockTypeCode               *string
 	StockFundamentalHistoryUuid *uuid.UUID
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
@@ -148,7 +151,10 @@ func (q *Queries) GetStockHistoryByUUID(ctx context.Context, argUuid uuid.UUID) 
 		&i.FundamentalYear,
 		&i.StockFundamentalHistoryID,
 		&i.StockUuid,
+		&i.StockName,
 		&i.StockTypeUuid,
+		&i.StockTypeName,
+		&i.StockTypeCode,
 		&i.StockFundamentalHistoryUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -157,7 +163,7 @@ func (q *Queries) GetStockHistoryByUUID(ctx context.Context, argUuid uuid.UUID) 
 }
 
 const listStockHistory = `-- name: ListStockHistory :many
-SELECT t.id, t.uuid, t.stock_id, t.stock_code, t.closing_date, t.closing_price, t.total_listed_share, t.total_market_capitalization, t.total_market_share, t.stock_type_id, t.price_to_book_value, t.price_earning_ratio, t.fundamental_month, t.fundamental_year, t.stock_fundamental_history_id, r_stock_id.uuid AS stock_uuid, r_stock_type_id.uuid AS stock_type_uuid, r_stock_fundamental_history_id.uuid AS stock_fundamental_history_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.stock_code, t.closing_date, t.closing_price, t.total_listed_share, t.total_market_capitalization, t.total_market_share, t.stock_type_id, t.price_to_book_value, t.price_earning_ratio, t.fundamental_month, t.fundamental_year, t.stock_fundamental_history_id, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_type_id.uuid AS stock_type_uuid, r_stock_type_id.stock_type_name AS stock_type_name, r_stock_type_id.stock_type_code AS stock_type_code, r_stock_fundamental_history_id.uuid AS stock_fundamental_history_uuid, t.created_at, t.updated_at
 FROM stock_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN stock_type r_stock_type_id ON r_stock_type_id.id = t.stock_type_id
@@ -201,7 +207,10 @@ type ListStockHistoryRow struct {
 	FundamentalYear             *int32
 	StockFundamentalHistoryID   *int64
 	StockUuid                   *uuid.UUID
+	StockName                   *string
 	StockTypeUuid               *uuid.UUID
+	StockTypeName               *string
+	StockTypeCode               *string
 	StockFundamentalHistoryUuid *uuid.UUID
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
@@ -240,7 +249,10 @@ func (q *Queries) ListStockHistory(ctx context.Context, arg ListStockHistoryPara
 			&i.FundamentalYear,
 			&i.StockFundamentalHistoryID,
 			&i.StockUuid,
+			&i.StockName,
 			&i.StockTypeUuid,
+			&i.StockTypeName,
+			&i.StockTypeCode,
 			&i.StockFundamentalHistoryUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

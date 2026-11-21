@@ -80,7 +80,7 @@ func (q *Queries) CreateMemberPortfolioTransaction(ctx context.Context, arg Crea
 
 const getMemberPortfolioTransactionByUUID = `-- name: GetMemberPortfolioTransactionByUUID :one
 
-SELECT t.id, t.uuid, t.member_portfolio_id, t.transaction_date, t.total_unit, t.effective_nav, t.total_transaction_value, t.trade_type_id, t.transaction_status, t.cost_of_transaction_value, r_member_portfolio_id.uuid AS member_portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.member_portfolio_id, t.transaction_date, t.total_unit, t.effective_nav, t.total_transaction_value, t.trade_type_id, t.transaction_status, t.cost_of_transaction_value, r_member_portfolio_id.uuid AS member_portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, t.created_at, t.updated_at
 FROM member_portfolio_transaction t
 LEFT JOIN member_portfolio r_member_portfolio_id ON r_member_portfolio_id.id = t.member_portfolio_id
 LEFT JOIN trade_type r_trade_type_id ON r_trade_type_id.id = t.trade_type_id
@@ -106,6 +106,8 @@ type GetMemberPortfolioTransactionByUUIDRow struct {
 	CostOfTransactionValue *decimal.Decimal
 	MemberPortfolioUuid    *uuid.UUID
 	TradeTypeUuid          *uuid.UUID
+	TradeTypeName          *string
+	TradeTypeCode          *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -127,6 +129,8 @@ func (q *Queries) GetMemberPortfolioTransactionByUUID(ctx context.Context, arg G
 		&i.CostOfTransactionValue,
 		&i.MemberPortfolioUuid,
 		&i.TradeTypeUuid,
+		&i.TradeTypeName,
+		&i.TradeTypeCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -134,7 +138,7 @@ func (q *Queries) GetMemberPortfolioTransactionByUUID(ctx context.Context, arg G
 }
 
 const listMemberPortfolioTransaction = `-- name: ListMemberPortfolioTransaction :many
-SELECT t.id, t.uuid, t.member_portfolio_id, t.transaction_date, t.total_unit, t.effective_nav, t.total_transaction_value, t.trade_type_id, t.transaction_status, t.cost_of_transaction_value, r_member_portfolio_id.uuid AS member_portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.member_portfolio_id, t.transaction_date, t.total_unit, t.effective_nav, t.total_transaction_value, t.trade_type_id, t.transaction_status, t.cost_of_transaction_value, r_member_portfolio_id.uuid AS member_portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, t.created_at, t.updated_at
 FROM member_portfolio_transaction t
 LEFT JOIN member_portfolio r_member_portfolio_id ON r_member_portfolio_id.id = t.member_portfolio_id
 LEFT JOIN trade_type r_trade_type_id ON r_trade_type_id.id = t.trade_type_id
@@ -173,6 +177,8 @@ type ListMemberPortfolioTransactionRow struct {
 	CostOfTransactionValue *decimal.Decimal
 	MemberPortfolioUuid    *uuid.UUID
 	TradeTypeUuid          *uuid.UUID
+	TradeTypeName          *string
+	TradeTypeCode          *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -206,6 +212,8 @@ func (q *Queries) ListMemberPortfolioTransaction(ctx context.Context, arg ListMe
 			&i.CostOfTransactionValue,
 			&i.MemberPortfolioUuid,
 			&i.TradeTypeUuid,
+			&i.TradeTypeName,
+			&i.TradeTypeCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

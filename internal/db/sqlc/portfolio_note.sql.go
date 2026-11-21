@@ -71,7 +71,7 @@ func (q *Queries) CreatePortfolioNote(ctx context.Context, arg CreatePortfolioNo
 
 const getPortfolioNoteByUUID = `-- name: GetPortfolioNoteByUUID :one
 
-SELECT t.id, t.uuid, t.note_subject, t.notes, t.portfolio_id, t.description, t.status, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.note_subject, t.notes, t.portfolio_id, t.description, t.status, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM portfolio_note t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -92,6 +92,8 @@ type GetPortfolioNoteByUUIDRow struct {
 	Description   *string
 	Status        *int16
 	PortfolioUuid *uuid.UUID
+	PortfolioName *string
+	PortfolioCode *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -109,6 +111,8 @@ func (q *Queries) GetPortfolioNoteByUUID(ctx context.Context, arg GetPortfolioNo
 		&i.Description,
 		&i.Status,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -116,7 +120,7 @@ func (q *Queries) GetPortfolioNoteByUUID(ctx context.Context, arg GetPortfolioNo
 }
 
 const listPortfolioNote = `-- name: ListPortfolioNote :many
-SELECT t.id, t.uuid, t.note_subject, t.notes, t.portfolio_id, t.description, t.status, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.note_subject, t.notes, t.portfolio_id, t.description, t.status, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM portfolio_note t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 WHERE t.deleted_at IS NULL
@@ -146,6 +150,8 @@ type ListPortfolioNoteRow struct {
 	Description   *string
 	Status        *int16
 	PortfolioUuid *uuid.UUID
+	PortfolioName *string
+	PortfolioCode *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -174,6 +180,8 @@ func (q *Queries) ListPortfolioNote(ctx context.Context, arg ListPortfolioNotePa
 			&i.Description,
 			&i.Status,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

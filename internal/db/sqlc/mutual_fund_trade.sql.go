@@ -97,7 +97,7 @@ func (q *Queries) CreateMutualFundTrade(ctx context.Context, arg CreateMutualFun
 
 const getMutualFundTradeByUUID = `-- name: GetMutualFundTradeByUUID :one
 
-SELECT t.id, t.uuid, t.mutual_fund_id, t.total_unit, t.net_asset_value, t.total_investment_value, t.trade_type_id, t.status, t.transaction_time, t.portfolio_id, t.transaction_date, t.transaction_fee, t.mutual_fund_name, t.description, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.mutual_fund_id, t.total_unit, t.net_asset_value, t.total_investment_value, t.trade_type_id, t.status, t.transaction_time, t.portfolio_id, t.transaction_date, t.transaction_fee, t.mutual_fund_name, t.description, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_mutual_fund_id.mutual_fund_code AS mutual_fund_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM mutual_fund_trade t
 LEFT JOIN mutual_fund r_mutual_fund_id ON r_mutual_fund_id.id = t.mutual_fund_id
 LEFT JOIN trade_type r_trade_type_id ON r_trade_type_id.id = t.trade_type_id
@@ -127,8 +127,13 @@ type GetMutualFundTradeByUUIDRow struct {
 	MutualFundName       *string
 	Description          *string
 	MutualFundUuid       *uuid.UUID
+	MutualFundCode       *string
 	TradeTypeUuid        *uuid.UUID
+	TradeTypeName        *string
+	TradeTypeCode        *string
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -153,8 +158,13 @@ func (q *Queries) GetMutualFundTradeByUUID(ctx context.Context, arg GetMutualFun
 		&i.MutualFundName,
 		&i.Description,
 		&i.MutualFundUuid,
+		&i.MutualFundCode,
 		&i.TradeTypeUuid,
+		&i.TradeTypeName,
+		&i.TradeTypeCode,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -162,7 +172,7 @@ func (q *Queries) GetMutualFundTradeByUUID(ctx context.Context, arg GetMutualFun
 }
 
 const listMutualFundTrade = `-- name: ListMutualFundTrade :many
-SELECT t.id, t.uuid, t.mutual_fund_id, t.total_unit, t.net_asset_value, t.total_investment_value, t.trade_type_id, t.status, t.transaction_time, t.portfolio_id, t.transaction_date, t.transaction_fee, t.mutual_fund_name, t.description, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.mutual_fund_id, t.total_unit, t.net_asset_value, t.total_investment_value, t.trade_type_id, t.status, t.transaction_time, t.portfolio_id, t.transaction_date, t.transaction_fee, t.mutual_fund_name, t.description, r_mutual_fund_id.uuid AS mutual_fund_uuid, r_mutual_fund_id.mutual_fund_code AS mutual_fund_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM mutual_fund_trade t
 LEFT JOIN mutual_fund r_mutual_fund_id ON r_mutual_fund_id.id = t.mutual_fund_id
 LEFT JOIN trade_type r_trade_type_id ON r_trade_type_id.id = t.trade_type_id
@@ -207,8 +217,13 @@ type ListMutualFundTradeRow struct {
 	MutualFundName       *string
 	Description          *string
 	MutualFundUuid       *uuid.UUID
+	MutualFundCode       *string
 	TradeTypeUuid        *uuid.UUID
+	TradeTypeName        *string
+	TradeTypeCode        *string
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -246,8 +261,13 @@ func (q *Queries) ListMutualFundTrade(ctx context.Context, arg ListMutualFundTra
 			&i.MutualFundName,
 			&i.Description,
 			&i.MutualFundUuid,
+			&i.MutualFundCode,
 			&i.TradeTypeUuid,
+			&i.TradeTypeName,
+			&i.TradeTypeCode,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

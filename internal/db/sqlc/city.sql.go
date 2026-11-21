@@ -74,7 +74,7 @@ func (q *Queries) CreateCity(ctx context.Context, arg CreateCityParams) (uuid.UU
 
 const getCityByUUID = `-- name: GetCityByUUID :one
 
-SELECT t.id, t.uuid, t.city_code, t.city_name, t.latitude, t.longitude, t.province_id, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.city_code, t.city_name, t.latitude, t.longitude, t.province_id, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM city t
 LEFT JOIN province r_province_id ON r_province_id.id = t.province_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -89,6 +89,8 @@ type GetCityByUUIDRow struct {
 	Longitude    *decimal.Decimal
 	ProvinceID   *int64
 	ProvinceUuid *uuid.UUID
+	ProvinceName *string
+	ProvinceCode *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -106,6 +108,8 @@ func (q *Queries) GetCityByUUID(ctx context.Context, argUuid uuid.UUID) (GetCity
 		&i.Longitude,
 		&i.ProvinceID,
 		&i.ProvinceUuid,
+		&i.ProvinceName,
+		&i.ProvinceCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -113,7 +117,7 @@ func (q *Queries) GetCityByUUID(ctx context.Context, argUuid uuid.UUID) (GetCity
 }
 
 const listCity = `-- name: ListCity :many
-SELECT t.id, t.uuid, t.city_code, t.city_name, t.latitude, t.longitude, t.province_id, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.city_code, t.city_name, t.latitude, t.longitude, t.province_id, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM city t
 LEFT JOIN province r_province_id ON r_province_id.id = t.province_id
 WHERE t.deleted_at IS NULL
@@ -149,6 +153,8 @@ type ListCityRow struct {
 	Longitude    *decimal.Decimal
 	ProvinceID   *int64
 	ProvinceUuid *uuid.UUID
+	ProvinceName *string
+	ProvinceCode *string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 }
@@ -177,6 +183,8 @@ func (q *Queries) ListCity(ctx context.Context, arg ListCityParams) ([]ListCityR
 			&i.Longitude,
 			&i.ProvinceID,
 			&i.ProvinceUuid,
+			&i.ProvinceName,
+			&i.ProvinceCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -36,7 +36,7 @@ func (q *Queries) CountPortfolioBudgetHistory(ctx context.Context, arg CountPort
 
 const getPortfolioBudgetHistoryByUUID = `-- name: GetPortfolioBudgetHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.portfolio_budget_id, t.asset_class_id, t.budget_year, t.month, t.real_allocation_value, t.real_allocation_percentage, t.real_yield_value, t.real_yield_percentage, t.year_to_date_value, t.year_to_date_percentage, r_portfolio_budget_id.uuid AS portfolio_budget_uuid, r_asset_class_id.uuid AS asset_class_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_budget_id, t.asset_class_id, t.budget_year, t.month, t.real_allocation_value, t.real_allocation_percentage, t.real_yield_value, t.real_yield_percentage, t.year_to_date_value, t.year_to_date_percentage, r_portfolio_budget_id.uuid AS portfolio_budget_uuid, r_asset_class_id.uuid AS asset_class_uuid, r_asset_class_id.asset_class_name AS asset_class_name, r_asset_class_id.asset_class_code AS asset_class_code, t.created_at, t.updated_at
 FROM portfolio_budget_history t
 LEFT JOIN portfolio_budget r_portfolio_budget_id ON r_portfolio_budget_id.id = t.portfolio_budget_id
 LEFT JOIN asset_class r_asset_class_id ON r_asset_class_id.id = t.asset_class_id
@@ -64,6 +64,8 @@ type GetPortfolioBudgetHistoryByUUIDRow struct {
 	YearToDatePercentage     *decimal.Decimal
 	PortfolioBudgetUuid      *uuid.UUID
 	AssetClassUuid           *uuid.UUID
+	AssetClassName           *string
+	AssetClassCode           *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -87,6 +89,8 @@ func (q *Queries) GetPortfolioBudgetHistoryByUUID(ctx context.Context, arg GetPo
 		&i.YearToDatePercentage,
 		&i.PortfolioBudgetUuid,
 		&i.AssetClassUuid,
+		&i.AssetClassName,
+		&i.AssetClassCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -94,7 +98,7 @@ func (q *Queries) GetPortfolioBudgetHistoryByUUID(ctx context.Context, arg GetPo
 }
 
 const listPortfolioBudgetHistory = `-- name: ListPortfolioBudgetHistory :many
-SELECT t.id, t.uuid, t.portfolio_budget_id, t.asset_class_id, t.budget_year, t.month, t.real_allocation_value, t.real_allocation_percentage, t.real_yield_value, t.real_yield_percentage, t.year_to_date_value, t.year_to_date_percentage, r_portfolio_budget_id.uuid AS portfolio_budget_uuid, r_asset_class_id.uuid AS asset_class_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_budget_id, t.asset_class_id, t.budget_year, t.month, t.real_allocation_value, t.real_allocation_percentage, t.real_yield_value, t.real_yield_percentage, t.year_to_date_value, t.year_to_date_percentage, r_portfolio_budget_id.uuid AS portfolio_budget_uuid, r_asset_class_id.uuid AS asset_class_uuid, r_asset_class_id.asset_class_name AS asset_class_name, r_asset_class_id.asset_class_code AS asset_class_code, t.created_at, t.updated_at
 FROM portfolio_budget_history t
 LEFT JOIN portfolio_budget r_portfolio_budget_id ON r_portfolio_budget_id.id = t.portfolio_budget_id
 LEFT JOIN asset_class r_asset_class_id ON r_asset_class_id.id = t.asset_class_id
@@ -137,6 +141,8 @@ type ListPortfolioBudgetHistoryRow struct {
 	YearToDatePercentage     *decimal.Decimal
 	PortfolioBudgetUuid      *uuid.UUID
 	AssetClassUuid           *uuid.UUID
+	AssetClassName           *string
+	AssetClassCode           *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -172,6 +178,8 @@ func (q *Queries) ListPortfolioBudgetHistory(ctx context.Context, arg ListPortfo
 			&i.YearToDatePercentage,
 			&i.PortfolioBudgetUuid,
 			&i.AssetClassUuid,
+			&i.AssetClassName,
+			&i.AssetClassCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

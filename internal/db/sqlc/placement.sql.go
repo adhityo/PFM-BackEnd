@@ -75,7 +75,7 @@ func (q *Queries) CreatePlacement(ctx context.Context, arg CreatePlacementParams
 
 const getPlacementByUUID = `-- name: GetPlacementByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.end_date, t.placement_number, t.placement_subject, t.placement_value, t.start_date, t.status, t.investment_manager_id, r_investment_manager_id.uuid AS investment_manager_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.end_date, t.placement_number, t.placement_subject, t.placement_value, t.start_date, t.status, t.investment_manager_id, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, t.created_at, t.updated_at
 FROM placement t
 LEFT JOIN investment_manager r_investment_manager_id ON r_investment_manager_id.id = t.investment_manager_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -93,6 +93,8 @@ type GetPlacementByUUIDRow struct {
 	Status                *int16
 	InvestmentManagerID   *int64
 	InvestmentManagerUuid *uuid.UUID
+	InvestmentManagerName *string
+	InvestmentManagerCode *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -113,6 +115,8 @@ func (q *Queries) GetPlacementByUUID(ctx context.Context, argUuid uuid.UUID) (Ge
 		&i.Status,
 		&i.InvestmentManagerID,
 		&i.InvestmentManagerUuid,
+		&i.InvestmentManagerName,
+		&i.InvestmentManagerCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -120,7 +124,7 @@ func (q *Queries) GetPlacementByUUID(ctx context.Context, argUuid uuid.UUID) (Ge
 }
 
 const listPlacement = `-- name: ListPlacement :many
-SELECT t.id, t.uuid, t.description, t.end_date, t.placement_number, t.placement_subject, t.placement_value, t.start_date, t.status, t.investment_manager_id, r_investment_manager_id.uuid AS investment_manager_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.end_date, t.placement_number, t.placement_subject, t.placement_value, t.start_date, t.status, t.investment_manager_id, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, t.created_at, t.updated_at
 FROM placement t
 LEFT JOIN investment_manager r_investment_manager_id ON r_investment_manager_id.id = t.investment_manager_id
 WHERE t.deleted_at IS NULL
@@ -155,6 +159,8 @@ type ListPlacementRow struct {
 	Status                *int16
 	InvestmentManagerID   *int64
 	InvestmentManagerUuid *uuid.UUID
+	InvestmentManagerName *string
+	InvestmentManagerCode *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -185,6 +191,8 @@ func (q *Queries) ListPlacement(ctx context.Context, arg ListPlacementParams) ([
 			&i.Status,
 			&i.InvestmentManagerID,
 			&i.InvestmentManagerUuid,
+			&i.InvestmentManagerName,
+			&i.InvestmentManagerCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

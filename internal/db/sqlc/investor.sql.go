@@ -139,7 +139,7 @@ func (q *Queries) CreateInvestor(ctx context.Context, arg CreateInvestorParams) 
 
 const getInvestorByUUID = `-- name: GetInvestorByUUID :one
 
-SELECT t.id, t.uuid, t.address, t.description, t.email, t.investor_name, t.investor_number, t.mobile_phone, t.npwp, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.province_id, t.address_city, t.address_postal_code, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.identity_number, t.marketing_agent_code, t.investor_number_counter, t.investor_unique_number, t.is_synchronized, t.synchronize_notes, r_city_id.uuid AS city_uuid, r_country_id.uuid AS country_uuid, r_investor_category_id.uuid AS investor_category_uuid, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.description, t.email, t.investor_name, t.investor_number, t.mobile_phone, t.npwp, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.province_id, t.address_city, t.address_postal_code, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.identity_number, t.marketing_agent_code, t.investor_number_counter, t.investor_unique_number, t.is_synchronized, t.synchronize_notes, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_investor_category_id.uuid AS investor_category_uuid, r_investor_category_id.investor_category_name AS investor_category_name, r_investor_category_id.investor_category_code AS investor_category_code, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM investor t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
@@ -180,9 +180,17 @@ type GetInvestorByUUIDRow struct {
 	IsSynchronized                 bool
 	SynchronizeNotes               *string
 	CityUuid                       *uuid.UUID
+	CityName                       *string
+	CityCode                       *string
 	CountryUuid                    *uuid.UUID
+	CountryName                    *string
+	CountryCode                    *string
 	InvestorCategoryUuid           *uuid.UUID
+	InvestorCategoryName           *string
+	InvestorCategoryCode           *string
 	ProvinceUuid                   *uuid.UUID
+	ProvinceName                   *string
+	ProvinceCode                   *string
 	CreatedAt                      time.Time
 	UpdatedAt                      time.Time
 }
@@ -223,9 +231,17 @@ func (q *Queries) GetInvestorByUUID(ctx context.Context, argUuid uuid.UUID) (Get
 		&i.IsSynchronized,
 		&i.SynchronizeNotes,
 		&i.CityUuid,
+		&i.CityName,
+		&i.CityCode,
 		&i.CountryUuid,
+		&i.CountryName,
+		&i.CountryCode,
 		&i.InvestorCategoryUuid,
+		&i.InvestorCategoryName,
+		&i.InvestorCategoryCode,
 		&i.ProvinceUuid,
+		&i.ProvinceName,
+		&i.ProvinceCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -233,7 +249,7 @@ func (q *Queries) GetInvestorByUUID(ctx context.Context, argUuid uuid.UUID) (Get
 }
 
 const listInvestor = `-- name: ListInvestor :many
-SELECT t.id, t.uuid, t.address, t.description, t.email, t.investor_name, t.investor_number, t.mobile_phone, t.npwp, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.province_id, t.address_city, t.address_postal_code, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.identity_number, t.marketing_agent_code, t.investor_number_counter, t.investor_unique_number, t.is_synchronized, t.synchronize_notes, r_city_id.uuid AS city_uuid, r_country_id.uuid AS country_uuid, r_investor_category_id.uuid AS investor_category_uuid, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.description, t.email, t.investor_name, t.investor_number, t.mobile_phone, t.npwp, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.province_id, t.address_city, t.address_postal_code, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.identity_number, t.marketing_agent_code, t.investor_number_counter, t.investor_unique_number, t.is_synchronized, t.synchronize_notes, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_investor_category_id.uuid AS investor_category_uuid, r_investor_category_id.investor_category_name AS investor_category_name, r_investor_category_id.investor_category_code AS investor_category_code, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM investor t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
@@ -301,9 +317,17 @@ type ListInvestorRow struct {
 	IsSynchronized                 bool
 	SynchronizeNotes               *string
 	CityUuid                       *uuid.UUID
+	CityName                       *string
+	CityCode                       *string
 	CountryUuid                    *uuid.UUID
+	CountryName                    *string
+	CountryCode                    *string
 	InvestorCategoryUuid           *uuid.UUID
+	InvestorCategoryName           *string
+	InvestorCategoryCode           *string
 	ProvinceUuid                   *uuid.UUID
+	ProvinceName                   *string
+	ProvinceCode                   *string
 	CreatedAt                      time.Time
 	UpdatedAt                      time.Time
 }
@@ -358,9 +382,17 @@ func (q *Queries) ListInvestor(ctx context.Context, arg ListInvestorParams) ([]L
 			&i.IsSynchronized,
 			&i.SynchronizeNotes,
 			&i.CityUuid,
+			&i.CityName,
+			&i.CityCode,
 			&i.CountryUuid,
+			&i.CountryName,
+			&i.CountryCode,
 			&i.InvestorCategoryUuid,
+			&i.InvestorCategoryName,
+			&i.InvestorCategoryCode,
 			&i.ProvinceUuid,
+			&i.ProvinceName,
+			&i.ProvinceCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

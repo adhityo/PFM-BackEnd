@@ -106,7 +106,7 @@ func (q *Queries) CreateCryptoTrade(ctx context.Context, arg CreateCryptoTradePa
 
 const getCryptoTradeByUUID = `-- name: GetCryptoTradeByUUID :one
 
-SELECT t.id, t.uuid, t.crypto_code, t.crypto_name, t.description, t.price, t.quantity, t.risk_classification, t.status, t.trade_date, t.trade_time, t.trade_type_name, t.trade_value, t.transaction_fee_amount, t.crypto_id, t.crypto_trade_plan_id, t.trade_type_id, t.portfolio_id, r_crypto_id.uuid AS crypto_uuid, r_crypto_trade_plan_id.uuid AS crypto_trade_plan_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.crypto_code, t.crypto_name, t.description, t.price, t.quantity, t.risk_classification, t.status, t.trade_date, t.trade_time, t.trade_type_name, t.trade_value, t.transaction_fee_amount, t.crypto_id, t.crypto_trade_plan_id, t.trade_type_id, t.portfolio_id, r_crypto_id.uuid AS crypto_uuid, r_crypto_trade_plan_id.uuid AS crypto_trade_plan_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_code AS trade_type_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM crypto_trade t
 LEFT JOIN crypto r_crypto_id ON r_crypto_id.id = t.crypto_id
 LEFT JOIN crypto_trade_plan r_crypto_trade_plan_id ON r_crypto_trade_plan_id.id = t.crypto_trade_plan_id
@@ -143,7 +143,10 @@ type GetCryptoTradeByUUIDRow struct {
 	CryptoUuid           *uuid.UUID
 	CryptoTradePlanUuid  *uuid.UUID
 	TradeTypeUuid        *uuid.UUID
+	TradeTypeCode        *string
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -174,7 +177,10 @@ func (q *Queries) GetCryptoTradeByUUID(ctx context.Context, arg GetCryptoTradeBy
 		&i.CryptoUuid,
 		&i.CryptoTradePlanUuid,
 		&i.TradeTypeUuid,
+		&i.TradeTypeCode,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -182,7 +188,7 @@ func (q *Queries) GetCryptoTradeByUUID(ctx context.Context, arg GetCryptoTradeBy
 }
 
 const listCryptoTrade = `-- name: ListCryptoTrade :many
-SELECT t.id, t.uuid, t.crypto_code, t.crypto_name, t.description, t.price, t.quantity, t.risk_classification, t.status, t.trade_date, t.trade_time, t.trade_type_name, t.trade_value, t.transaction_fee_amount, t.crypto_id, t.crypto_trade_plan_id, t.trade_type_id, t.portfolio_id, r_crypto_id.uuid AS crypto_uuid, r_crypto_trade_plan_id.uuid AS crypto_trade_plan_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.crypto_code, t.crypto_name, t.description, t.price, t.quantity, t.risk_classification, t.status, t.trade_date, t.trade_time, t.trade_type_name, t.trade_value, t.transaction_fee_amount, t.crypto_id, t.crypto_trade_plan_id, t.trade_type_id, t.portfolio_id, r_crypto_id.uuid AS crypto_uuid, r_crypto_trade_plan_id.uuid AS crypto_trade_plan_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_code AS trade_type_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM crypto_trade t
 LEFT JOIN crypto r_crypto_id ON r_crypto_id.id = t.crypto_id
 LEFT JOIN crypto_trade_plan r_crypto_trade_plan_id ON r_crypto_trade_plan_id.id = t.crypto_trade_plan_id
@@ -236,7 +242,10 @@ type ListCryptoTradeRow struct {
 	CryptoUuid           *uuid.UUID
 	CryptoTradePlanUuid  *uuid.UUID
 	TradeTypeUuid        *uuid.UUID
+	TradeTypeCode        *string
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -281,7 +290,10 @@ func (q *Queries) ListCryptoTrade(ctx context.Context, arg ListCryptoTradeParams
 			&i.CryptoUuid,
 			&i.CryptoTradePlanUuid,
 			&i.TradeTypeUuid,
+			&i.TradeTypeCode,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

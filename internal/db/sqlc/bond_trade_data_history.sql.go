@@ -75,7 +75,7 @@ func (q *Queries) CountBondTradeDataHistory(ctx context.Context, arg CountBondTr
 
 const getBondTradeDataHistoryByUUID = `-- name: GetBondTradeDataHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.accrued_interest, t.bond_code, t.bond_name, t.bond_trade_status, t.broker_name, t.certificate_counter, t.certificate_number, t.investment_length, t.investor_name, t.investor_number, t.marketing_agent_code, t.marketing_agent_name, t.nominal, t.number_of_days_coupon, t.previous_bond_code, t.previous_bond_name, t.previous_investment_length, t.previous_investor_name, t.previous_investor_number, t.previous_marketing_agent_code, t.previous_marketing_agent_name, t.previous_nominal, t.previous_settlement_date, t.previous_subscription_number, t.previous_trade_date, t.previous_transaction_fee, t.purchased_nominal, t.purchased_price, t.settlement_date, t.settlement_days, t.subscription_number, t.total_proceed, t.trade_date, t.trade_price, t.trade_size, t.trade_value, t.transaction_fee, t.transaction_fee_percentage, t.transaction_type, t.validation_number, t.bond_id, t.broker_id, t.custodian_bank_id, t.investor_id, t.marketing_agent_id, t.parent_bond_trade_id, t.portfolio_id, t.trade_type_id, t.bond_trade_id, r_bond_id.uuid AS bond_uuid, r_broker_id.uuid AS broker_uuid, r_custodian_bank_id.uuid AS custodian_bank_uuid, r_investor_id.uuid AS investor_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_parent_bond_trade_id.uuid AS parent_bond_trade_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.accrued_interest, t.bond_code, t.bond_name, t.bond_trade_status, t.broker_name, t.certificate_counter, t.certificate_number, t.investment_length, t.investor_name, t.investor_number, t.marketing_agent_code, t.marketing_agent_name, t.nominal, t.number_of_days_coupon, t.previous_bond_code, t.previous_bond_name, t.previous_investment_length, t.previous_investor_name, t.previous_investor_number, t.previous_marketing_agent_code, t.previous_marketing_agent_name, t.previous_nominal, t.previous_settlement_date, t.previous_subscription_number, t.previous_trade_date, t.previous_transaction_fee, t.purchased_nominal, t.purchased_price, t.settlement_date, t.settlement_days, t.subscription_number, t.total_proceed, t.trade_date, t.trade_price, t.trade_size, t.trade_value, t.transaction_fee, t.transaction_fee_percentage, t.transaction_type, t.validation_number, t.bond_id, t.broker_id, t.custodian_bank_id, t.investor_id, t.marketing_agent_id, t.parent_bond_trade_id, t.portfolio_id, t.trade_type_id, t.bond_trade_id, r_bond_id.uuid AS bond_uuid, r_broker_id.uuid AS broker_uuid, r_broker_id.broker_code AS broker_code, r_custodian_bank_id.uuid AS custodian_bank_uuid, r_custodian_bank_id.bank_name AS custodian_bank_name, r_investor_id.uuid AS investor_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_marketing_agent_id.marketing_agent_number AS marketing_agent_number, r_parent_bond_trade_id.uuid AS parent_bond_trade_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
 FROM bond_trade_data_history t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN broker r_broker_id ON r_broker_id.id = t.broker_id
@@ -149,12 +149,19 @@ type GetBondTradeDataHistoryByUUIDRow struct {
 	BondTradeID                *int64
 	BondUuid                   *uuid.UUID
 	BrokerUuid                 *uuid.UUID
+	BrokerCode                 *string
 	CustodianBankUuid          *uuid.UUID
+	CustodianBankName          *string
 	InvestorUuid               *uuid.UUID
 	MarketingAgentUuid         *uuid.UUID
+	MarketingAgentNumber       *string
 	ParentBondTradeUuid        *uuid.UUID
 	PortfolioUuid              *uuid.UUID
+	PortfolioName              *string
+	PortfolioCode              *string
 	TradeTypeUuid              *uuid.UUID
+	TradeTypeName              *string
+	TradeTypeCode              *string
 	BondTradeUuid              *uuid.UUID
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -218,12 +225,19 @@ func (q *Queries) GetBondTradeDataHistoryByUUID(ctx context.Context, arg GetBond
 		&i.BondTradeID,
 		&i.BondUuid,
 		&i.BrokerUuid,
+		&i.BrokerCode,
 		&i.CustodianBankUuid,
+		&i.CustodianBankName,
 		&i.InvestorUuid,
 		&i.MarketingAgentUuid,
+		&i.MarketingAgentNumber,
 		&i.ParentBondTradeUuid,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.TradeTypeUuid,
+		&i.TradeTypeName,
+		&i.TradeTypeCode,
 		&i.BondTradeUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -232,7 +246,7 @@ func (q *Queries) GetBondTradeDataHistoryByUUID(ctx context.Context, arg GetBond
 }
 
 const listBondTradeDataHistory = `-- name: ListBondTradeDataHistory :many
-SELECT t.id, t.uuid, t.accrued_interest, t.bond_code, t.bond_name, t.bond_trade_status, t.broker_name, t.certificate_counter, t.certificate_number, t.investment_length, t.investor_name, t.investor_number, t.marketing_agent_code, t.marketing_agent_name, t.nominal, t.number_of_days_coupon, t.previous_bond_code, t.previous_bond_name, t.previous_investment_length, t.previous_investor_name, t.previous_investor_number, t.previous_marketing_agent_code, t.previous_marketing_agent_name, t.previous_nominal, t.previous_settlement_date, t.previous_subscription_number, t.previous_trade_date, t.previous_transaction_fee, t.purchased_nominal, t.purchased_price, t.settlement_date, t.settlement_days, t.subscription_number, t.total_proceed, t.trade_date, t.trade_price, t.trade_size, t.trade_value, t.transaction_fee, t.transaction_fee_percentage, t.transaction_type, t.validation_number, t.bond_id, t.broker_id, t.custodian_bank_id, t.investor_id, t.marketing_agent_id, t.parent_bond_trade_id, t.portfolio_id, t.trade_type_id, t.bond_trade_id, r_bond_id.uuid AS bond_uuid, r_broker_id.uuid AS broker_uuid, r_custodian_bank_id.uuid AS custodian_bank_uuid, r_investor_id.uuid AS investor_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_parent_bond_trade_id.uuid AS parent_bond_trade_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.accrued_interest, t.bond_code, t.bond_name, t.bond_trade_status, t.broker_name, t.certificate_counter, t.certificate_number, t.investment_length, t.investor_name, t.investor_number, t.marketing_agent_code, t.marketing_agent_name, t.nominal, t.number_of_days_coupon, t.previous_bond_code, t.previous_bond_name, t.previous_investment_length, t.previous_investor_name, t.previous_investor_number, t.previous_marketing_agent_code, t.previous_marketing_agent_name, t.previous_nominal, t.previous_settlement_date, t.previous_subscription_number, t.previous_trade_date, t.previous_transaction_fee, t.purchased_nominal, t.purchased_price, t.settlement_date, t.settlement_days, t.subscription_number, t.total_proceed, t.trade_date, t.trade_price, t.trade_size, t.trade_value, t.transaction_fee, t.transaction_fee_percentage, t.transaction_type, t.validation_number, t.bond_id, t.broker_id, t.custodian_bank_id, t.investor_id, t.marketing_agent_id, t.parent_bond_trade_id, t.portfolio_id, t.trade_type_id, t.bond_trade_id, r_bond_id.uuid AS bond_uuid, r_broker_id.uuid AS broker_uuid, r_broker_id.broker_code AS broker_code, r_custodian_bank_id.uuid AS custodian_bank_uuid, r_custodian_bank_id.bank_name AS custodian_bank_name, r_investor_id.uuid AS investor_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_marketing_agent_id.marketing_agent_number AS marketing_agent_number, r_parent_bond_trade_id.uuid AS parent_bond_trade_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, r_bond_trade_id.uuid AS bond_trade_uuid, t.created_at, t.updated_at
 FROM bond_trade_data_history t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN broker r_broker_id ON r_broker_id.id = t.broker_id
@@ -344,12 +358,19 @@ type ListBondTradeDataHistoryRow struct {
 	BondTradeID                *int64
 	BondUuid                   *uuid.UUID
 	BrokerUuid                 *uuid.UUID
+	BrokerCode                 *string
 	CustodianBankUuid          *uuid.UUID
+	CustodianBankName          *string
 	InvestorUuid               *uuid.UUID
 	MarketingAgentUuid         *uuid.UUID
+	MarketingAgentNumber       *string
 	ParentBondTradeUuid        *uuid.UUID
 	PortfolioUuid              *uuid.UUID
+	PortfolioName              *string
+	PortfolioCode              *string
 	TradeTypeUuid              *uuid.UUID
+	TradeTypeName              *string
+	TradeTypeCode              *string
 	BondTradeUuid              *uuid.UUID
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -433,12 +454,19 @@ func (q *Queries) ListBondTradeDataHistory(ctx context.Context, arg ListBondTrad
 			&i.BondTradeID,
 			&i.BondUuid,
 			&i.BrokerUuid,
+			&i.BrokerCode,
 			&i.CustodianBankUuid,
+			&i.CustodianBankName,
 			&i.InvestorUuid,
 			&i.MarketingAgentUuid,
+			&i.MarketingAgentNumber,
 			&i.ParentBondTradeUuid,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.TradeTypeUuid,
+			&i.TradeTypeName,
+			&i.TradeTypeCode,
 			&i.BondTradeUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

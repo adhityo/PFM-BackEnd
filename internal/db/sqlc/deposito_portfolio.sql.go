@@ -99,7 +99,7 @@ func (q *Queries) CreateDepositoPortfolio(ctx context.Context, arg CreateDeposit
 
 const getDepositoPortfolioByUUID = `-- name: GetDepositoPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.deposito_id, t.portfolio_id, t.total_deposito_allocation, t.tenor, t.net_interest_rate, t.yield_percentage, t.interest_value, t.previous_portfolio_id, t.next_portfolio_id, t.portfolio_year, t.portfolio_start_date, t.portfolio_end_date, r_deposito_id.uuid AS deposito_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_previous_portfolio_id.uuid AS previous_portfolio_uuid, r_next_portfolio_id.uuid AS next_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.deposito_id, t.portfolio_id, t.total_deposito_allocation, t.tenor, t.net_interest_rate, t.yield_percentage, t.interest_value, t.previous_portfolio_id, t.next_portfolio_id, t.portfolio_year, t.portfolio_start_date, t.portfolio_end_date, r_deposito_id.uuid AS deposito_uuid, r_deposito_id.deposito_name AS deposito_name, r_deposito_id.deposito_code AS deposito_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_previous_portfolio_id.uuid AS previous_portfolio_uuid, r_next_portfolio_id.uuid AS next_portfolio_uuid, t.created_at, t.updated_at
 FROM deposito_portfolio t
 LEFT JOIN deposito r_deposito_id ON r_deposito_id.id = t.deposito_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -130,7 +130,11 @@ type GetDepositoPortfolioByUUIDRow struct {
 	PortfolioStartDate      *time.Time
 	PortfolioEndDate        *time.Time
 	DepositoUuid            *uuid.UUID
+	DepositoName            *string
+	DepositoCode            *string
 	PortfolioUuid           *uuid.UUID
+	PortfolioName           *string
+	PortfolioCode           *string
 	PreviousPortfolioUuid   *uuid.UUID
 	NextPortfolioUuid       *uuid.UUID
 	CreatedAt               time.Time
@@ -157,7 +161,11 @@ func (q *Queries) GetDepositoPortfolioByUUID(ctx context.Context, arg GetDeposit
 		&i.PortfolioStartDate,
 		&i.PortfolioEndDate,
 		&i.DepositoUuid,
+		&i.DepositoName,
+		&i.DepositoCode,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.PreviousPortfolioUuid,
 		&i.NextPortfolioUuid,
 		&i.CreatedAt,
@@ -167,7 +175,7 @@ func (q *Queries) GetDepositoPortfolioByUUID(ctx context.Context, arg GetDeposit
 }
 
 const listDepositoPortfolio = `-- name: ListDepositoPortfolio :many
-SELECT t.id, t.uuid, t.deposito_id, t.portfolio_id, t.total_deposito_allocation, t.tenor, t.net_interest_rate, t.yield_percentage, t.interest_value, t.previous_portfolio_id, t.next_portfolio_id, t.portfolio_year, t.portfolio_start_date, t.portfolio_end_date, r_deposito_id.uuid AS deposito_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_previous_portfolio_id.uuid AS previous_portfolio_uuid, r_next_portfolio_id.uuid AS next_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.deposito_id, t.portfolio_id, t.total_deposito_allocation, t.tenor, t.net_interest_rate, t.yield_percentage, t.interest_value, t.previous_portfolio_id, t.next_portfolio_id, t.portfolio_year, t.portfolio_start_date, t.portfolio_end_date, r_deposito_id.uuid AS deposito_uuid, r_deposito_id.deposito_name AS deposito_name, r_deposito_id.deposito_code AS deposito_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_previous_portfolio_id.uuid AS previous_portfolio_uuid, r_next_portfolio_id.uuid AS next_portfolio_uuid, t.created_at, t.updated_at
 FROM deposito_portfolio t
 LEFT JOIN deposito r_deposito_id ON r_deposito_id.id = t.deposito_id
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
@@ -215,7 +223,11 @@ type ListDepositoPortfolioRow struct {
 	PortfolioStartDate      *time.Time
 	PortfolioEndDate        *time.Time
 	DepositoUuid            *uuid.UUID
+	DepositoName            *string
+	DepositoCode            *string
 	PortfolioUuid           *uuid.UUID
+	PortfolioName           *string
+	PortfolioCode           *string
 	PreviousPortfolioUuid   *uuid.UUID
 	NextPortfolioUuid       *uuid.UUID
 	CreatedAt               time.Time
@@ -256,7 +268,11 @@ func (q *Queries) ListDepositoPortfolio(ctx context.Context, arg ListDepositoPor
 			&i.PortfolioStartDate,
 			&i.PortfolioEndDate,
 			&i.DepositoUuid,
+			&i.DepositoName,
+			&i.DepositoCode,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.PreviousPortfolioUuid,
 			&i.NextPortfolioUuid,
 			&i.CreatedAt,

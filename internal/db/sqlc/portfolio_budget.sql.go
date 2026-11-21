@@ -105,7 +105,7 @@ func (q *Queries) CreatePortfolioBudget(ctx context.Context, arg CreatePortfolio
 
 const getPortfolioBudgetByUUID = `-- name: GetPortfolioBudgetByUUID :one
 
-SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.budget_year, t.allocation_budget, t.budget_max_total_ojk, t.budget_max_total_per_issuer_ojk, t.budget_max_total_per_party_ojk, t.real_allocation, t.previous_budget_id, t.budget_yield_value, t.budget_yield_percentage, t.real_allocation_percentage, t.year_to_date_yield_percentage, t.year_to_date_yield_value, t.forecast_yield_value, t.forecast_yield_percentage, t.budget_status, r_portfolio_id.uuid AS portfolio_uuid, r_asset_class_id.uuid AS asset_class_uuid, r_previous_budget_id.uuid AS previous_budget_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.budget_year, t.allocation_budget, t.budget_max_total_ojk, t.budget_max_total_per_issuer_ojk, t.budget_max_total_per_party_ojk, t.real_allocation, t.previous_budget_id, t.budget_yield_value, t.budget_yield_percentage, t.real_allocation_percentage, t.year_to_date_yield_percentage, t.year_to_date_yield_value, t.forecast_yield_value, t.forecast_yield_percentage, t.budget_status, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_asset_class_id.uuid AS asset_class_uuid, r_asset_class_id.asset_class_name AS asset_class_name, r_asset_class_id.asset_class_code AS asset_class_code, r_previous_budget_id.uuid AS previous_budget_uuid, t.created_at, t.updated_at
 FROM portfolio_budget t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN asset_class r_asset_class_id ON r_asset_class_id.id = t.asset_class_id
@@ -140,7 +140,11 @@ type GetPortfolioBudgetByUUIDRow struct {
 	ForecastYieldPercentage    *decimal.Decimal
 	BudgetStatus               *int16
 	PortfolioUuid              *uuid.UUID
+	PortfolioName              *string
+	PortfolioCode              *string
 	AssetClassUuid             *uuid.UUID
+	AssetClassName             *string
+	AssetClassCode             *string
 	PreviousBudgetUuid         *uuid.UUID
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -171,7 +175,11 @@ func (q *Queries) GetPortfolioBudgetByUUID(ctx context.Context, arg GetPortfolio
 		&i.ForecastYieldPercentage,
 		&i.BudgetStatus,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.AssetClassUuid,
+		&i.AssetClassName,
+		&i.AssetClassCode,
 		&i.PreviousBudgetUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -180,7 +188,7 @@ func (q *Queries) GetPortfolioBudgetByUUID(ctx context.Context, arg GetPortfolio
 }
 
 const listPortfolioBudget = `-- name: ListPortfolioBudget :many
-SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.budget_year, t.allocation_budget, t.budget_max_total_ojk, t.budget_max_total_per_issuer_ojk, t.budget_max_total_per_party_ojk, t.real_allocation, t.previous_budget_id, t.budget_yield_value, t.budget_yield_percentage, t.real_allocation_percentage, t.year_to_date_yield_percentage, t.year_to_date_yield_value, t.forecast_yield_value, t.forecast_yield_percentage, t.budget_status, r_portfolio_id.uuid AS portfolio_uuid, r_asset_class_id.uuid AS asset_class_uuid, r_previous_budget_id.uuid AS previous_budget_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.asset_class_id, t.budget_year, t.allocation_budget, t.budget_max_total_ojk, t.budget_max_total_per_issuer_ojk, t.budget_max_total_per_party_ojk, t.real_allocation, t.previous_budget_id, t.budget_yield_value, t.budget_yield_percentage, t.real_allocation_percentage, t.year_to_date_yield_percentage, t.year_to_date_yield_value, t.forecast_yield_value, t.forecast_yield_percentage, t.budget_status, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_asset_class_id.uuid AS asset_class_uuid, r_asset_class_id.asset_class_name AS asset_class_name, r_asset_class_id.asset_class_code AS asset_class_code, r_previous_budget_id.uuid AS previous_budget_uuid, t.created_at, t.updated_at
 FROM portfolio_budget t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN asset_class r_asset_class_id ON r_asset_class_id.id = t.asset_class_id
@@ -230,7 +238,11 @@ type ListPortfolioBudgetRow struct {
 	ForecastYieldPercentage    *decimal.Decimal
 	BudgetStatus               *int16
 	PortfolioUuid              *uuid.UUID
+	PortfolioName              *string
+	PortfolioCode              *string
 	AssetClassUuid             *uuid.UUID
+	AssetClassName             *string
+	AssetClassCode             *string
 	PreviousBudgetUuid         *uuid.UUID
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -274,7 +286,11 @@ func (q *Queries) ListPortfolioBudget(ctx context.Context, arg ListPortfolioBudg
 			&i.ForecastYieldPercentage,
 			&i.BudgetStatus,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.AssetClassUuid,
+			&i.AssetClassName,
+			&i.AssetClassCode,
 			&i.PreviousBudgetUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

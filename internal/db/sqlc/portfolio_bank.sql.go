@@ -88,7 +88,7 @@ func (q *Queries) CreatePortfolioBank(ctx context.Context, arg CreatePortfolioBa
 
 const getPortfolioBankByUUID = `-- name: GetPortfolioBankByUUID :one
 
-SELECT t.id, t.uuid, t.portfolio_id, t.bank_id, t.account_number, t.account_name, t.bank_branch_name, t.description, t.currency_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_bank_id.uuid AS bank_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.bank_id, t.account_number, t.account_name, t.bank_branch_name, t.description, t.currency_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_bank_id.uuid AS bank_uuid, r_bank_id.bank_name AS bank_name, t.created_at, t.updated_at
 FROM portfolio_bank t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN bank r_bank_id ON r_bank_id.id = t.bank_id
@@ -112,7 +112,10 @@ type GetPortfolioBankByUUIDRow struct {
 	Description    *string
 	CurrencyTypeID *int64
 	PortfolioUuid  *uuid.UUID
+	PortfolioName  *string
+	PortfolioCode  *string
 	BankUuid       *uuid.UUID
+	BankName       *string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -132,7 +135,10 @@ func (q *Queries) GetPortfolioBankByUUID(ctx context.Context, arg GetPortfolioBa
 		&i.Description,
 		&i.CurrencyTypeID,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.BankUuid,
+		&i.BankName,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -140,7 +146,7 @@ func (q *Queries) GetPortfolioBankByUUID(ctx context.Context, arg GetPortfolioBa
 }
 
 const listPortfolioBank = `-- name: ListPortfolioBank :many
-SELECT t.id, t.uuid, t.portfolio_id, t.bank_id, t.account_number, t.account_name, t.bank_branch_name, t.description, t.currency_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_bank_id.uuid AS bank_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.bank_id, t.account_number, t.account_name, t.bank_branch_name, t.description, t.currency_type_id, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_bank_id.uuid AS bank_uuid, r_bank_id.bank_name AS bank_name, t.created_at, t.updated_at
 FROM portfolio_bank t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN bank r_bank_id ON r_bank_id.id = t.bank_id
@@ -179,7 +185,10 @@ type ListPortfolioBankRow struct {
 	Description    *string
 	CurrencyTypeID *int64
 	PortfolioUuid  *uuid.UUID
+	PortfolioName  *string
+	PortfolioCode  *string
 	BankUuid       *uuid.UUID
+	BankName       *string
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 }
@@ -212,7 +221,10 @@ func (q *Queries) ListPortfolioBank(ctx context.Context, arg ListPortfolioBankPa
 			&i.Description,
 			&i.CurrencyTypeID,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.BankUuid,
+			&i.BankName,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

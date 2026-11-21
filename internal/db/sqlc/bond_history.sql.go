@@ -44,7 +44,7 @@ func (q *Queries) CountBondHistory(ctx context.Context, arg CountBondHistoryPara
 
 const getBondHistoryByUUID = `-- name: GetBondHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.bond_id, t.bond_price, t.bond_code, t.rating_id, t.description, r_bond_id.uuid AS bond_uuid, r_rating_id.uuid AS rating_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.bond_price, t.bond_code, t.rating_id, t.description, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, t.created_at, t.updated_at
 FROM bond_history t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN rating r_rating_id ON r_rating_id.id = t.rating_id
@@ -66,7 +66,10 @@ type GetBondHistoryByUUIDRow struct {
 	RatingID    *int64
 	Description *string
 	BondUuid    *uuid.UUID
+	BondName    *string
 	RatingUuid  *uuid.UUID
+	RatingName  *string
+	RatingCode  *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -84,7 +87,10 @@ func (q *Queries) GetBondHistoryByUUID(ctx context.Context, arg GetBondHistoryBy
 		&i.RatingID,
 		&i.Description,
 		&i.BondUuid,
+		&i.BondName,
 		&i.RatingUuid,
+		&i.RatingName,
+		&i.RatingCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -92,7 +98,7 @@ func (q *Queries) GetBondHistoryByUUID(ctx context.Context, arg GetBondHistoryBy
 }
 
 const listBondHistory = `-- name: ListBondHistory :many
-SELECT t.id, t.uuid, t.bond_id, t.bond_price, t.bond_code, t.rating_id, t.description, r_bond_id.uuid AS bond_uuid, r_rating_id.uuid AS rating_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_id, t.bond_price, t.bond_code, t.rating_id, t.description, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, t.created_at, t.updated_at
 FROM bond_history t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN rating r_rating_id ON r_rating_id.id = t.rating_id
@@ -128,7 +134,10 @@ type ListBondHistoryRow struct {
 	RatingID    *int64
 	Description *string
 	BondUuid    *uuid.UUID
+	BondName    *string
 	RatingUuid  *uuid.UUID
+	RatingName  *string
+	RatingCode  *string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -159,7 +168,10 @@ func (q *Queries) ListBondHistory(ctx context.Context, arg ListBondHistoryParams
 			&i.RatingID,
 			&i.Description,
 			&i.BondUuid,
+			&i.BondName,
 			&i.RatingUuid,
+			&i.RatingName,
+			&i.RatingCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

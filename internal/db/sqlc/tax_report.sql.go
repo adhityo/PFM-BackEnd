@@ -73,7 +73,7 @@ func (q *Queries) CreateTaxReport(ctx context.Context, arg CreateTaxReportParams
 
 const getTaxReportByUUID = `-- name: GetTaxReportByUUID :one
 
-SELECT t.id, t.uuid, t.beneficiary_tax_number, t.tax_report_number, t.treasury_tax_number, t.dependant_id, t.member_id, r_dependant_id.uuid AS dependant_uuid, r_member_id.uuid AS member_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.beneficiary_tax_number, t.tax_report_number, t.treasury_tax_number, t.dependant_id, t.member_id, r_dependant_id.uuid AS dependant_uuid, r_dependant_id.dependant_name AS dependant_name, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, t.created_at, t.updated_at
 FROM tax_report t
 LEFT JOIN dependant r_dependant_id ON r_dependant_id.id = t.dependant_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
@@ -95,7 +95,10 @@ type GetTaxReportByUUIDRow struct {
 	DependantID          *int64
 	MemberID             *int64
 	DependantUuid        *uuid.UUID
+	DependantName        *string
 	MemberUuid           *uuid.UUID
+	MemberName           *string
+	MemberNumber         *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -113,7 +116,10 @@ func (q *Queries) GetTaxReportByUUID(ctx context.Context, arg GetTaxReportByUUID
 		&i.DependantID,
 		&i.MemberID,
 		&i.DependantUuid,
+		&i.DependantName,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -121,7 +127,7 @@ func (q *Queries) GetTaxReportByUUID(ctx context.Context, arg GetTaxReportByUUID
 }
 
 const listTaxReport = `-- name: ListTaxReport :many
-SELECT t.id, t.uuid, t.beneficiary_tax_number, t.tax_report_number, t.treasury_tax_number, t.dependant_id, t.member_id, r_dependant_id.uuid AS dependant_uuid, r_member_id.uuid AS member_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.beneficiary_tax_number, t.tax_report_number, t.treasury_tax_number, t.dependant_id, t.member_id, r_dependant_id.uuid AS dependant_uuid, r_dependant_id.dependant_name AS dependant_name, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, t.created_at, t.updated_at
 FROM tax_report t
 LEFT JOIN dependant r_dependant_id ON r_dependant_id.id = t.dependant_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
@@ -156,7 +162,10 @@ type ListTaxReportRow struct {
 	DependantID          *int64
 	MemberID             *int64
 	DependantUuid        *uuid.UUID
+	DependantName        *string
 	MemberUuid           *uuid.UUID
+	MemberName           *string
+	MemberNumber         *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -186,7 +195,10 @@ func (q *Queries) ListTaxReport(ctx context.Context, arg ListTaxReportParams) ([
 			&i.DependantID,
 			&i.MemberID,
 			&i.DependantUuid,
+			&i.DependantName,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

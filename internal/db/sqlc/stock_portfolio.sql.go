@@ -36,7 +36,7 @@ func (q *Queries) CountStockPortfolio(ctx context.Context, arg CountStockPortfol
 
 const getStockPortfolioByUUID = `-- name: GetStockPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.portfolio_id, t.stock_id, t.inception_date, t.average_price, t.stock_amount, t.market_value, t.description, t.portfolio_manager_type, r_portfolio_id.uuid AS portfolio_uuid, r_stock_id.uuid AS stock_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.stock_id, t.inception_date, t.average_price, t.stock_amount, t.market_value, t.description, t.portfolio_manager_type, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_id.stock_code AS stock_code, t.created_at, t.updated_at
 FROM stock_portfolio t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
@@ -61,7 +61,11 @@ type GetStockPortfolioByUUIDRow struct {
 	Description          *string
 	PortfolioManagerType *int16
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	StockUuid            *uuid.UUID
+	StockName            *string
+	StockCode            *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -82,7 +86,11 @@ func (q *Queries) GetStockPortfolioByUUID(ctx context.Context, arg GetStockPortf
 		&i.Description,
 		&i.PortfolioManagerType,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.StockUuid,
+		&i.StockName,
+		&i.StockCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -90,7 +98,7 @@ func (q *Queries) GetStockPortfolioByUUID(ctx context.Context, arg GetStockPortf
 }
 
 const listStockPortfolio = `-- name: ListStockPortfolio :many
-SELECT t.id, t.uuid, t.portfolio_id, t.stock_id, t.inception_date, t.average_price, t.stock_amount, t.market_value, t.description, t.portfolio_manager_type, r_portfolio_id.uuid AS portfolio_uuid, r_stock_id.uuid AS stock_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_id, t.stock_id, t.inception_date, t.average_price, t.stock_amount, t.market_value, t.description, t.portfolio_manager_type, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_id.stock_code AS stock_code, t.created_at, t.updated_at
 FROM stock_portfolio t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
@@ -126,7 +134,11 @@ type ListStockPortfolioRow struct {
 	Description          *string
 	PortfolioManagerType *int16
 	PortfolioUuid        *uuid.UUID
+	PortfolioName        *string
+	PortfolioCode        *string
 	StockUuid            *uuid.UUID
+	StockName            *string
+	StockCode            *string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
 }
@@ -159,7 +171,11 @@ func (q *Queries) ListStockPortfolio(ctx context.Context, arg ListStockPortfolio
 			&i.Description,
 			&i.PortfolioManagerType,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.StockUuid,
+			&i.StockName,
+			&i.StockCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

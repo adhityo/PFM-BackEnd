@@ -92,7 +92,7 @@ func (q *Queries) CreateMemberDocument(ctx context.Context, arg CreateMemberDocu
 
 const getMemberDocumentByUUID = `-- name: GetMemberDocumentByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.document_date, t.document_status, t.document_file_uuid, t.document_category_id, t.member_benefit_payout_id, t.member_id, t.member_premium_payment_id, r_document_category_id.uuid AS document_category_uuid, r_member_benefit_payout_id.uuid AS member_benefit_payout_uuid, r_member_id.uuid AS member_uuid, r_member_premium_payment_id.uuid AS member_premium_payment_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.document_date, t.document_status, t.document_file_uuid, t.document_category_id, t.member_benefit_payout_id, t.member_id, t.member_premium_payment_id, r_document_category_id.uuid AS document_category_uuid, r_document_category_id.document_category_name AS document_category_name, r_document_category_id.document_category_code AS document_category_code, r_member_benefit_payout_id.uuid AS member_benefit_payout_uuid, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_member_premium_payment_id.uuid AS member_premium_payment_uuid, t.created_at, t.updated_at
 FROM member_document t
 LEFT JOIN document_category r_document_category_id ON r_document_category_id.id = t.document_category_id
 LEFT JOIN member_benefit_payout r_member_benefit_payout_id ON r_member_benefit_payout_id.id = t.member_benefit_payout_id
@@ -119,8 +119,12 @@ type GetMemberDocumentByUUIDRow struct {
 	MemberID                 *int64
 	MemberPremiumPaymentID   *int64
 	DocumentCategoryUuid     *uuid.UUID
+	DocumentCategoryName     *string
+	DocumentCategoryCode     *string
 	MemberBenefitPayoutUuid  *uuid.UUID
 	MemberUuid               *uuid.UUID
+	MemberName               *string
+	MemberNumber             *string
 	MemberPremiumPaymentUuid *uuid.UUID
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
@@ -142,8 +146,12 @@ func (q *Queries) GetMemberDocumentByUUID(ctx context.Context, arg GetMemberDocu
 		&i.MemberID,
 		&i.MemberPremiumPaymentID,
 		&i.DocumentCategoryUuid,
+		&i.DocumentCategoryName,
+		&i.DocumentCategoryCode,
 		&i.MemberBenefitPayoutUuid,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.MemberPremiumPaymentUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -152,7 +160,7 @@ func (q *Queries) GetMemberDocumentByUUID(ctx context.Context, arg GetMemberDocu
 }
 
 const listMemberDocument = `-- name: ListMemberDocument :many
-SELECT t.id, t.uuid, t.description, t.document_date, t.document_status, t.document_file_uuid, t.document_category_id, t.member_benefit_payout_id, t.member_id, t.member_premium_payment_id, r_document_category_id.uuid AS document_category_uuid, r_member_benefit_payout_id.uuid AS member_benefit_payout_uuid, r_member_id.uuid AS member_uuid, r_member_premium_payment_id.uuid AS member_premium_payment_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.document_date, t.document_status, t.document_file_uuid, t.document_category_id, t.member_benefit_payout_id, t.member_id, t.member_premium_payment_id, r_document_category_id.uuid AS document_category_uuid, r_document_category_id.document_category_name AS document_category_name, r_document_category_id.document_category_code AS document_category_code, r_member_benefit_payout_id.uuid AS member_benefit_payout_uuid, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_member_premium_payment_id.uuid AS member_premium_payment_uuid, t.created_at, t.updated_at
 FROM member_document t
 LEFT JOIN document_category r_document_category_id ON r_document_category_id.id = t.document_category_id
 LEFT JOIN member_benefit_payout r_member_benefit_payout_id ON r_member_benefit_payout_id.id = t.member_benefit_payout_id
@@ -194,8 +202,12 @@ type ListMemberDocumentRow struct {
 	MemberID                 *int64
 	MemberPremiumPaymentID   *int64
 	DocumentCategoryUuid     *uuid.UUID
+	DocumentCategoryName     *string
+	DocumentCategoryCode     *string
 	MemberBenefitPayoutUuid  *uuid.UUID
 	MemberUuid               *uuid.UUID
+	MemberName               *string
+	MemberNumber             *string
 	MemberPremiumPaymentUuid *uuid.UUID
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
@@ -231,8 +243,12 @@ func (q *Queries) ListMemberDocument(ctx context.Context, arg ListMemberDocument
 			&i.MemberID,
 			&i.MemberPremiumPaymentID,
 			&i.DocumentCategoryUuid,
+			&i.DocumentCategoryName,
+			&i.DocumentCategoryCode,
 			&i.MemberBenefitPayoutUuid,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.MemberPremiumPaymentUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

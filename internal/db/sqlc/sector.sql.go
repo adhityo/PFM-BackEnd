@@ -74,7 +74,7 @@ func (q *Queries) CreateSector(ctx context.Context, arg CreateSectorParams) (uui
 
 const getSectorByUUID = `-- name: GetSectorByUUID :one
 
-SELECT t.id, t.uuid, t.sector_name, t.sector_code, t.description, t.sector_status, t.total_stock, t.total_market_capitalization, t.latest_sector_date, t.total_corporate, t.parent_sector_id, r_parent_sector_id.uuid AS parent_sector_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.sector_name, t.sector_code, t.description, t.sector_status, t.total_stock, t.total_market_capitalization, t.latest_sector_date, t.total_corporate, t.parent_sector_id, r_parent_sector_id.uuid AS parent_sector_uuid, r_parent_sector_id.sector_name AS parent_sector_name, r_parent_sector_id.sector_code AS parent_sector_code, t.created_at, t.updated_at
 FROM sector t
 LEFT JOIN sector r_parent_sector_id ON r_parent_sector_id.id = t.parent_sector_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -93,6 +93,8 @@ type GetSectorByUUIDRow struct {
 	TotalCorporate            *int32
 	ParentSectorID            *int64
 	ParentSectorUuid          *uuid.UUID
+	ParentSectorName          *string
+	ParentSectorCode          *string
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -114,6 +116,8 @@ func (q *Queries) GetSectorByUUID(ctx context.Context, argUuid uuid.UUID) (GetSe
 		&i.TotalCorporate,
 		&i.ParentSectorID,
 		&i.ParentSectorUuid,
+		&i.ParentSectorName,
+		&i.ParentSectorCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -121,7 +125,7 @@ func (q *Queries) GetSectorByUUID(ctx context.Context, argUuid uuid.UUID) (GetSe
 }
 
 const listSector = `-- name: ListSector :many
-SELECT t.id, t.uuid, t.sector_name, t.sector_code, t.description, t.sector_status, t.total_stock, t.total_market_capitalization, t.latest_sector_date, t.total_corporate, t.parent_sector_id, r_parent_sector_id.uuid AS parent_sector_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.sector_name, t.sector_code, t.description, t.sector_status, t.total_stock, t.total_market_capitalization, t.latest_sector_date, t.total_corporate, t.parent_sector_id, r_parent_sector_id.uuid AS parent_sector_uuid, r_parent_sector_id.sector_name AS parent_sector_name, r_parent_sector_id.sector_code AS parent_sector_code, t.created_at, t.updated_at
 FROM sector t
 LEFT JOIN sector r_parent_sector_id ON r_parent_sector_id.id = t.parent_sector_id
 WHERE t.deleted_at IS NULL
@@ -161,6 +165,8 @@ type ListSectorRow struct {
 	TotalCorporate            *int32
 	ParentSectorID            *int64
 	ParentSectorUuid          *uuid.UUID
+	ParentSectorName          *string
+	ParentSectorCode          *string
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -193,6 +199,8 @@ func (q *Queries) ListSector(ctx context.Context, arg ListSectorParams) ([]ListS
 			&i.TotalCorporate,
 			&i.ParentSectorID,
 			&i.ParentSectorUuid,
+			&i.ParentSectorName,
+			&i.ParentSectorCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

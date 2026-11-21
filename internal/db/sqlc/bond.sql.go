@@ -222,7 +222,7 @@ func (q *Queries) CreateBond(ctx context.Context, arg CreateBondParams) (uuid.UU
 
 const getBondByUUID = `-- name: GetBondByUUID :one
 
-SELECT t.id, t.uuid, t.bond_name, t.bond_code, t.bond_type_id, t.description, t.coupon, t.coupon_payment_periode, t.maturity_date, t.coupon_frequency, t.last_coupon_date, t.bond_price, t.yield_to_maturity, t.rating_id, t.sector_id, t.bond_classification_id, t.issuance_date, t.client_id, t.next_coupon_date, t.bond_status, t.bond_duration_days, t.default_transaction_fee, t.total_coupon, t.total_fund, t.total_matured_value, t.total_paid_coupon, t.total_paid_fee, t.total_revolving_value, t.total_transaction_fee, t.no_akta_pengakuan_utang, t.no_akta_perjanjian_penerbitan, t.tanggal_akta_pengakuan_utang, t.tanggal_akta_perjanjian_penerbitan, t.parent_bond_id, t.coupon_type, t.arranger, t.asset_appraisal, t.feasibility_consultant, t.financial_consultant, t.legal_counsel_name, t.monitoring_agent, t.notary_name, t.payment_agent, t.public_accountant, t.safe_keeping_agent, t.selling_agent, t.bond_series_duration_days, t.notary_location, t.bond_short_name, t.minimum_denomination, t.book_building_end_date, t.book_building_start_date, t.latest_certificate_counter, t.emitent_id, t.emitent_name, t.bond_series_number, t.bond_periode_option_id, t.bond_activate_sync_status, t.bond_expire_sync_status, t.bond_offering_sync_status, t.remote_product_id, t.no_akta_personal_guarantee, t.tanggal_akta_personal_guarantee, r_bond_type_id.uuid AS bond_type_uuid, r_rating_id.uuid AS rating_uuid, r_sector_id.uuid AS sector_uuid, r_client_id.uuid AS client_uuid, r_parent_bond_id.uuid AS parent_bond_uuid, r_emitent_id.uuid AS emitent_uuid, r_bond_periode_option_id.uuid AS bond_periode_option_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_name, t.bond_code, t.bond_type_id, t.description, t.coupon, t.coupon_payment_periode, t.maturity_date, t.coupon_frequency, t.last_coupon_date, t.bond_price, t.yield_to_maturity, t.rating_id, t.sector_id, t.bond_classification_id, t.issuance_date, t.client_id, t.next_coupon_date, t.bond_status, t.bond_duration_days, t.default_transaction_fee, t.total_coupon, t.total_fund, t.total_matured_value, t.total_paid_coupon, t.total_paid_fee, t.total_revolving_value, t.total_transaction_fee, t.no_akta_pengakuan_utang, t.no_akta_perjanjian_penerbitan, t.tanggal_akta_pengakuan_utang, t.tanggal_akta_perjanjian_penerbitan, t.parent_bond_id, t.coupon_type, t.arranger, t.asset_appraisal, t.feasibility_consultant, t.financial_consultant, t.legal_counsel_name, t.monitoring_agent, t.notary_name, t.payment_agent, t.public_accountant, t.safe_keeping_agent, t.selling_agent, t.bond_series_duration_days, t.notary_location, t.bond_short_name, t.minimum_denomination, t.book_building_end_date, t.book_building_start_date, t.latest_certificate_counter, t.emitent_id, t.emitent_name, t.bond_series_number, t.bond_periode_option_id, t.bond_activate_sync_status, t.bond_expire_sync_status, t.bond_offering_sync_status, t.remote_product_id, t.no_akta_personal_guarantee, t.tanggal_akta_personal_guarantee, r_bond_type_id.uuid AS bond_type_uuid, r_bond_type_id.bond_type_name AS bond_type_name, r_bond_type_id.bond_type_code AS bond_type_code, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_name AS sector_name, r_sector_id.sector_code AS sector_code, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, r_parent_bond_id.uuid AS parent_bond_uuid, r_parent_bond_id.bond_name AS parent_bond_name, r_parent_bond_id.bond_code AS parent_bond_code, r_emitent_id.uuid AS emitent_uuid, r_bond_periode_option_id.uuid AS bond_periode_option_uuid, r_bond_periode_option_id.bond_periode_option_name AS bond_periode_option_name, r_bond_periode_option_id.bond_periode_option_code AS bond_periode_option_code, t.created_at, t.updated_at
 FROM bond t
 LEFT JOIN bond_type r_bond_type_id ON r_bond_type_id.id = t.bond_type_id
 LEFT JOIN rating r_rating_id ON r_rating_id.id = t.rating_id
@@ -305,12 +305,24 @@ type GetBondByUUIDRow struct {
 	NoAktaPersonalGuarantee         *string
 	TanggalAktaPersonalGuarantee    *time.Time
 	BondTypeUuid                    *uuid.UUID
+	BondTypeName                    *string
+	BondTypeCode                    *string
 	RatingUuid                      *uuid.UUID
+	RatingName                      *string
+	RatingCode                      *string
 	SectorUuid                      *uuid.UUID
+	SectorName                      *string
+	SectorCode                      *string
 	ClientUuid                      *uuid.UUID
+	ClientName                      *string
+	ClientCode                      *string
 	ParentBondUuid                  *uuid.UUID
+	ParentBondName                  *string
+	ParentBondCode                  *string
 	EmitentUuid                     *uuid.UUID
 	BondPeriodeOptionUuid           *uuid.UUID
+	BondPeriodeOptionName           *string
+	BondPeriodeOptionCode           *string
 	CreatedAt                       time.Time
 	UpdatedAt                       time.Time
 }
@@ -384,12 +396,24 @@ func (q *Queries) GetBondByUUID(ctx context.Context, arg GetBondByUUIDParams) (G
 		&i.NoAktaPersonalGuarantee,
 		&i.TanggalAktaPersonalGuarantee,
 		&i.BondTypeUuid,
+		&i.BondTypeName,
+		&i.BondTypeCode,
 		&i.RatingUuid,
+		&i.RatingName,
+		&i.RatingCode,
 		&i.SectorUuid,
+		&i.SectorName,
+		&i.SectorCode,
 		&i.ClientUuid,
+		&i.ClientName,
+		&i.ClientCode,
 		&i.ParentBondUuid,
+		&i.ParentBondName,
+		&i.ParentBondCode,
 		&i.EmitentUuid,
 		&i.BondPeriodeOptionUuid,
+		&i.BondPeriodeOptionName,
+		&i.BondPeriodeOptionCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -397,7 +421,7 @@ func (q *Queries) GetBondByUUID(ctx context.Context, arg GetBondByUUIDParams) (G
 }
 
 const listBond = `-- name: ListBond :many
-SELECT t.id, t.uuid, t.bond_name, t.bond_code, t.bond_type_id, t.description, t.coupon, t.coupon_payment_periode, t.maturity_date, t.coupon_frequency, t.last_coupon_date, t.bond_price, t.yield_to_maturity, t.rating_id, t.sector_id, t.bond_classification_id, t.issuance_date, t.client_id, t.next_coupon_date, t.bond_status, t.bond_duration_days, t.default_transaction_fee, t.total_coupon, t.total_fund, t.total_matured_value, t.total_paid_coupon, t.total_paid_fee, t.total_revolving_value, t.total_transaction_fee, t.no_akta_pengakuan_utang, t.no_akta_perjanjian_penerbitan, t.tanggal_akta_pengakuan_utang, t.tanggal_akta_perjanjian_penerbitan, t.parent_bond_id, t.coupon_type, t.arranger, t.asset_appraisal, t.feasibility_consultant, t.financial_consultant, t.legal_counsel_name, t.monitoring_agent, t.notary_name, t.payment_agent, t.public_accountant, t.safe_keeping_agent, t.selling_agent, t.bond_series_duration_days, t.notary_location, t.bond_short_name, t.minimum_denomination, t.book_building_end_date, t.book_building_start_date, t.latest_certificate_counter, t.emitent_id, t.emitent_name, t.bond_series_number, t.bond_periode_option_id, t.bond_activate_sync_status, t.bond_expire_sync_status, t.bond_offering_sync_status, t.remote_product_id, t.no_akta_personal_guarantee, t.tanggal_akta_personal_guarantee, r_bond_type_id.uuid AS bond_type_uuid, r_rating_id.uuid AS rating_uuid, r_sector_id.uuid AS sector_uuid, r_client_id.uuid AS client_uuid, r_parent_bond_id.uuid AS parent_bond_uuid, r_emitent_id.uuid AS emitent_uuid, r_bond_periode_option_id.uuid AS bond_periode_option_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.bond_name, t.bond_code, t.bond_type_id, t.description, t.coupon, t.coupon_payment_periode, t.maturity_date, t.coupon_frequency, t.last_coupon_date, t.bond_price, t.yield_to_maturity, t.rating_id, t.sector_id, t.bond_classification_id, t.issuance_date, t.client_id, t.next_coupon_date, t.bond_status, t.bond_duration_days, t.default_transaction_fee, t.total_coupon, t.total_fund, t.total_matured_value, t.total_paid_coupon, t.total_paid_fee, t.total_revolving_value, t.total_transaction_fee, t.no_akta_pengakuan_utang, t.no_akta_perjanjian_penerbitan, t.tanggal_akta_pengakuan_utang, t.tanggal_akta_perjanjian_penerbitan, t.parent_bond_id, t.coupon_type, t.arranger, t.asset_appraisal, t.feasibility_consultant, t.financial_consultant, t.legal_counsel_name, t.monitoring_agent, t.notary_name, t.payment_agent, t.public_accountant, t.safe_keeping_agent, t.selling_agent, t.bond_series_duration_days, t.notary_location, t.bond_short_name, t.minimum_denomination, t.book_building_end_date, t.book_building_start_date, t.latest_certificate_counter, t.emitent_id, t.emitent_name, t.bond_series_number, t.bond_periode_option_id, t.bond_activate_sync_status, t.bond_expire_sync_status, t.bond_offering_sync_status, t.remote_product_id, t.no_akta_personal_guarantee, t.tanggal_akta_personal_guarantee, r_bond_type_id.uuid AS bond_type_uuid, r_bond_type_id.bond_type_name AS bond_type_name, r_bond_type_id.bond_type_code AS bond_type_code, r_rating_id.uuid AS rating_uuid, r_rating_id.rating_name AS rating_name, r_rating_id.rating_code AS rating_code, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_name AS sector_name, r_sector_id.sector_code AS sector_code, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, r_parent_bond_id.uuid AS parent_bond_uuid, r_parent_bond_id.bond_name AS parent_bond_name, r_parent_bond_id.bond_code AS parent_bond_code, r_emitent_id.uuid AS emitent_uuid, r_bond_periode_option_id.uuid AS bond_periode_option_uuid, r_bond_periode_option_id.bond_periode_option_name AS bond_periode_option_name, r_bond_periode_option_id.bond_periode_option_code AS bond_periode_option_code, t.created_at, t.updated_at
 FROM bond t
 LEFT JOIN bond_type r_bond_type_id ON r_bond_type_id.id = t.bond_type_id
 LEFT JOIN rating r_rating_id ON r_rating_id.id = t.rating_id
@@ -514,12 +538,24 @@ type ListBondRow struct {
 	NoAktaPersonalGuarantee         *string
 	TanggalAktaPersonalGuarantee    *time.Time
 	BondTypeUuid                    *uuid.UUID
+	BondTypeName                    *string
+	BondTypeCode                    *string
 	RatingUuid                      *uuid.UUID
+	RatingName                      *string
+	RatingCode                      *string
 	SectorUuid                      *uuid.UUID
+	SectorName                      *string
+	SectorCode                      *string
 	ClientUuid                      *uuid.UUID
+	ClientName                      *string
+	ClientCode                      *string
 	ParentBondUuid                  *uuid.UUID
+	ParentBondName                  *string
+	ParentBondCode                  *string
 	EmitentUuid                     *uuid.UUID
 	BondPeriodeOptionUuid           *uuid.UUID
+	BondPeriodeOptionName           *string
+	BondPeriodeOptionCode           *string
 	CreatedAt                       time.Time
 	UpdatedAt                       time.Time
 }
@@ -611,12 +647,24 @@ func (q *Queries) ListBond(ctx context.Context, arg ListBondParams) ([]ListBondR
 			&i.NoAktaPersonalGuarantee,
 			&i.TanggalAktaPersonalGuarantee,
 			&i.BondTypeUuid,
+			&i.BondTypeName,
+			&i.BondTypeCode,
 			&i.RatingUuid,
+			&i.RatingName,
+			&i.RatingCode,
 			&i.SectorUuid,
+			&i.SectorName,
+			&i.SectorCode,
 			&i.ClientUuid,
+			&i.ClientName,
+			&i.ClientCode,
 			&i.ParentBondUuid,
+			&i.ParentBondName,
+			&i.ParentBondCode,
 			&i.EmitentUuid,
 			&i.BondPeriodeOptionUuid,
+			&i.BondPeriodeOptionName,
+			&i.BondPeriodeOptionCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -90,7 +90,7 @@ func (q *Queries) CreatePaymentDocument(ctx context.Context, arg CreatePaymentDo
 
 const getPaymentDocumentByUUID = `-- name: GetPaymentDocumentByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_uuid, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_uuid, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_document_category_id.document_category_name AS document_category_name, r_document_category_id.document_category_code AS document_category_code, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
 FROM payment_document t
 LEFT JOIN bond_coupon_schedule r_bond_coupon_schedule_id ON r_bond_coupon_schedule_id.id = t.bond_coupon_schedule_id
 LEFT JOIN document_category r_document_category_id ON r_document_category_id.id = t.document_category_id
@@ -116,6 +116,8 @@ type GetPaymentDocumentByUUIDRow struct {
 	InvestorCouponScheduleID   *int64
 	BondCouponScheduleUuid     *uuid.UUID
 	DocumentCategoryUuid       *uuid.UUID
+	DocumentCategoryName       *string
+	DocumentCategoryCode       *string
 	InvestorCouponScheduleUuid *uuid.UUID
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -137,6 +139,8 @@ func (q *Queries) GetPaymentDocumentByUUID(ctx context.Context, arg GetPaymentDo
 		&i.InvestorCouponScheduleID,
 		&i.BondCouponScheduleUuid,
 		&i.DocumentCategoryUuid,
+		&i.DocumentCategoryName,
+		&i.DocumentCategoryCode,
 		&i.InvestorCouponScheduleUuid,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -145,7 +149,7 @@ func (q *Queries) GetPaymentDocumentByUUID(ctx context.Context, arg GetPaymentDo
 }
 
 const listPaymentDocument = `-- name: ListPaymentDocument :many
-SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_uuid, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.document_name, t.document_status, t.document_file_uuid, t.bond_coupon_schedule_id, t.document_category_id, t.investor_coupon_schedule_id, r_bond_coupon_schedule_id.uuid AS bond_coupon_schedule_uuid, r_document_category_id.uuid AS document_category_uuid, r_document_category_id.document_category_name AS document_category_name, r_document_category_id.document_category_code AS document_category_code, r_investor_coupon_schedule_id.uuid AS investor_coupon_schedule_uuid, t.created_at, t.updated_at
 FROM payment_document t
 LEFT JOIN bond_coupon_schedule r_bond_coupon_schedule_id ON r_bond_coupon_schedule_id.id = t.bond_coupon_schedule_id
 LEFT JOIN document_category r_document_category_id ON r_document_category_id.id = t.document_category_id
@@ -187,6 +191,8 @@ type ListPaymentDocumentRow struct {
 	InvestorCouponScheduleID   *int64
 	BondCouponScheduleUuid     *uuid.UUID
 	DocumentCategoryUuid       *uuid.UUID
+	DocumentCategoryName       *string
+	DocumentCategoryCode       *string
 	InvestorCouponScheduleUuid *uuid.UUID
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
@@ -222,6 +228,8 @@ func (q *Queries) ListPaymentDocument(ctx context.Context, arg ListPaymentDocume
 			&i.InvestorCouponScheduleID,
 			&i.BondCouponScheduleUuid,
 			&i.DocumentCategoryUuid,
+			&i.DocumentCategoryName,
+			&i.DocumentCategoryCode,
 			&i.InvestorCouponScheduleUuid,
 			&i.CreatedAt,
 			&i.UpdatedAt,

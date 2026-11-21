@@ -98,7 +98,7 @@ func (q *Queries) CreatePortfolio(ctx context.Context, arg CreatePortfolioParams
 
 const getPortfolioByUUID = `-- name: GetPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.portfolio_name, t.portfolio_code, t.portfolio_date, t.portfolio_status, t.description, t.investment_manager_id, t.parent_portfolio_id, t.client_id, t.cash_fund_value, t.cagr, t.fund_target_rate, t.realized_profit_loss, t.unrealized_profit_loss, r_investment_manager_id.uuid AS investment_manager_uuid, r_parent_portfolio_id.uuid AS parent_portfolio_uuid, r_client_id.uuid AS client_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_name, t.portfolio_code, t.portfolio_date, t.portfolio_status, t.description, t.investment_manager_id, t.parent_portfolio_id, t.client_id, t.cash_fund_value, t.cagr, t.fund_target_rate, t.realized_profit_loss, t.unrealized_profit_loss, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, r_parent_portfolio_id.uuid AS parent_portfolio_uuid, r_parent_portfolio_id.portfolio_name AS parent_portfolio_name, r_parent_portfolio_id.portfolio_code AS parent_portfolio_code, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, t.created_at, t.updated_at
 FROM portfolio t
 LEFT JOIN investment_manager r_investment_manager_id ON r_investment_manager_id.id = t.investment_manager_id
 LEFT JOIN portfolio r_parent_portfolio_id ON r_parent_portfolio_id.id = t.parent_portfolio_id
@@ -129,8 +129,14 @@ type GetPortfolioByUUIDRow struct {
 	RealizedProfitLoss    *decimal.Decimal
 	UnrealizedProfitLoss  *decimal.Decimal
 	InvestmentManagerUuid *uuid.UUID
+	InvestmentManagerName *string
+	InvestmentManagerCode *string
 	ParentPortfolioUuid   *uuid.UUID
+	ParentPortfolioName   *string
+	ParentPortfolioCode   *string
 	ClientUuid            *uuid.UUID
+	ClientName            *string
+	ClientCode            *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -156,8 +162,14 @@ func (q *Queries) GetPortfolioByUUID(ctx context.Context, arg GetPortfolioByUUID
 		&i.RealizedProfitLoss,
 		&i.UnrealizedProfitLoss,
 		&i.InvestmentManagerUuid,
+		&i.InvestmentManagerName,
+		&i.InvestmentManagerCode,
 		&i.ParentPortfolioUuid,
+		&i.ParentPortfolioName,
+		&i.ParentPortfolioCode,
 		&i.ClientUuid,
+		&i.ClientName,
+		&i.ClientCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -165,7 +177,7 @@ func (q *Queries) GetPortfolioByUUID(ctx context.Context, arg GetPortfolioByUUID
 }
 
 const listPortfolio = `-- name: ListPortfolio :many
-SELECT t.id, t.uuid, t.portfolio_name, t.portfolio_code, t.portfolio_date, t.portfolio_status, t.description, t.investment_manager_id, t.parent_portfolio_id, t.client_id, t.cash_fund_value, t.cagr, t.fund_target_rate, t.realized_profit_loss, t.unrealized_profit_loss, r_investment_manager_id.uuid AS investment_manager_uuid, r_parent_portfolio_id.uuid AS parent_portfolio_uuid, r_client_id.uuid AS client_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.portfolio_name, t.portfolio_code, t.portfolio_date, t.portfolio_status, t.description, t.investment_manager_id, t.parent_portfolio_id, t.client_id, t.cash_fund_value, t.cagr, t.fund_target_rate, t.realized_profit_loss, t.unrealized_profit_loss, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, r_parent_portfolio_id.uuid AS parent_portfolio_uuid, r_parent_portfolio_id.portfolio_name AS parent_portfolio_name, r_parent_portfolio_id.portfolio_code AS parent_portfolio_code, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, t.created_at, t.updated_at
 FROM portfolio t
 LEFT JOIN investment_manager r_investment_manager_id ON r_investment_manager_id.id = t.investment_manager_id
 LEFT JOIN portfolio r_parent_portfolio_id ON r_parent_portfolio_id.id = t.parent_portfolio_id
@@ -217,8 +229,14 @@ type ListPortfolioRow struct {
 	RealizedProfitLoss    *decimal.Decimal
 	UnrealizedProfitLoss  *decimal.Decimal
 	InvestmentManagerUuid *uuid.UUID
+	InvestmentManagerName *string
+	InvestmentManagerCode *string
 	ParentPortfolioUuid   *uuid.UUID
+	ParentPortfolioName   *string
+	ParentPortfolioCode   *string
 	ClientUuid            *uuid.UUID
+	ClientName            *string
+	ClientCode            *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -258,8 +276,14 @@ func (q *Queries) ListPortfolio(ctx context.Context, arg ListPortfolioParams) ([
 			&i.RealizedProfitLoss,
 			&i.UnrealizedProfitLoss,
 			&i.InvestmentManagerUuid,
+			&i.InvestmentManagerName,
+			&i.InvestmentManagerCode,
 			&i.ParentPortfolioUuid,
+			&i.ParentPortfolioName,
+			&i.ParentPortfolioCode,
 			&i.ClientUuid,
+			&i.ClientName,
+			&i.ClientCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

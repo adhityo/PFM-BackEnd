@@ -103,7 +103,7 @@ func (q *Queries) CreateMemberBenefitPayout(ctx context.Context, arg CreateMembe
 
 const getMemberBenefitPayoutByUUID = `-- name: GetMemberBenefitPayoutByUUID :one
 
-SELECT t.id, t.uuid, t.benefit_payout_date, t.benefit_payout_tax_value, t.benefit_payout_value, t.description, t.final_payout_value, t.member_benefit_payout_status, t.value_description, t.benefit_payout_batch_id, t.member_id, t.dependant_id, t.month, t.payment_method, t.year, t.tax_report_id, r_benefit_payout_batch_id.uuid AS benefit_payout_batch_uuid, r_member_id.uuid AS member_uuid, r_dependant_id.uuid AS dependant_uuid, r_tax_report_id.uuid AS tax_report_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.benefit_payout_date, t.benefit_payout_tax_value, t.benefit_payout_value, t.description, t.final_payout_value, t.member_benefit_payout_status, t.value_description, t.benefit_payout_batch_id, t.member_id, t.dependant_id, t.month, t.payment_method, t.year, t.tax_report_id, r_benefit_payout_batch_id.uuid AS benefit_payout_batch_uuid, r_benefit_payout_batch_id.benefit_payout_batch_name AS benefit_payout_batch_name, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_dependant_id.uuid AS dependant_uuid, r_dependant_id.dependant_name AS dependant_name, r_tax_report_id.uuid AS tax_report_uuid, r_tax_report_id.tax_report_number AS tax_report_number, t.created_at, t.updated_at
 FROM member_benefit_payout t
 LEFT JOIN benefit_payout_batch r_benefit_payout_batch_id ON r_benefit_payout_batch_id.id = t.benefit_payout_batch_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
@@ -136,9 +136,14 @@ type GetMemberBenefitPayoutByUUIDRow struct {
 	Year                      *int32
 	TaxReportID               *int64
 	BenefitPayoutBatchUuid    *uuid.UUID
+	BenefitPayoutBatchName    *string
 	MemberUuid                *uuid.UUID
+	MemberName                *string
+	MemberNumber              *string
 	DependantUuid             *uuid.UUID
+	DependantName             *string
 	TaxReportUuid             *uuid.UUID
+	TaxReportNumber           *string
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -165,9 +170,14 @@ func (q *Queries) GetMemberBenefitPayoutByUUID(ctx context.Context, arg GetMembe
 		&i.Year,
 		&i.TaxReportID,
 		&i.BenefitPayoutBatchUuid,
+		&i.BenefitPayoutBatchName,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.DependantUuid,
+		&i.DependantName,
 		&i.TaxReportUuid,
+		&i.TaxReportNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -175,7 +185,7 @@ func (q *Queries) GetMemberBenefitPayoutByUUID(ctx context.Context, arg GetMembe
 }
 
 const listMemberBenefitPayout = `-- name: ListMemberBenefitPayout :many
-SELECT t.id, t.uuid, t.benefit_payout_date, t.benefit_payout_tax_value, t.benefit_payout_value, t.description, t.final_payout_value, t.member_benefit_payout_status, t.value_description, t.benefit_payout_batch_id, t.member_id, t.dependant_id, t.month, t.payment_method, t.year, t.tax_report_id, r_benefit_payout_batch_id.uuid AS benefit_payout_batch_uuid, r_member_id.uuid AS member_uuid, r_dependant_id.uuid AS dependant_uuid, r_tax_report_id.uuid AS tax_report_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.benefit_payout_date, t.benefit_payout_tax_value, t.benefit_payout_value, t.description, t.final_payout_value, t.member_benefit_payout_status, t.value_description, t.benefit_payout_batch_id, t.member_id, t.dependant_id, t.month, t.payment_method, t.year, t.tax_report_id, r_benefit_payout_batch_id.uuid AS benefit_payout_batch_uuid, r_benefit_payout_batch_id.benefit_payout_batch_name AS benefit_payout_batch_name, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_dependant_id.uuid AS dependant_uuid, r_dependant_id.dependant_name AS dependant_name, r_tax_report_id.uuid AS tax_report_uuid, r_tax_report_id.tax_report_number AS tax_report_number, t.created_at, t.updated_at
 FROM member_benefit_payout t
 LEFT JOIN benefit_payout_batch r_benefit_payout_batch_id ON r_benefit_payout_batch_id.id = t.benefit_payout_batch_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
@@ -223,9 +233,14 @@ type ListMemberBenefitPayoutRow struct {
 	Year                      *int32
 	TaxReportID               *int64
 	BenefitPayoutBatchUuid    *uuid.UUID
+	BenefitPayoutBatchName    *string
 	MemberUuid                *uuid.UUID
+	MemberName                *string
+	MemberNumber              *string
 	DependantUuid             *uuid.UUID
+	DependantName             *string
 	TaxReportUuid             *uuid.UUID
+	TaxReportNumber           *string
 	CreatedAt                 time.Time
 	UpdatedAt                 time.Time
 }
@@ -266,9 +281,14 @@ func (q *Queries) ListMemberBenefitPayout(ctx context.Context, arg ListMemberBen
 			&i.Year,
 			&i.TaxReportID,
 			&i.BenefitPayoutBatchUuid,
+			&i.BenefitPayoutBatchName,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.DependantUuid,
+			&i.DependantName,
 			&i.TaxReportUuid,
+			&i.TaxReportNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

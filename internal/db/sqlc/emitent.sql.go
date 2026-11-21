@@ -91,7 +91,7 @@ func (q *Queries) CreateEmitent(ctx context.Context, arg CreateEmitentParams) (u
 
 const getEmitentByUUID = `-- name: GetEmitentByUUID :one
 
-SELECT t.id, t.uuid, t.address, t.description, t.email, t.emitent_name, t.faximile, t.npwp, t.sector_name, t.status, t.sub_sector_name, t.telephone, t.sector_id, t.sub_sector_id, r_sector_id.uuid AS sector_uuid, r_sub_sector_id.uuid AS sub_sector_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.description, t.email, t.emitent_name, t.faximile, t.npwp, t.sector_name, t.status, t.sub_sector_name, t.telephone, t.sector_id, t.sub_sector_id, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_code AS sector_code, r_sub_sector_id.uuid AS sub_sector_uuid, r_sub_sector_id.sub_sector_code AS sub_sector_code, t.created_at, t.updated_at
 FROM emitent t
 LEFT JOIN sector r_sector_id ON r_sector_id.id = t.sector_id
 LEFT JOIN sub_sector r_sub_sector_id ON r_sub_sector_id.id = t.sub_sector_id
@@ -114,7 +114,9 @@ type GetEmitentByUUIDRow struct {
 	SectorID      *int64
 	SubSectorID   *int64
 	SectorUuid    *uuid.UUID
+	SectorCode    *string
 	SubSectorUuid *uuid.UUID
+	SubSectorCode *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -139,7 +141,9 @@ func (q *Queries) GetEmitentByUUID(ctx context.Context, argUuid uuid.UUID) (GetE
 		&i.SectorID,
 		&i.SubSectorID,
 		&i.SectorUuid,
+		&i.SectorCode,
 		&i.SubSectorUuid,
+		&i.SubSectorCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -147,7 +151,7 @@ func (q *Queries) GetEmitentByUUID(ctx context.Context, argUuid uuid.UUID) (GetE
 }
 
 const listEmitent = `-- name: ListEmitent :many
-SELECT t.id, t.uuid, t.address, t.description, t.email, t.emitent_name, t.faximile, t.npwp, t.sector_name, t.status, t.sub_sector_name, t.telephone, t.sector_id, t.sub_sector_id, r_sector_id.uuid AS sector_uuid, r_sub_sector_id.uuid AS sub_sector_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.description, t.email, t.emitent_name, t.faximile, t.npwp, t.sector_name, t.status, t.sub_sector_name, t.telephone, t.sector_id, t.sub_sector_id, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_code AS sector_code, r_sub_sector_id.uuid AS sub_sector_uuid, r_sub_sector_id.sub_sector_code AS sub_sector_code, t.created_at, t.updated_at
 FROM emitent t
 LEFT JOIN sector r_sector_id ON r_sector_id.id = t.sector_id
 LEFT JOIN sub_sector r_sub_sector_id ON r_sub_sector_id.id = t.sub_sector_id
@@ -190,7 +194,9 @@ type ListEmitentRow struct {
 	SectorID      *int64
 	SubSectorID   *int64
 	SectorUuid    *uuid.UUID
+	SectorCode    *string
 	SubSectorUuid *uuid.UUID
+	SubSectorCode *string
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 }
@@ -227,7 +233,9 @@ func (q *Queries) ListEmitent(ctx context.Context, arg ListEmitentParams) ([]Lis
 			&i.SectorID,
 			&i.SubSectorID,
 			&i.SectorUuid,
+			&i.SectorCode,
 			&i.SubSectorUuid,
+			&i.SubSectorCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

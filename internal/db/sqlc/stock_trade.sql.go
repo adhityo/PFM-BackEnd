@@ -114,7 +114,7 @@ func (q *Queries) CreateStockTrade(ctx context.Context, arg CreateStockTradePara
 
 const getStockTradeByUUID = `-- name: GetStockTradeByUUID :one
 
-SELECT t.id, t.uuid, t.stock_trade_time, t.stock_trade_date, t.classification, t.stock_code, t.stock_id, t.price, t.quantity_lot, t.quantity_share, t.transaction_fee_percentage, t.transaction_fee_amount, t.trade_value, t.broker_id, t.investment_manager_id, t.settlement_date, t.portfolio_id, t.stock_trade_status, t.trade_type_id, t.stock_name, t.broker_name, r_stock_id.uuid AS stock_uuid, r_broker_id.uuid AS broker_uuid, r_investment_manager_id.uuid AS investment_manager_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_trade_time, t.stock_trade_date, t.classification, t.stock_code, t.stock_id, t.price, t.quantity_lot, t.quantity_share, t.transaction_fee_percentage, t.transaction_fee_amount, t.trade_value, t.broker_id, t.investment_manager_id, t.settlement_date, t.portfolio_id, t.stock_trade_status, t.trade_type_id, t.stock_name, t.broker_name, r_stock_id.uuid AS stock_uuid, r_broker_id.uuid AS broker_uuid, r_broker_id.broker_code AS broker_code, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, t.created_at, t.updated_at
 FROM stock_trade t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN broker r_broker_id ON r_broker_id.id = t.broker_id
@@ -154,9 +154,16 @@ type GetStockTradeByUUIDRow struct {
 	BrokerName               *string
 	StockUuid                *uuid.UUID
 	BrokerUuid               *uuid.UUID
+	BrokerCode               *string
 	InvestmentManagerUuid    *uuid.UUID
+	InvestmentManagerName    *string
+	InvestmentManagerCode    *string
 	PortfolioUuid            *uuid.UUID
+	PortfolioName            *string
+	PortfolioCode            *string
 	TradeTypeUuid            *uuid.UUID
+	TradeTypeName            *string
+	TradeTypeCode            *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -189,9 +196,16 @@ func (q *Queries) GetStockTradeByUUID(ctx context.Context, arg GetStockTradeByUU
 		&i.BrokerName,
 		&i.StockUuid,
 		&i.BrokerUuid,
+		&i.BrokerCode,
 		&i.InvestmentManagerUuid,
+		&i.InvestmentManagerName,
+		&i.InvestmentManagerCode,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.TradeTypeUuid,
+		&i.TradeTypeName,
+		&i.TradeTypeCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -199,7 +213,7 @@ func (q *Queries) GetStockTradeByUUID(ctx context.Context, arg GetStockTradeByUU
 }
 
 const listStockTrade = `-- name: ListStockTrade :many
-SELECT t.id, t.uuid, t.stock_trade_time, t.stock_trade_date, t.classification, t.stock_code, t.stock_id, t.price, t.quantity_lot, t.quantity_share, t.transaction_fee_percentage, t.transaction_fee_amount, t.trade_value, t.broker_id, t.investment_manager_id, t.settlement_date, t.portfolio_id, t.stock_trade_status, t.trade_type_id, t.stock_name, t.broker_name, r_stock_id.uuid AS stock_uuid, r_broker_id.uuid AS broker_uuid, r_investment_manager_id.uuid AS investment_manager_uuid, r_portfolio_id.uuid AS portfolio_uuid, r_trade_type_id.uuid AS trade_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_trade_time, t.stock_trade_date, t.classification, t.stock_code, t.stock_id, t.price, t.quantity_lot, t.quantity_share, t.transaction_fee_percentage, t.transaction_fee_amount, t.trade_value, t.broker_id, t.investment_manager_id, t.settlement_date, t.portfolio_id, t.stock_trade_status, t.trade_type_id, t.stock_name, t.broker_name, r_stock_id.uuid AS stock_uuid, r_broker_id.uuid AS broker_uuid, r_broker_id.broker_code AS broker_code, r_investment_manager_id.uuid AS investment_manager_uuid, r_investment_manager_id.investment_manager_name AS investment_manager_name, r_investment_manager_id.investment_manager_code AS investment_manager_code, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_trade_type_id.uuid AS trade_type_uuid, r_trade_type_id.trade_type_name AS trade_type_name, r_trade_type_id.trade_type_code AS trade_type_code, t.created_at, t.updated_at
 FROM stock_trade t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN broker r_broker_id ON r_broker_id.id = t.broker_id
@@ -258,9 +272,16 @@ type ListStockTradeRow struct {
 	BrokerName               *string
 	StockUuid                *uuid.UUID
 	BrokerUuid               *uuid.UUID
+	BrokerCode               *string
 	InvestmentManagerUuid    *uuid.UUID
+	InvestmentManagerName    *string
+	InvestmentManagerCode    *string
 	PortfolioUuid            *uuid.UUID
+	PortfolioName            *string
+	PortfolioCode            *string
 	TradeTypeUuid            *uuid.UUID
+	TradeTypeName            *string
+	TradeTypeCode            *string
 	CreatedAt                time.Time
 	UpdatedAt                time.Time
 }
@@ -308,9 +329,16 @@ func (q *Queries) ListStockTrade(ctx context.Context, arg ListStockTradeParams) 
 			&i.BrokerName,
 			&i.StockUuid,
 			&i.BrokerUuid,
+			&i.BrokerCode,
 			&i.InvestmentManagerUuid,
+			&i.InvestmentManagerName,
+			&i.InvestmentManagerCode,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.TradeTypeUuid,
+			&i.TradeTypeName,
+			&i.TradeTypeCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

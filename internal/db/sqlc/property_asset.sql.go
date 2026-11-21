@@ -89,7 +89,7 @@ func (q *Queries) CreatePropertyAsset(ctx context.Context, arg CreatePropertyAss
 
 const getPropertyAssetByUUID = `-- name: GetPropertyAssetByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.latest_appraisal_date, t.latest_appraisal_value, t.property_asset_code, t.property_asset_name, t.property_asset_number, t.purchase_date, t.purchase_value, t.status, t.property_asset_type_id, r_property_asset_type_id.uuid AS property_asset_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.latest_appraisal_date, t.latest_appraisal_value, t.property_asset_code, t.property_asset_name, t.property_asset_number, t.purchase_date, t.purchase_value, t.status, t.property_asset_type_id, r_property_asset_type_id.uuid AS property_asset_type_uuid, r_property_asset_type_id.property_asset_type_name AS property_asset_type_name, r_property_asset_type_id.property_asset_type_code AS property_asset_type_code, t.created_at, t.updated_at
 FROM property_asset t
 LEFT JOIN property_asset_type r_property_asset_type_id ON r_property_asset_type_id.id = t.property_asset_type_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -109,6 +109,8 @@ type GetPropertyAssetByUUIDRow struct {
 	Status                *int16
 	PropertyAssetTypeID   *int64
 	PropertyAssetTypeUuid *uuid.UUID
+	PropertyAssetTypeName *string
+	PropertyAssetTypeCode *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -131,6 +133,8 @@ func (q *Queries) GetPropertyAssetByUUID(ctx context.Context, argUuid uuid.UUID)
 		&i.Status,
 		&i.PropertyAssetTypeID,
 		&i.PropertyAssetTypeUuid,
+		&i.PropertyAssetTypeName,
+		&i.PropertyAssetTypeCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -138,7 +142,7 @@ func (q *Queries) GetPropertyAssetByUUID(ctx context.Context, argUuid uuid.UUID)
 }
 
 const listPropertyAsset = `-- name: ListPropertyAsset :many
-SELECT t.id, t.uuid, t.description, t.latest_appraisal_date, t.latest_appraisal_value, t.property_asset_code, t.property_asset_name, t.property_asset_number, t.purchase_date, t.purchase_value, t.status, t.property_asset_type_id, r_property_asset_type_id.uuid AS property_asset_type_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.latest_appraisal_date, t.latest_appraisal_value, t.property_asset_code, t.property_asset_name, t.property_asset_number, t.purchase_date, t.purchase_value, t.status, t.property_asset_type_id, r_property_asset_type_id.uuid AS property_asset_type_uuid, r_property_asset_type_id.property_asset_type_name AS property_asset_type_name, r_property_asset_type_id.property_asset_type_code AS property_asset_type_code, t.created_at, t.updated_at
 FROM property_asset t
 LEFT JOIN property_asset_type r_property_asset_type_id ON r_property_asset_type_id.id = t.property_asset_type_id
 WHERE t.deleted_at IS NULL
@@ -179,6 +183,8 @@ type ListPropertyAssetRow struct {
 	Status                *int16
 	PropertyAssetTypeID   *int64
 	PropertyAssetTypeUuid *uuid.UUID
+	PropertyAssetTypeName *string
+	PropertyAssetTypeCode *string
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 }
@@ -212,6 +218,8 @@ func (q *Queries) ListPropertyAsset(ctx context.Context, arg ListPropertyAssetPa
 			&i.Status,
 			&i.PropertyAssetTypeID,
 			&i.PropertyAssetTypeUuid,
+			&i.PropertyAssetTypeName,
+			&i.PropertyAssetTypeCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

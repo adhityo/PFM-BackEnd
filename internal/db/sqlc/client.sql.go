@@ -93,7 +93,7 @@ func (q *Queries) CreateClient(ctx context.Context, arg CreateClientParams) (uui
 
 const getClientByUUID = `-- name: GetClientByUUID :one
 
-SELECT t.id, t.uuid, t.client_name, t.client_number, t.description, t.client_status, t.email, t.contact_person, t.telephone, t.faximile, t.sector_id, t.base_platform_url, t.client_code, r_sector_id.uuid AS sector_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.client_name, t.client_number, t.description, t.client_status, t.email, t.contact_person, t.telephone, t.faximile, t.sector_id, t.base_platform_url, t.client_code, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_name AS sector_name, r_sector_id.sector_code AS sector_code, t.created_at, t.updated_at
 FROM client t
 LEFT JOIN sector r_sector_id ON r_sector_id.id = t.sector_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -120,6 +120,8 @@ type GetClientByUUIDRow struct {
 	BasePlatformUrl *string
 	ClientCode      *string
 	SectorUuid      *uuid.UUID
+	SectorName      *string
+	SectorCode      *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -143,6 +145,8 @@ func (q *Queries) GetClientByUUID(ctx context.Context, arg GetClientByUUIDParams
 		&i.BasePlatformUrl,
 		&i.ClientCode,
 		&i.SectorUuid,
+		&i.SectorName,
+		&i.SectorCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -150,7 +154,7 @@ func (q *Queries) GetClientByUUID(ctx context.Context, arg GetClientByUUIDParams
 }
 
 const listClient = `-- name: ListClient :many
-SELECT t.id, t.uuid, t.client_name, t.client_number, t.description, t.client_status, t.email, t.contact_person, t.telephone, t.faximile, t.sector_id, t.base_platform_url, t.client_code, r_sector_id.uuid AS sector_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.client_name, t.client_number, t.description, t.client_status, t.email, t.contact_person, t.telephone, t.faximile, t.sector_id, t.base_platform_url, t.client_code, r_sector_id.uuid AS sector_uuid, r_sector_id.sector_name AS sector_name, r_sector_id.sector_code AS sector_code, t.created_at, t.updated_at
 FROM client t
 LEFT JOIN sector r_sector_id ON r_sector_id.id = t.sector_id
 WHERE t.deleted_at IS NULL
@@ -194,6 +198,8 @@ type ListClientRow struct {
 	BasePlatformUrl *string
 	ClientCode      *string
 	SectorUuid      *uuid.UUID
+	SectorName      *string
+	SectorCode      *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -229,6 +235,8 @@ func (q *Queries) ListClient(ctx context.Context, arg ListClientParams) ([]ListC
 			&i.BasePlatformUrl,
 			&i.ClientCode,
 			&i.SectorUuid,
+			&i.SectorName,
+			&i.SectorCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

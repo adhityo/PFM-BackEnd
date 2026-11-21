@@ -91,7 +91,7 @@ func (q *Queries) CreateMemberGroup(ctx context.Context, arg CreateMemberGroupPa
 
 const getMemberGroupByUUID = `-- name: GetMemberGroupByUUID :one
 
-SELECT t.id, t.uuid, t.address, t.description, t.member_group_name, t.member_group_number, t.city_id, t.country_id, t.province_id, t.member_group_status, r_city_id.uuid AS city_uuid, r_country_id.uuid AS country_uuid, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.description, t.member_group_name, t.member_group_number, t.city_id, t.country_id, t.province_id, t.member_group_status, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM member_group t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
@@ -111,8 +111,14 @@ type GetMemberGroupByUUIDRow struct {
 	ProvinceID        *int64
 	MemberGroupStatus *int16
 	CityUuid          *uuid.UUID
+	CityName          *string
+	CityCode          *string
 	CountryUuid       *uuid.UUID
+	CountryName       *string
+	CountryCode       *string
 	ProvinceUuid      *uuid.UUID
+	ProvinceName      *string
+	ProvinceCode      *string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
@@ -133,8 +139,14 @@ func (q *Queries) GetMemberGroupByUUID(ctx context.Context, argUuid uuid.UUID) (
 		&i.ProvinceID,
 		&i.MemberGroupStatus,
 		&i.CityUuid,
+		&i.CityName,
+		&i.CityCode,
 		&i.CountryUuid,
+		&i.CountryName,
+		&i.CountryCode,
 		&i.ProvinceUuid,
+		&i.ProvinceName,
+		&i.ProvinceCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -142,7 +154,7 @@ func (q *Queries) GetMemberGroupByUUID(ctx context.Context, argUuid uuid.UUID) (
 }
 
 const listMemberGroup = `-- name: ListMemberGroup :many
-SELECT t.id, t.uuid, t.address, t.description, t.member_group_name, t.member_group_number, t.city_id, t.country_id, t.province_id, t.member_group_status, r_city_id.uuid AS city_uuid, r_country_id.uuid AS country_uuid, r_province_id.uuid AS province_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.address, t.description, t.member_group_name, t.member_group_number, t.city_id, t.country_id, t.province_id, t.member_group_status, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
 FROM member_group t
 LEFT JOIN city r_city_id ON r_city_id.id = t.city_id
 LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
@@ -187,8 +199,14 @@ type ListMemberGroupRow struct {
 	ProvinceID        *int64
 	MemberGroupStatus *int16
 	CityUuid          *uuid.UUID
+	CityName          *string
+	CityCode          *string
 	CountryUuid       *uuid.UUID
+	CountryName       *string
+	CountryCode       *string
 	ProvinceUuid      *uuid.UUID
+	ProvinceName      *string
+	ProvinceCode      *string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 }
@@ -222,8 +240,14 @@ func (q *Queries) ListMemberGroup(ctx context.Context, arg ListMemberGroupParams
 			&i.ProvinceID,
 			&i.MemberGroupStatus,
 			&i.CityUuid,
+			&i.CityName,
+			&i.CityCode,
 			&i.CountryUuid,
+			&i.CountryName,
+			&i.CountryCode,
 			&i.ProvinceUuid,
+			&i.ProvinceName,
+			&i.ProvinceCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

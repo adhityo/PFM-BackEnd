@@ -114,7 +114,7 @@ func (q *Queries) CreateCashSettlement(ctx context.Context, arg CreateCashSettle
 
 const getCashSettlementByUUID = `-- name: GetCashSettlementByUUID :one
 
-SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_uuid, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_member_id.uuid AS member_uuid, r_client_id.uuid AS client_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_uuid, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_cash_settlement_category_id.cash_settlement_category_name AS cash_settlement_category_name, r_cash_settlement_category_id.cash_settlement_category_code AS cash_settlement_category_code, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
 FROM cash_settlement t
 LEFT JOIN cash_settlement_category r_cash_settlement_category_id ON r_cash_settlement_category_id.id = t.cash_settlement_category_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
@@ -149,8 +149,14 @@ type GetCashSettlementByUUIDRow struct {
 	DepositoPortfolioID        *int64
 	MutualFundPortfolioID      *int64
 	CashSettlementCategoryUuid *uuid.UUID
+	CashSettlementCategoryName *string
+	CashSettlementCategoryCode *string
 	MemberUuid                 *uuid.UUID
+	MemberName                 *string
+	MemberNumber               *string
 	ClientUuid                 *uuid.UUID
+	ClientName                 *string
+	ClientCode                 *string
 	BondPortfolioUuid          *uuid.UUID
 	StockPortfolioUuid         *uuid.UUID
 	DepositoPortfolioUuid      *uuid.UUID
@@ -180,8 +186,14 @@ func (q *Queries) GetCashSettlementByUUID(ctx context.Context, arg GetCashSettle
 		&i.DepositoPortfolioID,
 		&i.MutualFundPortfolioID,
 		&i.CashSettlementCategoryUuid,
+		&i.CashSettlementCategoryName,
+		&i.CashSettlementCategoryCode,
 		&i.MemberUuid,
+		&i.MemberName,
+		&i.MemberNumber,
 		&i.ClientUuid,
+		&i.ClientName,
+		&i.ClientCode,
 		&i.BondPortfolioUuid,
 		&i.StockPortfolioUuid,
 		&i.DepositoPortfolioUuid,
@@ -193,7 +205,7 @@ func (q *Queries) GetCashSettlementByUUID(ctx context.Context, arg GetCashSettle
 }
 
 const listCashSettlement = `-- name: ListCashSettlement :many
-SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_uuid, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_member_id.uuid AS member_uuid, r_client_id.uuid AS client_uuid, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.cash_settlement_category_id, t.member_id, t.client_id, t.cash_settlement_value, t.cash_settlement_subject, t.validation_number, t.document_file_uuid, t.description, t.cash_settlement_status, t.bond_portfolio_id, t.stock_portfolio_id, t.deposito_portfolio_id, t.mutual_fund_portfolio_id, r_cash_settlement_category_id.uuid AS cash_settlement_category_uuid, r_cash_settlement_category_id.cash_settlement_category_name AS cash_settlement_category_name, r_cash_settlement_category_id.cash_settlement_category_code AS cash_settlement_category_code, r_member_id.uuid AS member_uuid, r_member_id.member_name AS member_name, r_member_id.member_number AS member_number, r_client_id.uuid AS client_uuid, r_client_id.client_name AS client_name, r_client_id.client_code AS client_code, r_bond_portfolio_id.uuid AS bond_portfolio_uuid, r_stock_portfolio_id.uuid AS stock_portfolio_uuid, r_deposito_portfolio_id.uuid AS deposito_portfolio_uuid, r_mutual_fund_portfolio_id.uuid AS mutual_fund_portfolio_uuid, t.created_at, t.updated_at
 FROM cash_settlement t
 LEFT JOIN cash_settlement_category r_cash_settlement_category_id ON r_cash_settlement_category_id.id = t.cash_settlement_category_id
 LEFT JOIN member r_member_id ON r_member_id.id = t.member_id
@@ -249,8 +261,14 @@ type ListCashSettlementRow struct {
 	DepositoPortfolioID        *int64
 	MutualFundPortfolioID      *int64
 	CashSettlementCategoryUuid *uuid.UUID
+	CashSettlementCategoryName *string
+	CashSettlementCategoryCode *string
 	MemberUuid                 *uuid.UUID
+	MemberName                 *string
+	MemberNumber               *string
 	ClientUuid                 *uuid.UUID
+	ClientName                 *string
+	ClientCode                 *string
 	BondPortfolioUuid          *uuid.UUID
 	StockPortfolioUuid         *uuid.UUID
 	DepositoPortfolioUuid      *uuid.UUID
@@ -297,8 +315,14 @@ func (q *Queries) ListCashSettlement(ctx context.Context, arg ListCashSettlement
 			&i.DepositoPortfolioID,
 			&i.MutualFundPortfolioID,
 			&i.CashSettlementCategoryUuid,
+			&i.CashSettlementCategoryName,
+			&i.CashSettlementCategoryCode,
 			&i.MemberUuid,
+			&i.MemberName,
+			&i.MemberNumber,
 			&i.ClientUuid,
+			&i.ClientName,
+			&i.ClientCode,
 			&i.BondPortfolioUuid,
 			&i.StockPortfolioUuid,
 			&i.DepositoPortfolioUuid,

@@ -85,7 +85,7 @@ func (q *Queries) CreateFinanceAccount(ctx context.Context, arg CreateFinanceAcc
 
 const getFinanceAccountByUUID = `-- name: GetFinanceAccountByUUID :one
 
-SELECT t.id, t.uuid, t.finance_account_name, t.finance_account_number, t.description, t.parent_account_id, t.finance_account_type, t.portfolio_id, r_parent_account_id.uuid AS parent_account_uuid, r_finance_account_type.uuid AS finance_account_type_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.finance_account_name, t.finance_account_number, t.description, t.parent_account_id, t.finance_account_type, t.portfolio_id, r_parent_account_id.uuid AS parent_account_uuid, r_parent_account_id.finance_account_name AS parent_account_name, r_parent_account_id.finance_account_number AS parent_account_number, r_finance_account_type.uuid AS finance_account_type_uuid, r_finance_account_type.finance_account_type_name AS finance_account_type_name, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM finance_account t
 LEFT JOIN finance_account r_parent_account_id ON r_parent_account_id.id = t.parent_account_id
 LEFT JOIN finance_account_type r_finance_account_type ON r_finance_account_type.id = t.finance_account_type
@@ -103,8 +103,13 @@ type GetFinanceAccountByUUIDRow struct {
 	FinanceAccountType     *int64
 	PortfolioID            *int64
 	ParentAccountUuid      *uuid.UUID
+	ParentAccountName      *string
+	ParentAccountNumber    *string
 	FinanceAccountTypeUuid *uuid.UUID
+	FinanceAccountTypeName *string
 	PortfolioUuid          *uuid.UUID
+	PortfolioName          *string
+	PortfolioCode          *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -123,8 +128,13 @@ func (q *Queries) GetFinanceAccountByUUID(ctx context.Context, argUuid uuid.UUID
 		&i.FinanceAccountType,
 		&i.PortfolioID,
 		&i.ParentAccountUuid,
+		&i.ParentAccountName,
+		&i.ParentAccountNumber,
 		&i.FinanceAccountTypeUuid,
+		&i.FinanceAccountTypeName,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -132,7 +142,7 @@ func (q *Queries) GetFinanceAccountByUUID(ctx context.Context, argUuid uuid.UUID
 }
 
 const listFinanceAccount = `-- name: ListFinanceAccount :many
-SELECT t.id, t.uuid, t.finance_account_name, t.finance_account_number, t.description, t.parent_account_id, t.finance_account_type, t.portfolio_id, r_parent_account_id.uuid AS parent_account_uuid, r_finance_account_type.uuid AS finance_account_type_uuid, r_portfolio_id.uuid AS portfolio_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.finance_account_name, t.finance_account_number, t.description, t.parent_account_id, t.finance_account_type, t.portfolio_id, r_parent_account_id.uuid AS parent_account_uuid, r_parent_account_id.finance_account_name AS parent_account_name, r_parent_account_id.finance_account_number AS parent_account_number, r_finance_account_type.uuid AS finance_account_type_uuid, r_finance_account_type.finance_account_type_name AS finance_account_type_name, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, t.created_at, t.updated_at
 FROM finance_account t
 LEFT JOIN finance_account r_parent_account_id ON r_parent_account_id.id = t.parent_account_id
 LEFT JOIN finance_account_type r_finance_account_type ON r_finance_account_type.id = t.finance_account_type
@@ -175,8 +185,13 @@ type ListFinanceAccountRow struct {
 	FinanceAccountType     *int64
 	PortfolioID            *int64
 	ParentAccountUuid      *uuid.UUID
+	ParentAccountName      *string
+	ParentAccountNumber    *string
 	FinanceAccountTypeUuid *uuid.UUID
+	FinanceAccountTypeName *string
 	PortfolioUuid          *uuid.UUID
+	PortfolioName          *string
+	PortfolioCode          *string
 	CreatedAt              time.Time
 	UpdatedAt              time.Time
 }
@@ -208,8 +223,13 @@ func (q *Queries) ListFinanceAccount(ctx context.Context, arg ListFinanceAccount
 			&i.FinanceAccountType,
 			&i.PortfolioID,
 			&i.ParentAccountUuid,
+			&i.ParentAccountName,
+			&i.ParentAccountNumber,
 			&i.FinanceAccountTypeUuid,
+			&i.FinanceAccountTypeName,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

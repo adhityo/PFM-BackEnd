@@ -36,7 +36,7 @@ func (q *Queries) CountCryptoPortfolio(ctx context.Context, arg CountCryptoPortf
 
 const getCryptoPortfolioByUUID = `-- name: GetCryptoPortfolioByUUID :one
 
-SELECT t.id, t.uuid, t.description, t.status, t.total_average_price, t.total_crypto_quantity, t.total_value, t.portfolio_id, t.crypto_id, r_portfolio_id.uuid AS portfolio_uuid, r_crypto_id.uuid AS crypto_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.status, t.total_average_price, t.total_crypto_quantity, t.total_value, t.portfolio_id, t.crypto_id, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_crypto_id.uuid AS crypto_uuid, r_crypto_id.crypto_name AS crypto_name, r_crypto_id.crypto_code AS crypto_code, t.created_at, t.updated_at
 FROM crypto_portfolio t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN crypto r_crypto_id ON r_crypto_id.id = t.crypto_id
@@ -60,7 +60,11 @@ type GetCryptoPortfolioByUUIDRow struct {
 	PortfolioID         *int64
 	CryptoID            *int64
 	PortfolioUuid       *uuid.UUID
+	PortfolioName       *string
+	PortfolioCode       *string
 	CryptoUuid          *uuid.UUID
+	CryptoName          *string
+	CryptoCode          *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -80,7 +84,11 @@ func (q *Queries) GetCryptoPortfolioByUUID(ctx context.Context, arg GetCryptoPor
 		&i.PortfolioID,
 		&i.CryptoID,
 		&i.PortfolioUuid,
+		&i.PortfolioName,
+		&i.PortfolioCode,
 		&i.CryptoUuid,
+		&i.CryptoName,
+		&i.CryptoCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -88,7 +96,7 @@ func (q *Queries) GetCryptoPortfolioByUUID(ctx context.Context, arg GetCryptoPor
 }
 
 const listCryptoPortfolio = `-- name: ListCryptoPortfolio :many
-SELECT t.id, t.uuid, t.description, t.status, t.total_average_price, t.total_crypto_quantity, t.total_value, t.portfolio_id, t.crypto_id, r_portfolio_id.uuid AS portfolio_uuid, r_crypto_id.uuid AS crypto_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.description, t.status, t.total_average_price, t.total_crypto_quantity, t.total_value, t.portfolio_id, t.crypto_id, r_portfolio_id.uuid AS portfolio_uuid, r_portfolio_id.portfolio_name AS portfolio_name, r_portfolio_id.portfolio_code AS portfolio_code, r_crypto_id.uuid AS crypto_uuid, r_crypto_id.crypto_name AS crypto_name, r_crypto_id.crypto_code AS crypto_code, t.created_at, t.updated_at
 FROM crypto_portfolio t
 LEFT JOIN portfolio r_portfolio_id ON r_portfolio_id.id = t.portfolio_id
 LEFT JOIN crypto r_crypto_id ON r_crypto_id.id = t.crypto_id
@@ -123,7 +131,11 @@ type ListCryptoPortfolioRow struct {
 	PortfolioID         *int64
 	CryptoID            *int64
 	PortfolioUuid       *uuid.UUID
+	PortfolioName       *string
+	PortfolioCode       *string
 	CryptoUuid          *uuid.UUID
+	CryptoName          *string
+	CryptoCode          *string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -155,7 +167,11 @@ func (q *Queries) ListCryptoPortfolio(ctx context.Context, arg ListCryptoPortfol
 			&i.PortfolioID,
 			&i.CryptoID,
 			&i.PortfolioUuid,
+			&i.PortfolioName,
+			&i.PortfolioCode,
 			&i.CryptoUuid,
+			&i.CryptoName,
+			&i.CryptoCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

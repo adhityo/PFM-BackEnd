@@ -69,7 +69,7 @@ func (q *Queries) CreateBondCouponSchedule(ctx context.Context, arg CreateBondCo
 
 const getBondCouponScheduleByUUID = `-- name: GetBondCouponScheduleByUUID :one
 
-SELECT t.id, t.uuid, t.coupon_date, t.bond_id, t.coupon_rate, t.coupon_value, t.coupon_paid_value, t.status, t.transaction_type, t.settlement_date, r_bond_id.uuid AS bond_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.coupon_date, t.bond_id, t.coupon_rate, t.coupon_value, t.coupon_paid_value, t.status, t.transaction_type, t.settlement_date, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_bond_id.bond_code AS bond_code, t.created_at, t.updated_at
 FROM bond_coupon_schedule t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -93,6 +93,8 @@ type GetBondCouponScheduleByUUIDRow struct {
 	TransactionType *int16
 	SettlementDate  *time.Time
 	BondUuid        *uuid.UUID
+	BondName        *string
+	BondCode        *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -113,6 +115,8 @@ func (q *Queries) GetBondCouponScheduleByUUID(ctx context.Context, arg GetBondCo
 		&i.TransactionType,
 		&i.SettlementDate,
 		&i.BondUuid,
+		&i.BondName,
+		&i.BondCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -120,7 +124,7 @@ func (q *Queries) GetBondCouponScheduleByUUID(ctx context.Context, arg GetBondCo
 }
 
 const listBondCouponSchedule = `-- name: ListBondCouponSchedule :many
-SELECT t.id, t.uuid, t.coupon_date, t.bond_id, t.coupon_rate, t.coupon_value, t.coupon_paid_value, t.status, t.transaction_type, t.settlement_date, r_bond_id.uuid AS bond_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.coupon_date, t.bond_id, t.coupon_rate, t.coupon_value, t.coupon_paid_value, t.status, t.transaction_type, t.settlement_date, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_bond_id.bond_code AS bond_code, t.created_at, t.updated_at
 FROM bond_coupon_schedule t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 WHERE t.deleted_at IS NULL
@@ -155,6 +159,8 @@ type ListBondCouponScheduleRow struct {
 	TransactionType *int16
 	SettlementDate  *time.Time
 	BondUuid        *uuid.UUID
+	BondName        *string
+	BondCode        *string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -186,6 +192,8 @@ func (q *Queries) ListBondCouponSchedule(ctx context.Context, arg ListBondCoupon
 			&i.TransactionType,
 			&i.SettlementDate,
 			&i.BondUuid,
+			&i.BondName,
+			&i.BondCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

@@ -60,7 +60,7 @@ func (q *Queries) CreateCryptoListingExchange(ctx context.Context, arg CreateCry
 
 const getCryptoListingExchangeByUUID = `-- name: GetCryptoListingExchangeByUUID :one
 
-SELECT t.id, t.uuid, t.crypto_exchange_name, t.description, t.status, t.crypto_exchange_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.crypto_exchange_name, t.description, t.status, t.crypto_exchange_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, r_crypto_exchange_id.crypto_exchange_code AS crypto_exchange_code, t.created_at, t.updated_at
 FROM crypto_listing_exchange t
 LEFT JOIN crypto_exchange r_crypto_exchange_id ON r_crypto_exchange_id.id = t.crypto_exchange_id
 WHERE t.uuid = $1 AND t.deleted_at IS NULL
@@ -74,6 +74,7 @@ type GetCryptoListingExchangeByUUIDRow struct {
 	Status             *string
 	CryptoExchangeID   *int64
 	CryptoExchangeUuid *uuid.UUID
+	CryptoExchangeCode *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -90,6 +91,7 @@ func (q *Queries) GetCryptoListingExchangeByUUID(ctx context.Context, argUuid uu
 		&i.Status,
 		&i.CryptoExchangeID,
 		&i.CryptoExchangeUuid,
+		&i.CryptoExchangeCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -97,7 +99,7 @@ func (q *Queries) GetCryptoListingExchangeByUUID(ctx context.Context, argUuid uu
 }
 
 const listCryptoListingExchange = `-- name: ListCryptoListingExchange :many
-SELECT t.id, t.uuid, t.crypto_exchange_name, t.description, t.status, t.crypto_exchange_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.crypto_exchange_name, t.description, t.status, t.crypto_exchange_id, r_crypto_exchange_id.uuid AS crypto_exchange_uuid, r_crypto_exchange_id.crypto_exchange_code AS crypto_exchange_code, t.created_at, t.updated_at
 FROM crypto_listing_exchange t
 LEFT JOIN crypto_exchange r_crypto_exchange_id ON r_crypto_exchange_id.id = t.crypto_exchange_id
 WHERE t.deleted_at IS NULL
@@ -124,6 +126,7 @@ type ListCryptoListingExchangeRow struct {
 	Status             *string
 	CryptoExchangeID   *int64
 	CryptoExchangeUuid *uuid.UUID
+	CryptoExchangeCode *string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
 }
@@ -150,6 +153,7 @@ func (q *Queries) ListCryptoListingExchange(ctx context.Context, arg ListCryptoL
 			&i.Status,
 			&i.CryptoExchangeID,
 			&i.CryptoExchangeUuid,
+			&i.CryptoExchangeCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

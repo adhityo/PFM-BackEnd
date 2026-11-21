@@ -71,7 +71,7 @@ func (q *Queries) CreateStockSizeClassificationHistory(ctx context.Context, arg 
 
 const getStockSizeClassificationHistoryByUUID = `-- name: GetStockSizeClassificationHistoryByUUID :one
 
-SELECT t.id, t.uuid, t.stock_id, t.stock_size_classification_id, t.size_change_date, t.description, t.status, r_stock_id.uuid AS stock_uuid, r_stock_size_classification_id.uuid AS stock_size_classification_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.stock_size_classification_id, t.size_change_date, t.description, t.status, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_id.stock_code AS stock_code, r_stock_size_classification_id.uuid AS stock_size_classification_uuid, r_stock_size_classification_id.stock_size_classification_name AS stock_size_classification_name, r_stock_size_classification_id.stock_size_classification_code AS stock_size_classification_code, t.created_at, t.updated_at
 FROM stock_size_classification_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN stock_size_classification r_stock_size_classification_id ON r_stock_size_classification_id.id = t.stock_size_classification_id
@@ -87,7 +87,11 @@ type GetStockSizeClassificationHistoryByUUIDRow struct {
 	Description                 *string
 	Status                      *int16
 	StockUuid                   *uuid.UUID
+	StockName                   *string
+	StockCode                   *string
 	StockSizeClassificationUuid *uuid.UUID
+	StockSizeClassificationName *string
+	StockSizeClassificationCode *string
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
 }
@@ -105,7 +109,11 @@ func (q *Queries) GetStockSizeClassificationHistoryByUUID(ctx context.Context, a
 		&i.Description,
 		&i.Status,
 		&i.StockUuid,
+		&i.StockName,
+		&i.StockCode,
 		&i.StockSizeClassificationUuid,
+		&i.StockSizeClassificationName,
+		&i.StockSizeClassificationCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -113,7 +121,7 @@ func (q *Queries) GetStockSizeClassificationHistoryByUUID(ctx context.Context, a
 }
 
 const listStockSizeClassificationHistory = `-- name: ListStockSizeClassificationHistory :many
-SELECT t.id, t.uuid, t.stock_id, t.stock_size_classification_id, t.size_change_date, t.description, t.status, r_stock_id.uuid AS stock_uuid, r_stock_size_classification_id.uuid AS stock_size_classification_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.stock_id, t.stock_size_classification_id, t.size_change_date, t.description, t.status, r_stock_id.uuid AS stock_uuid, r_stock_id.stock_name AS stock_name, r_stock_id.stock_code AS stock_code, r_stock_size_classification_id.uuid AS stock_size_classification_uuid, r_stock_size_classification_id.stock_size_classification_name AS stock_size_classification_name, r_stock_size_classification_id.stock_size_classification_code AS stock_size_classification_code, t.created_at, t.updated_at
 FROM stock_size_classification_history t
 LEFT JOIN stock r_stock_id ON r_stock_id.id = t.stock_id
 LEFT JOIN stock_size_classification r_stock_size_classification_id ON r_stock_size_classification_id.id = t.stock_size_classification_id
@@ -146,7 +154,11 @@ type ListStockSizeClassificationHistoryRow struct {
 	Description                 *string
 	Status                      *int16
 	StockUuid                   *uuid.UUID
+	StockName                   *string
+	StockCode                   *string
 	StockSizeClassificationUuid *uuid.UUID
+	StockSizeClassificationName *string
+	StockSizeClassificationCode *string
 	CreatedAt                   time.Time
 	UpdatedAt                   time.Time
 }
@@ -175,7 +187,11 @@ func (q *Queries) ListStockSizeClassificationHistory(ctx context.Context, arg Li
 			&i.Description,
 			&i.Status,
 			&i.StockUuid,
+			&i.StockName,
+			&i.StockCode,
 			&i.StockSizeClassificationUuid,
+			&i.StockSizeClassificationName,
+			&i.StockSizeClassificationCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {

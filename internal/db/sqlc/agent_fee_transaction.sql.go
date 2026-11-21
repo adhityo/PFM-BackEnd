@@ -102,7 +102,7 @@ func (q *Queries) CreateAgentFeeTransaction(ctx context.Context, arg CreateAgent
 
 const getAgentFeeTransactionByUUID = `-- name: GetAgentFeeTransactionByUUID :one
 
-SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_uuid, t.request_date, t.status, t.tax_document_file_uuid, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_bond_id.uuid AS bond_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_uuid, t.request_date, t.status, t.tax_document_file_uuid, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_bond_id.bond_code AS bond_code, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_marketing_agent_id.marketing_agent_name AS marketing_agent_name, r_marketing_agent_id.marketing_agent_number AS marketing_agent_number, t.created_at, t.updated_at
 FROM agent_fee_transaction t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
@@ -144,7 +144,11 @@ type GetAgentFeeTransactionByUUIDRow struct {
 	Npwp                    *string
 	PersonalCommision       *decimal.Decimal
 	BondUuid                *uuid.UUID
+	BondName                *string
+	BondCode                *string
 	MarketingAgentUuid      *uuid.UUID
+	MarketingAgentName      *string
+	MarketingAgentNumber    *string
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -182,7 +186,11 @@ func (q *Queries) GetAgentFeeTransactionByUUID(ctx context.Context, arg GetAgent
 		&i.Npwp,
 		&i.PersonalCommision,
 		&i.BondUuid,
+		&i.BondName,
+		&i.BondCode,
 		&i.MarketingAgentUuid,
+		&i.MarketingAgentName,
+		&i.MarketingAgentNumber,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -190,7 +198,7 @@ func (q *Queries) GetAgentFeeTransactionByUUID(ctx context.Context, arg GetAgent
 }
 
 const listAgentFeeTransaction = `-- name: ListAgentFeeTransaction :many
-SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_uuid, t.request_date, t.status, t.tax_document_file_uuid, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_bond_id.uuid AS bond_uuid, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
+SELECT t.id, t.uuid, t.agent_name, t.description, t.outstanding_value, t.paid_value, t.payment_date, t.payment_document_file_uuid, t.request_date, t.status, t.tax_document_file_uuid, t.tax_paid_value, t.tax_value, t.bond_id, t.marketing_agent_id, t.agent_level, t.agent_number, t.agent_type, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.email, t.identity_number, t.leader_commision, t.npwp, t.personal_commision, r_bond_id.uuid AS bond_uuid, r_bond_id.bond_name AS bond_name, r_bond_id.bond_code AS bond_code, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_marketing_agent_id.marketing_agent_name AS marketing_agent_name, r_marketing_agent_id.marketing_agent_number AS marketing_agent_number, t.created_at, t.updated_at
 FROM agent_fee_transaction t
 LEFT JOIN bond r_bond_id ON r_bond_id.id = t.bond_id
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
@@ -243,7 +251,11 @@ type ListAgentFeeTransactionRow struct {
 	Npwp                    *string
 	PersonalCommision       *decimal.Decimal
 	BondUuid                *uuid.UUID
+	BondName                *string
+	BondCode                *string
 	MarketingAgentUuid      *uuid.UUID
+	MarketingAgentName      *string
+	MarketingAgentNumber    *string
 	CreatedAt               time.Time
 	UpdatedAt               time.Time
 }
@@ -293,7 +305,11 @@ func (q *Queries) ListAgentFeeTransaction(ctx context.Context, arg ListAgentFeeT
 			&i.Npwp,
 			&i.PersonalCommision,
 			&i.BondUuid,
+			&i.BondName,
+			&i.BondCode,
 			&i.MarketingAgentUuid,
+			&i.MarketingAgentName,
+			&i.MarketingAgentNumber,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
