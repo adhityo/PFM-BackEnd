@@ -19,6 +19,9 @@ func genSQL(sp *Spec, t *Table) string {
 		if ref, ok := t.FKs[c.Name]; ok {
 			alias := "r_" + c.Name
 			sel = append(sel, fmt.Sprintf("%s.uuid AS %s_uuid", alias, fkBase(c.Name)))
+			for _, l := range labelColumns(t, c.Name) {
+				sel = append(sel, fmt.Sprintf("%s.%s AS %s", alias, l.Source, l.Alias))
+			}
 			joins = append(joins, fmt.Sprintf("LEFT JOIN %s %s ON %s.id = t.%s", ref, alias, alias, c.Name))
 		}
 	}

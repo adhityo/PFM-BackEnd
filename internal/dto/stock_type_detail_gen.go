@@ -33,6 +33,8 @@ type StockTypeDetailResponse struct {
 	StockName     *string    `json:"stock_name"`
 	StockUUID     *uuid.UUID `json:"stock_uuid"`
 	StockTypeUUID *uuid.UUID `json:"stock_type_uuid"`
+	StockTypeName *string    `json:"stock_type_name"`
+	StockTypeCode *string    `json:"stock_type_code"`
 	CreatedAt     time.Time  `json:"created_at"`
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
@@ -46,6 +48,8 @@ func StockTypeDetailFromRow(r sqlc.GetStockTypeDetailByUUIDRow) StockTypeDetailR
 		StockName:     r.StockName,
 		StockUUID:     r.StockUuid,
 		StockTypeUUID: r.StockTypeUuid,
+		StockTypeName: r.StockTypeName,
+		StockTypeCode: r.StockTypeCode,
 		CreatedAt:     r.CreatedAt,
 		UpdatedAt:     r.UpdatedAt,
 	}

@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
 	"pfm-backend/internal/platform/audit"
@@ -201,6 +202,38 @@ func sortOptions(sorts []string) []string {
 		out = append(out, s, "-"+s)
 	}
 	return out
+}
+
+// ParseList parses list parameters with the resource's sorts and filters, for
+// hand-written endpoints that list the same rows with extra data.
+func (r Resource[Row, Req, Resp]) ParseList(c fiber.Ctx) (httpx.ListQuery, error) {
+	return httpx.ParseListQuery(c, sortOptions(r.Sorts), r.DefaultSort, r.Filters...)
+}
+
+// Insert creates one row through the pipeline of POST <path> (check, files,
+// scope, hooks, audit) inside the caller's transaction, so a hand-written
+// endpoint can create several resources atomically. route names that endpoint
+// in the audit entry. It returns the (PII-masked) representation and metadata.
+func (r Resource[Row, Req, Resp]) Insert(ctx context.Context, env Env, req Req, route string) (Resp, Meta, error) {
+	var (
+		resp Resp
+		meta Meta
+	)
+	actor, err := auth.MustActor(ctx)
+	if err != nil {
+		return resp, meta, err
+	}
+	s := &service[Row, Req, Resp]{res: r, tx: env.TX, audit: env.Audit, files: env.Files}
+	err = env.TX.WithinTx(ctx, func(ctx context.Context) error {
+		row, err := s.insert(ctx, req, actor.AuditName())
+		if err != nil {
+			return err
+		}
+		meta, resp = r.Store.Meta(row), r.Response(row)
+		present(ctx, env.Audit, r.Table, r.Mask, &resp)
+		return s.record(ctx, "create", meta.UUID, "", route)
+	})
+	return resp, meta, err
 }
 
 // View returns the (PII-masked) API representation of one row and its ETag

@@ -53,6 +53,8 @@ func introspect(ctx context.Context, dsn string) (Schema, error) {
 		       is_nullable = 'YES'
 		FROM information_schema.columns
 		WHERE table_schema = 'public' AND table_name <> 'goose_db_version'
+		  AND table_name IN (SELECT table_name FROM information_schema.tables
+		                     WHERE table_schema = 'public' AND table_type = 'BASE TABLE')
 		ORDER BY table_name, ordinal_position`)
 	if err != nil {
 		return nil, err

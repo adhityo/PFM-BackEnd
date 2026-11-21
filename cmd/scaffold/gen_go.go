@@ -44,6 +44,9 @@ func newPlan(sp *Spec, t *Table) (*plan, error) {
 		if rq != nil {
 			p.reqs = append(p.reqs, *rq)
 		}
+		for _, l := range labelColumns(t, c.Name) {
+			p.resps = append(p.resps, respField{Name: goName(l.Alias), Type: "*string", JSON: l.Alias, Expr: "r." + sqlcName(l.Alias)})
+		}
 		if _, ok := t.FKs[c.Name]; ok {
 			p.filterFKs = append(p.filterFKs, c)
 			if sp.writable(c) {

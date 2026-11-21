@@ -41,7 +41,13 @@ func refreshEach(ids []*int64, fn func(*int64) error) error {
 
 func refreshStockPrice(ctx context.Context, d Deps, before, after *sqlc.GetStockHistoryByUUIDRow) error {
 	ids := parents(func(r *sqlc.GetStockHistoryByUUIDRow) *int64 { return r.StockID }, before, after)
-	return refreshEach(ids, func(id *int64) error { return d.TX.Queries(ctx).RefreshStockLatestPrice(ctx, id) })
+	return refreshEach(ids, func(id *int64) error {
+		q := d.TX.Queries(ctx)
+		if err := q.RefreshStockLatestPrice(ctx, id); err != nil {
+			return err
+		}
+		return revalueInstrument(ctx, q, dto.AssetStock, *id)
+	})
 }
 
 func refreshStockBeta(ctx context.Context, d Deps, before, after *sqlc.GetStockBetaHistoryByUUIDRow) error {
@@ -61,7 +67,13 @@ func refreshIndices(ctx context.Context, d Deps, before, after *sqlc.GetIndicesH
 
 func refreshMutualFund(ctx context.Context, d Deps, before, after *sqlc.GetMutualFundHistoryByUUIDRow) error {
 	ids := parents(func(r *sqlc.GetMutualFundHistoryByUUIDRow) *int64 { return r.MutualFundID }, before, after)
-	return refreshEach(ids, func(id *int64) error { return d.TX.Queries(ctx).RefreshMutualFundNAV(ctx, id) })
+	return refreshEach(ids, func(id *int64) error {
+		q := d.TX.Queries(ctx)
+		if err := q.RefreshMutualFundNAV(ctx, id); err != nil {
+			return err
+		}
+		return revalueInstrument(ctx, q, dto.AssetMutualFund, *id)
+	})
 }
 
 func refreshDepositoRate(ctx context.Context, d Deps, before, after *sqlc.GetDepositoInterestHistoryByUUIDRow) error {

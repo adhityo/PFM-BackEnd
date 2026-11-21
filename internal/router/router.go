@@ -194,6 +194,8 @@ func build(d Deps) (*fiber.App, *auth.Router) {
 	handler.NewFileHandler(fileSvc).Register(api)
 	handler.NewConfigurationHandler(v, configSvc).Register(api)
 	handler.NewPortfolioTxHandler(v, service.NewPortfolioTxService(tx, rec)).Register(api)
+	handler.NewPortfolioSetupHandler(v, service.NewPortfolioSetupService(deps, rec, v)).Register(api)
+	handler.NewPortfolioValuationHandler(service.NewPortfolioValuationService(tx), service.PortfolioResource(deps).ParseList).Register(api)
 	journals := service.NewJournalService(tx)
 	handler.NewAccountingHandler(v, service.NewAccountingService(tx, journals, rec)).Register(api)
 	handler.NewTradeHandler(service.NewTradeService(tx, journals, rec)).Register(api)

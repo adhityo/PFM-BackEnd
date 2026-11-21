@@ -72,6 +72,9 @@ func trade(kind, label string) map[string]spec {
 	}
 }
 
+// portfolioDoc supplies the list parameters shared by GET /portfolio-overviews.
+var portfolioDoc = service.PortfolioResource(service.Deps{})
+
 var specs = func() map[string]spec {
 	m := map[string]spec{
 		// ------------------------------------------------------------ auth
@@ -165,6 +168,33 @@ var specs = func() map[string]spec {
 			Req: dto.ConfigurationRequest{}, Resp: dto.ConfigurationResponse{}, Desc: "Counter penomoran bersifat read-only (diubah oleh transaksi)."},
 
 		// ------------------------------------------------------------ portfolio
+		"POST /portfolios/setup": {Name: "Setup portofolio", Order: 1, Req: dto.PortfolioSetupRequest{}, Resp: dto.PortfolioSetupResponse{},
+			Body: map[string]any{
+				"portfolio": map[string]any{"portfolio_name": "Dana Pensiun Utama", "portfolio_code": "DPU-01", "client_uuid": "{{clientUuid}}",
+					"portfolio_date": "2026-11-21", "portfolio_status": "active"},
+				"asset_classes": []any{map[string]any{"asset_class_uuid": "{{assetClassUuid}}", "buy_account_uuid": "{{financeAccountUuid}}",
+					"capital_gain_account_uuid": "{{financeAccountUuid}}", "capital_loss_account_uuid": "{{financeAccountUuid}}",
+					"cash_accounts": []any{map[string]any{"trade_type_uuid": "{{tradeTypeUuid}}", "finance_account_uuid": "{{financeAccountUuid}}"}}}},
+				"banks": []any{map[string]any{"bank_uuid": "{{bankUuid}}", "account_number": "0011223344", "account_name": "Dana Pensiun Utama"}},
+			},
+			Script: saveUUID("portfolioUuid", ".portfolio"),
+			Desc: "Membuat portofolio siap trading dalam 1 transaksi (semua atau tidak sama sekali): portofolio, mapping akun per kelas aset " +
+				"(`asset_classes[]`, sama dengan `POST /asset-class-finance-accounts`), akun kas per jenis transaksi (`cash_accounts[]`, sama dengan " +
+				"`POST /portfolio-accounting-structures`) dan rekening bank (`banks[]`, sama dengan `POST /portfolio-banks`). Aturan tiap bagian sama dengan " +
+				"endpoint CRUD-nya; error ditunjukkan per posisi (mis. `asset_classes[0].cash_accounts[1].finance_account_uuid`). Selain `portfolio:create`, " +
+				"wajib punya izin create untuk setiap bagian yang diisi. `asset_classes` dan `banks` opsional (maks 20)."},
+		"GET /portfolio-overviews": {Name: "Overview portofolio", Resp: dto.PortfolioOverviewResponse{},
+			Query: listQuery(sortOptions(portfolioDoc.Sorts), portfolioDoc.DefaultSort, filter("q", "", "cari kode/nama"),
+				filter("client_uuid", "{{clientUuid}}", "filter client"), filter("investment_manager_uuid", "{{investmentManagerUuid}}", "filter manajer investasi"),
+				filter("parent_portfolio_uuid", "", "filter induk portofolio")),
+			Desc: "Daftar portofolio (parameter sama dengan `GET /portfolios`) beserta `valuation` dan `allocation` terkini per kelas aset, untuk halaman daftar/dashboard."},
+		"GET /portfolios/:uuid/summary": {Name: "Ringkasan portofolio", Resp: dto.PortfolioSummaryResponse{},
+			Desc: "Data portofolio + valuasi terkini: nilai perolehan, nilai pasar (harga penutupan/NAV/harga obligasi terbaru; tanpa harga memakai harga trade terakhir), " +
+				"laba/rugi belum terealisasi (deposito dinilai pada pokok), laba/rugi realisasi, dan alokasi per kelas aset (Saham, Reksa Dana, Kripto, Obligasi, Deposito) dengan bobot %."},
+		"GET /portfolios/:uuid/holdings": {Name: "Kepemilikan portofolio", Resp: []dto.PortfolioHoldingResponse{},
+			Query: []param{filter("asset_class", "STOCK", "STOCK | MF-ASSET | CRYPTO | BOND | DEPOSITO (opsional)")},
+			Desc: "Semua posisi aktif portofolio dengan harga terakhir, nilai pasar, laba/rugi belum terealisasi dan bobot terhadap seluruh portofolio. " +
+				"`position_path` menunjuk detail posisinya (mis. `/stock-portfolios/{uuid}`)."},
 		"GET /placements/:uuid/details": {Name: "Detail penempatan", Resp: dto.PlacementDetailsResponse{}},
 		"PUT /placements/:uuid/details": {Name: "Ganti detail penempatan", IfMatch: true, Req: dto.PlacementDetailsRequest{}, Resp: dto.PlacementDetailsResponse{},
 			Body: map[string]any{"details": []any{map[string]any{"placement_detail_date": "2026-11-20", "placement_value": "1000000"}}},

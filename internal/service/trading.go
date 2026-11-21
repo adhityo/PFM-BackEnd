@@ -273,6 +273,10 @@ func (s *TradeService) Settle(ctx context.Context, kind string, id uuid.UUID, ex
 				return database.MapError("realized p/l", err)
 			}
 		}
+		// Crypto's last price comes from settled trades, so every holder is revalued.
+		if err := revalueInstrument(ctx, q, k.assetClass, *t.InstrumentID, *t.PortfolioID); err != nil {
+			return err
+		}
 		return s.audit.Record(ctx, audit.Entry{Action: kind + ".settle", Entity: kind, EntityUUID: id,
 			Description: side + " nilai=" + t.Value.String(), Route: "POST " + k.path + "/{uuid}/settle"})
 	})
@@ -354,6 +358,9 @@ func (s *TradeService) Reverse(ctx context.Context, kind string, id uuid.UUID, e
 				}
 			}
 		}
+		if err := revalueInstrument(ctx, q, k.assetClass, *t.InstrumentID, *t.PortfolioID); err != nil {
+			return err
+		}
 		return s.audit.Record(ctx, audit.Entry{Action: kind + ".reverse", Entity: kind, EntityUUID: id,
 			Route: "POST " + k.path + "/{uuid}/reverse"})
 	})
@@ -389,7 +396,7 @@ func visibleVia[Row any](store interface {
 
 func stockInstrument(tx *database.TxManager) instrument {
 	return instrument{
-		table: "stock_trade", path: "/stock-trades", assetClass: "STOCK",
+		table: "stock_trade", path: "/stock-trades", assetClass: dto.AssetStock,
 		visible: visibleVia[sqlc.GetStockTradeByUUIDRow](repository.NewStockTradeRepository(tx)),
 		lock: func(ctx context.Context, q *sqlc.Queries, id uuid.UUID) (tradeRow, error) {
 			r, err := q.LockStockTrade(ctx, id)
@@ -428,7 +435,7 @@ func stockInstrument(tx *database.TxManager) instrument {
 
 func mutualFundInstrument(tx *database.TxManager) instrument {
 	return instrument{
-		table: "mutual_fund_trade", path: "/mutual-fund-trades", assetClass: "MF-ASSET",
+		table: "mutual_fund_trade", path: "/mutual-fund-trades", assetClass: dto.AssetMutualFund,
 		visible: visibleVia[sqlc.GetMutualFundTradeByUUIDRow](repository.NewMutualFundTradeRepository(tx)),
 		lock: func(ctx context.Context, q *sqlc.Queries, id uuid.UUID) (tradeRow, error) {
 			r, err := q.LockMutualFundTrade(ctx, id)
@@ -471,7 +478,7 @@ var cryptoStatus = []string{"draft", "settled", "cancelled", "reversed"}
 
 func cryptoInstrument(tx *database.TxManager) instrument {
 	return instrument{
-		table: "crypto_trade", path: "/crypto-trades", assetClass: "CRYPTO",
+		table: "crypto_trade", path: "/crypto-trades", assetClass: dto.AssetCrypto,
 		visible: visibleVia[sqlc.GetCryptoTradeByUUIDRow](repository.NewCryptoTradeRepository(tx)),
 		lock: func(ctx context.Context, q *sqlc.Queries, id uuid.UUID) (tradeRow, error) {
 			r, err := q.LockCryptoTrade(ctx, id)

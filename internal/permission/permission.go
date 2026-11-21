@@ -37,6 +37,9 @@ const (
 	ConfigurationRead   = "configuration:read"
 	ConfigurationUpdate = "configuration:update"
 
+	PortfolioRead   = "portfolio:read"
+	PortfolioCreate = "portfolio:create"
+
 	PlacementDetailRead   = "placement:read"
 	PlacementDetailUpdate = "placement:update"
 	DepositoRollover      = "deposito_portfolio:rollover"

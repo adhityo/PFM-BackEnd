@@ -124,6 +124,18 @@ Data dipisah agar kebocoran satu kredensial, dump, atau celah SQL injection tida
   riwayat `/…-portfolio-histories`, `/portfolio-budget-histories`, `/deposito-histories`.
 - **Transaksi:** `GET/PUT /placements/{uuid}/details` (ganti seluruh detail dalam 1 transaksi),
   `POST /deposito-portfolios/{uuid}/rollover` dan `/withdraw` (`If-Match` wajib).
+- **Setup portofolio** `POST /portfolios/setup`: portofolio + mapping akun per kelas aset + akun kas per jenis transaksi
+  + rekening bank dalam 1 transaksi (semua atau tidak sama sekali), dengan aturan, scope, hook dan audit yang sama seperti
+  endpoint CRUD masing-masing. Butuh `portfolio:create` dan izin create untuk tiap bagian yang diisi.
+- **Valuasi untuk UI** (permission `portfolio:read`, scope sama dengan `/portfolios`):
+  `GET /portfolio-overviews` (parameter sama dengan `GET /portfolios` + `valuation` dan `allocation` per baris),
+  `GET /portfolios/{uuid}/summary` (data portofolio, nilai perolehan, nilai pasar, laba/rugi belum terealisasi &
+  realisasi, alokasi per kelas aset dengan bobot %), `GET /portfolios/{uuid}/holdings?asset_class=` (semua posisi
+  aktif dengan harga terakhir dan `position_path`). Dihitung langsung dari view `portfolio_holding`: harga saham =
+  penutupan terakhir, reksa dana = NAV terakhir, obligasi = `bond_price` (% nominal), kripto = harga trade settled
+  terakhir; tanpa harga dipakai harga trade terakhir lalu harga rata-rata. Deposito aktif dinilai pada pokok.
+  Kolom tersimpan (`portfolio.unrealized_profit_loss`, `market_value` posisi) diperbarui otomatis saat harga
+  (riwayat harga/NAV, harga obligasi) berubah dan saat trade di-settle/dibalik.
 
 ## Endpoint M3 (Trading & Akuntansi)
 

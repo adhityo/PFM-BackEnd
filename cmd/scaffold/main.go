@@ -44,6 +44,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	schemaTables = s
 
 	switch args[0] {
 	case "schema":

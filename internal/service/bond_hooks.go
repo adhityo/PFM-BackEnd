@@ -80,7 +80,8 @@ func checkBond(_ context.Context, _ Deps, req *dto.BondRequest, cur *sqlc.GetBon
 
 func dateEq(t *time.Time, s string) bool { return t != nil && t.Format(time.DateOnly) == s }
 
-// snapshotBond records bond_history on creation and on price/rating changes.
+// snapshotBond records bond_history on creation and on price/rating changes;
+// a new price revalues the portfolios holding the bond.
 func snapshotBond(ctx context.Context, d Deps, before, after *sqlc.GetBondByUUIDRow) error {
 	if after == nil {
 		return nil
@@ -89,6 +90,11 @@ func snapshotBond(ctx context.Context, d Deps, before, after *sqlc.GetBondByUUID
 	if before != nil {
 		priceChanged := (before.BondPrice == nil) != (after.BondPrice == nil) ||
 			(before.BondPrice != nil && after.BondPrice != nil && !before.BondPrice.Equal(*after.BondPrice))
+		if priceChanged {
+			if err := revalueInstrument(ctx, d.TX.Queries(ctx), dto.AssetBond, after.ID); err != nil {
+				return err
+			}
+		}
 		if !priceChanged && sameID(before.RatingID, after.RatingID) {
 			return nil
 		}

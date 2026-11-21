@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"slices"
 	"strings"
@@ -103,11 +104,14 @@ func requestDocs(r *request) string {
 		b.WriteString("\n" + fieldTable("Body", r.req, true))
 	}
 	if r.resp != nil {
-		title := "Respons (`data`)"
-		if r.list {
+		resp, title := r.resp, "Respons (`data`)"
+		switch t := reflect.TypeOf(resp); {
+		case r.list:
 			title = "Respons (`data[]`, `meta`: `page`, `per_page`, `total`)"
+		case t.Kind() == reflect.Slice: // unpaged array
+			resp, title = reflect.Zero(t.Elem()).Interface(), "Respons (`data[]`)"
 		}
-		b.WriteString("\n" + fieldTable(title, r.resp, false))
+		b.WriteString("\n" + fieldTable(title, resp, false))
 	}
 	return b.String()
 }

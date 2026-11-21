@@ -901,6 +901,10 @@ Legenda operasi: L = list, G = get, C = create, U = update, D = delete (soft).
 | `POST` | `/api/v1/auth/activate` | Aktivasi akun / set password pertama (activation key sekali pakai) |
 | `POST` | `/api/v1/auth/change-password` | Ganti password (wajib password lama) |
 | `GET` | `/api/v1/me` | Profil dan permission user saat ini |
+| `POST` | `/api/v1/portfolios/setup` | Buat portofolio + mapping akun kelas aset, akun kas per jenis transaksi, rekening bank dalam 1 transaksi |
+| `GET` | `/api/v1/portfolio-overviews` | Daftar portofolio (parameter = `GET /portfolios`) + valuasi & alokasi terkini |
+| `GET` | `/api/v1/portfolios/{uuid}/summary` | Ringkasan portofolio: nilai perolehan, nilai pasar, laba/rugi, alokasi per kelas aset |
+| `GET` | `/api/v1/portfolios/{uuid}/holdings` | Posisi aktif semua kelas aset dengan harga terakhir dan bobot (`?asset_class=`) |
 | `GET` | `/healthz` | Liveness |
 | `GET` | `/readyz` | Readiness (ping DB + head bucket S3 + cek direktori image) |
 | `GET` | `/metrics` | Prometheus (port internal terpisah, tidak diekspos publik) |
@@ -1267,7 +1271,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 
 ## Lampiran A — Urutan Migrasi per Tabel
 
-132 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (2), `core/` (115), `security/` (7), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), kolom `source` log (00129), metadata katalog permission (00130), antrean email (00131) dan waktu terbit kunci aktivasi (00132). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
+133 file migrasi dalam 6 folder: `shared/` (1, fungsi bersama), `outbox/` (2), `core/` (116), `security/` (7), `log/` (2), dan `document/` (5). Isinya: 1 init, 120 tabel legacy, 2 tabel baru, migrasi pendukung M2–M5, outbox audit (00128), kolom `source` log (00129), metadata katalog permission (00130), antrean email (00131), waktu terbit kunci aktivasi (00132) dan view valuasi `portfolio_holding` (00133). Kolom "Bergantung pada" berisi tabel yang di-referensikan FK di database yang sama, dan nomornya selalu lebih kecil. Referensi ke database lain ditandai *(UUID, pfm_x)* dan tidak memakai FK.
 
 | No | File migrasi | Tabel | Modul | Bergantung pada |
 |---|---|---|---|---|
@@ -1403,6 +1407,7 @@ Kolom `action_query` **tidak** berisi SQL mentah; isinya route dan method.
 | 00130 | `security/00130_action_catalog_metadata.sql` | kolom `action.module`, `resource_label`, `is_system` | iam | action |
 | 00131 | `outbox/00131_create_mail_outbox.sql` | `mail_outbox` | mail | — |
 | 00132 | `security/00132_app_user_activation_issued_at.sql` | kolom `app_user.activation_key_issued_at` | iam | app_user |
+| 00133 | `core/00133_create_portfolio_holding_view.sql` | view `portfolio_holding` (kepemilikan aktif + valuasi semua kelas aset) | portfolio | stock_portfolio, mutual_fund_portfolio, crypto_portfolio, bond_portfolio, deposito_portfolio, stock, mutual_fund, crypto, bond, deposito, stock_trade, crypto_trade |
 
 
 ## Lampiran B — DDL PostgreSQL Lengkap
