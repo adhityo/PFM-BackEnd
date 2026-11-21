@@ -66,3 +66,24 @@ sql:
             go_type:
               import: encoding/json
               type: RawMessage
+          # View portfolio_holding (00133): sqlc infers types from the first UNION
+          # branch, but bond/deposito rows LEFT JOIN their instrument and values come from round()/CASE.
+          - column: portfolio_holding.instrument_uuid
+            go_type:
+              import: github.com/google/uuid
+              type: UUID
+              pointer: true
+          - column: portfolio_holding.cost_value
+            go_type:
+              import: github.com/shopspring/decimal
+              type: Decimal
+              pointer: true
+          - column: portfolio_holding.market_value
+            go_type:
+              import: github.com/shopspring/decimal
+              type: Decimal
+              pointer: true
+          - column: portfolio_holding.price_date
+            go_type:
+              type: time.Time
+              pointer: true
