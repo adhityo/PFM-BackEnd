@@ -4,13 +4,15 @@
 SELECT t.id, t.uuid, t.address, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.birthdate, t.description, t.email, t.handphone, t.identity_number, t.location, t.marketing_agent_name, t.marketing_agent_number, t.npwp, t.previous_address, t.previous_agent_name, t.previous_birthdate, t.previous_description, t.previous_email, t.previous_handphone, t.previous_identity_number, t.previous_location, t.previous_marketing_agent_number, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.marketing_agent_id, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
 FROM marketing_agent_data_history t
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
-WHERE t.uuid = $1 AND t.deleted_at IS NULL;
+WHERE t.uuid = sqlc.arg('uuid') AND t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR (SELECT sa.client_id FROM marketing_agent sa WHERE sa.id = t.marketing_agent_id) = sqlc.narg('scope_client_id'));
 
 -- name: ListMarketingAgentDataHistory :many
 SELECT t.id, t.uuid, t.address, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.birthdate, t.description, t.email, t.handphone, t.identity_number, t.location, t.marketing_agent_name, t.marketing_agent_number, t.npwp, t.previous_address, t.previous_agent_name, t.previous_birthdate, t.previous_description, t.previous_email, t.previous_handphone, t.previous_identity_number, t.previous_location, t.previous_marketing_agent_number, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.marketing_agent_id, r_marketing_agent_id.uuid AS marketing_agent_uuid, t.created_at, t.updated_at
 FROM marketing_agent_data_history t
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
 WHERE t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR (SELECT sa.client_id FROM marketing_agent sa WHERE sa.id = t.marketing_agent_id) = sqlc.narg('scope_client_id'))
   AND (sqlc.narg('q')::text IS NULL
        OR t.bank_account_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
        OR t.marketing_agent_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
@@ -25,6 +27,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 -- name: CountMarketingAgentDataHistory :one
 SELECT count(*) FROM marketing_agent_data_history t
 WHERE t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR (SELECT sa.client_id FROM marketing_agent sa WHERE sa.id = t.marketing_agent_id) = sqlc.narg('scope_client_id'))
   AND (sqlc.narg('q')::text IS NULL
        OR t.bank_account_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
        OR t.marketing_agent_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'

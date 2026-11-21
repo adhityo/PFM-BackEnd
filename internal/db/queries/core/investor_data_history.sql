@@ -8,7 +8,8 @@ LEFT JOIN country r_country_id ON r_country_id.id = t.country_id
 LEFT JOIN investor_category r_investor_category_id ON r_investor_category_id.id = t.investor_category_id
 LEFT JOIN investor r_investor_id ON r_investor_id.id = t.investor_id
 LEFT JOIN province r_province_id ON r_province_id.id = t.province_id
-WHERE t.uuid = $1 AND t.deleted_at IS NULL;
+WHERE t.uuid = sqlc.arg('uuid') AND t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR (SELECT si.client_id FROM investor si WHERE si.id = t.investor_id) = sqlc.narg('scope_client_id'));
 
 -- name: ListInvestorDataHistory :many
 SELECT t.id, t.uuid, t.address, t.address_city, t.address_postal_code, t.approval_ip_address, t.approval_notes, t.approval_status, t.approved_by, t.approved_time, t.bank, t.bank_account_name, t.bank_account_number, t.bank_branch, t.corresponding_address, t.corresponding_address_city, t.corresponding_address_postal_code, t.description, t.email, t.identity_number, t.investor_name, t.investor_number, t.investor_number_counter, t.marketing_agent_code, t.mobile_phone, t.npwp, t.previous_address, t.previous_address_city, t.previous_address_postal_code, t.previous_bank, t.previous_bank_account_name, t.previous_bank_account_number, t.previous_bank_branch, t.previous_corresponding_address, t.previous_corresponding_address_city, t.previous_corresponding_address_postal_code, t.previous_email, t.previous_identity_number, t.previous_investor_category_id, t.previous_investor_name, t.previous_mobile_phone, t.previous_npwp, t.previous_telephone, t.status, t.telephone, t.city_id, t.country_id, t.investor_category_id, t.investor_id, t.province_id, r_city_id.uuid AS city_uuid, r_city_id.city_name AS city_name, r_city_id.city_code AS city_code, r_country_id.uuid AS country_uuid, r_country_id.country_name AS country_name, r_country_id.country_code AS country_code, r_investor_category_id.uuid AS investor_category_uuid, r_investor_category_id.investor_category_name AS investor_category_name, r_investor_category_id.investor_category_code AS investor_category_code, r_investor_id.uuid AS investor_uuid, r_province_id.uuid AS province_uuid, r_province_id.province_name AS province_name, r_province_id.province_code AS province_code, t.created_at, t.updated_at
@@ -19,6 +20,7 @@ LEFT JOIN investor_category r_investor_category_id ON r_investor_category_id.id 
 LEFT JOIN investor r_investor_id ON r_investor_id.id = t.investor_id
 LEFT JOIN province r_province_id ON r_province_id.id = t.province_id
 WHERE t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR (SELECT si.client_id FROM investor si WHERE si.id = t.investor_id) = sqlc.narg('scope_client_id'))
   AND (sqlc.narg('q')::text IS NULL
        OR t.address_postal_code ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
        OR t.bank_account_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
@@ -43,6 +45,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 -- name: CountInvestorDataHistory :one
 SELECT count(*) FROM investor_data_history t
 WHERE t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR (SELECT si.client_id FROM investor si WHERE si.id = t.investor_id) = sqlc.narg('scope_client_id'))
   AND (sqlc.narg('q')::text IS NULL
        OR t.address_postal_code ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
        OR t.bank_account_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'

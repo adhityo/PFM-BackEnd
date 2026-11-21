@@ -5,7 +5,8 @@ SELECT t.id, t.uuid, t.bank_account_name, t.bank_account_number, t.bank_branch_n
 FROM bank_account t
 LEFT JOIN investor r_investor_id ON r_investor_id.id = t.investor_id
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
-WHERE t.uuid = $1 AND t.deleted_at IS NULL;
+WHERE t.uuid = sqlc.arg('uuid') AND t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR COALESCE((SELECT si.client_id FROM investor si WHERE si.id = t.investor_id), (SELECT sa.client_id FROM marketing_agent sa WHERE sa.id = t.marketing_agent_id)) = sqlc.narg('scope_client_id'));
 
 -- name: ListBankAccount :many
 SELECT t.id, t.uuid, t.bank_account_name, t.bank_account_number, t.bank_branch_name, t.bank_name, t.description, t.status, t.investor_id, t.marketing_agent_id, r_investor_id.uuid AS investor_uuid, r_investor_id.investor_name AS investor_name, r_investor_id.investor_number AS investor_number, r_marketing_agent_id.uuid AS marketing_agent_uuid, r_marketing_agent_id.marketing_agent_name AS marketing_agent_name, r_marketing_agent_id.marketing_agent_number AS marketing_agent_number, t.created_at, t.updated_at
@@ -13,6 +14,7 @@ FROM bank_account t
 LEFT JOIN investor r_investor_id ON r_investor_id.id = t.investor_id
 LEFT JOIN marketing_agent r_marketing_agent_id ON r_marketing_agent_id.id = t.marketing_agent_id
 WHERE t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR COALESCE((SELECT si.client_id FROM investor si WHERE si.id = t.investor_id), (SELECT sa.client_id FROM marketing_agent sa WHERE sa.id = t.marketing_agent_id)) = sqlc.narg('scope_client_id'))
   AND (sqlc.narg('q')::text IS NULL
        OR t.bank_account_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
        OR t.bank_branch_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
@@ -30,6 +32,7 @@ LIMIT sqlc.arg('limit') OFFSET sqlc.arg('offset');
 -- name: CountBankAccount :one
 SELECT count(*) FROM bank_account t
 WHERE t.deleted_at IS NULL
+  AND (sqlc.narg('scope_client_id')::bigint IS NULL OR COALESCE((SELECT si.client_id FROM investor si WHERE si.id = t.investor_id), (SELECT sa.client_id FROM marketing_agent sa WHERE sa.id = t.marketing_agent_id)) = sqlc.narg('scope_client_id'))
   AND (sqlc.narg('q')::text IS NULL
        OR t.bank_account_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'
        OR t.bank_branch_name ILIKE '%' || sqlc.narg('q') || '%' ESCAPE '\'

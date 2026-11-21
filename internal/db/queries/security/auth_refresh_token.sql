@@ -20,5 +20,13 @@ WHERE family_id = $1 AND revoked_at IS NULL;
 UPDATE auth_refresh_token SET revoked_at = now()
 WHERE user_id = $1 AND revoked_at IS NULL;
 
+-- name: SessionActive :one
+-- An access token belongs to a session (token family); it stays valid only
+-- while the family still has an unrevoked, unexpired refresh token, so
+-- logout, logout-all, password change/reset and reuse detection end it at once.
+SELECT EXISTS (SELECT 1 FROM auth_refresh_token
+               WHERE family_id = sqlc.arg('family_id') AND user_id = sqlc.arg('user_id')
+                 AND revoked_at IS NULL AND expires_at > now());
+
 -- name: DeleteExpiredRefreshTokens :execrows
 DELETE FROM auth_refresh_token WHERE expires_at < now() - interval '1 day';

@@ -92,10 +92,12 @@ WHERE uuid = sqlc.arg('uuid') AND updated_at = sqlc.arg('expected_updated_at') A
 RETURNING id;
 
 -- name: ResetUserCredential :one
+-- Like SetUserPassword, keeps an administrative lock: only /unlock lifts it.
 UPDATE app_user
 SET password_hash = NULL, activation_key_hash = sqlc.arg('activation_key_hash'),
     activation_key_expires_at = sqlc.arg('activation_key_expires_at'), activation_key_issued_at = now(), password_changed = FALSE,
-    failed_login_count = 0, locked_until = NULL, updated_by = sqlc.arg('actor')
+    failed_login_count = 0, locked_until = CASE WHEN locked_until >= '9999-01-01' THEN locked_until END,
+    updated_by = sqlc.arg('actor')
 WHERE uuid = sqlc.arg('uuid') AND updated_at = sqlc.arg('expected_updated_at') AND deleted_at IS NULL
 RETURNING id, updated_at;
 
@@ -112,10 +114,13 @@ WHERE activation_key_hash = $1 AND deleted_at IS NULL
 FOR UPDATE;
 
 -- name: SetUserPassword :exec
+-- Clears a lockout from failed logins, but never an administrative lock
+-- (locked_until 9999-12-31, see service.lockForever): only /unlock lifts it.
 UPDATE app_user
 SET password_hash = sqlc.arg('password_hash'), activation_key_hash = NULL, activation_key_expires_at = NULL,
     activation_key_issued_at = NULL,
-    password_changed = TRUE, last_password_change = now(), failed_login_count = 0, locked_until = NULL,
+    password_changed = TRUE, last_password_change = now(), failed_login_count = 0,
+    locked_until = CASE WHEN locked_until >= '9999-01-01' THEN locked_until END,
     updated_by = sqlc.arg('actor')
 WHERE id = sqlc.arg('id') AND deleted_at IS NULL;
 
@@ -134,10 +139,12 @@ WHERE u.uuid = $1 AND u.deleted_at IS NULL;
 SELECT count(*) FROM app_user WHERE client_uuid = $1 AND deleted_at IS NULL;
 
 -- name: GetUserForPasswordReset :one
--- Self-service reset (forgot password): active, non-deleted accounts only.
+-- Self-service reset (forgot password): active, non-deleted accounts that are
+-- not administratively locked.
 SELECT id, uuid, username, email, first_name, activation_key_issued_at
 FROM app_user
 WHERE lower(email) = lower(sqlc.arg('email')::text) AND deleted_at IS NULL AND status = 1
+  AND (locked_until IS NULL OR locked_until < '9999-01-01')
 ORDER BY id
 LIMIT 1;
 

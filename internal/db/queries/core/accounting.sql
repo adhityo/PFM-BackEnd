@@ -128,7 +128,7 @@ FROM cash_settlement_category WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: LockCashSettlement :one
 SELECT cs.id, cs.uuid, cs.cash_settlement_status, cs.cash_settlement_category_id, cs.cash_settlement_value,
-       cs.cash_settlement_subject, cs.created_by, cs.updated_at,
+       cs.cash_settlement_subject, cs.created_by, cs.updated_by, cs.updated_at,
        sp.portfolio_id AS stock_position_portfolio_id, bp.portfolio_id AS bond_position_portfolio_id,
        dp.portfolio_id AS deposito_position_portfolio_id, mp.portfolio_id AS fund_position_portfolio_id
 FROM cash_settlement cs

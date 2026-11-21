@@ -109,7 +109,7 @@ SELECT sqlc.arg('uuid'), t.id, t.accrued_interest, t.bond_code, t.bond_name, t.b
 FROM bond_trade t WHERE t.id = sqlc.arg('id');
 
 -- name: LockBondTrade :one
-SELECT id, uuid, bond_id, nominal, bond_trade_status, bond_periode_option_id, created_by, updated_at
+SELECT id, uuid, bond_id, nominal, bond_trade_status, bond_periode_option_id, created_by, updated_by, updated_at
 FROM bond_trade WHERE uuid = $1 AND deleted_at IS NULL FOR UPDATE;
 
 -- name: ApproveBondTrade :exec

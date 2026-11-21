@@ -20,8 +20,8 @@ SELECT member_id FROM tax_report WHERE id = $1 AND deleted_at IS NULL;
 -- name: GetInvoiceState :one
 SELECT invoice_status, client_id FROM invoice WHERE id = $1 AND deleted_at IS NULL;
 
--- name: GetPayoutBatchStatus :one
-SELECT payout_batch_status FROM benefit_payout_batch WHERE id = $1 AND deleted_at IS NULL;
+-- name: GetPayoutBatchState :one
+SELECT payout_batch_status, client_id FROM benefit_payout_batch WHERE id = $1 AND deleted_at IS NULL;
 
 -- name: SetMemberNumber :exec
 UPDATE member SET member_number = sqlc.arg('number') WHERE id = sqlc.arg('id');
@@ -136,17 +136,17 @@ UPDATE benefit_payout_batch SET value_description = sqlc.arg('description') WHER
 
 -- name: FindActivePayoutBatch :one
 SELECT id, uuid, payout_batch_status FROM benefit_payout_batch
-WHERE year = sqlc.arg('year') AND month = sqlc.arg('month') AND deleted_at IS NULL
+WHERE client_id = sqlc.arg('client_id') AND year = sqlc.arg('year') AND month = sqlc.arg('month') AND deleted_at IS NULL
   AND COALESCE(payout_batch_status, 0) <> 3
 FOR UPDATE;
 
 -- name: InsertPayoutBatch :one
-INSERT INTO benefit_payout_batch (uuid, year, month, payout_batch_status, created_by, updated_by)
-VALUES (sqlc.arg('uuid'), sqlc.arg('year'), sqlc.arg('month'), 0, sqlc.arg('actor'), sqlc.arg('actor'))
+INSERT INTO benefit_payout_batch (uuid, client_id, year, month, payout_batch_status, created_by, updated_by)
+VALUES (sqlc.arg('uuid'), sqlc.arg('client_id'), sqlc.arg('year'), sqlc.arg('month'), 0, sqlc.arg('actor'), sqlc.arg('actor'))
 RETURNING id;
 
 -- name: InsertPayoutLines :execrows
--- Retired members (status 2) and dependants with a monthly benefit.
+-- Retired members (status 2) and dependants with a monthly benefit, of the batch's client.
 INSERT INTO member_benefit_payout (uuid, benefit_payout_batch_id, member_id, dependant_id, month, year,
                                    benefit_payout_value, benefit_payout_tax_value, final_payout_value, payment_method,
                                    member_benefit_payout_status, created_by, updated_by)
@@ -155,11 +155,11 @@ SELECT gen_random_uuid(), sqlc.arg('batch_id'), r.member_id, r.dependant_id, sql
 FROM (
     SELECT m.id AS member_id, NULL::bigint AS dependant_id, m.pension_benefit_value AS amount, m.payment_method
     FROM member m
-    WHERE m.deleted_at IS NULL AND m.status = 2 AND COALESCE(m.pension_benefit_value, 0) > 0
+    WHERE m.deleted_at IS NULL AND m.client_id = sqlc.arg('client_id') AND m.status = 2 AND COALESCE(m.pension_benefit_value, 0) > 0
       AND (m.retired_date IS NULL OR m.retired_date <= sqlc.arg('period_end')::date)
     UNION ALL
     SELECT d.member_id, d.id, d.pension_benefit_value, m.payment_method
-    FROM dependant d JOIN member m ON m.id = d.member_id AND m.deleted_at IS NULL
+    FROM dependant d JOIN member m ON m.id = d.member_id AND m.deleted_at IS NULL AND m.client_id = sqlc.arg('client_id')
     WHERE d.deleted_at IS NULL AND COALESCE(d.pension_benefit_value, 0) > 0
 ) r
 WHERE NOT EXISTS (SELECT 1 FROM member_benefit_payout p
@@ -167,8 +167,14 @@ WHERE NOT EXISTS (SELECT 1 FROM member_benefit_payout p
                     AND COALESCE(p.dependant_id, 0) = COALESCE(r.dependant_id, 0) AND p.deleted_at IS NULL);
 
 -- name: LockPayoutBatch :one
-SELECT id, uuid, payout_batch_status, total_beneficiaries, created_by, updated_at
+SELECT id, uuid, payout_batch_status, total_beneficiaries, created_by, updated_by, updated_at
 FROM benefit_payout_batch WHERE uuid = $1 AND deleted_at IS NULL FOR UPDATE;
+
+-- name: PayoutLinesTouchedBy :one
+-- Maker-checker: whoever created or last edited a line of the batch is a maker too.
+SELECT EXISTS (SELECT 1 FROM member_benefit_payout
+               WHERE benefit_payout_batch_id = sqlc.arg('batch_id') AND deleted_at IS NULL
+                 AND (created_by = sqlc.arg('actor')::text OR updated_by = sqlc.arg('actor')::text));
 
 -- name: ApprovePayoutBatch :exec
 UPDATE benefit_payout_batch
